@@ -23,20 +23,12 @@
         }
         #welcomeOverlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; z-index: 10; width: 90%; max-width: 600px;
-            pointer-events: auto; cursor: pointer;
-            transition: opacity 0.5s ease, visibility 0.5s, transform 0.2s, border-color 0.2s;
-            border: 2px dashed #444; padding: 40px 20px; border-radius: 16px;
-            background: rgba(30, 30, 30, 0.3);
+            text-align: center; z-index: 0; width: 90%; pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s;
         }
-        #welcomeOverlay.dragover {
-            border-color: #03dac6;
-            background: rgba(3, 218, 198, 0.05);
-            transform: translate(-50%, -50%) scale(1.02);
-        }
-        #welcomeOverlay h1 { font-size: 3em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; pointer-events: none; }
-        #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; pointer-events: none; }
-        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
+        #welcomeOverlay h1 { font-size: 3em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; }
+        #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
         .clip-wrapper { 
             display: flex; flex-direction: column; align-items: center; 
@@ -97,7 +89,7 @@
 
     <div id="welcomeOverlay">
         <h1 id="mainTitle">Tải video lên</h1>
-        <p id="subTitle">Chọn một tệp video hoặc kéo thả vào đây để bắt đầu phân đoạn.</p>
+        <p id="subTitle">Chọn một tệp video để bắt đầu phân đoạn.</p>
     </div>
 
     <div id="videoContainer"></div>
@@ -140,7 +132,6 @@
         const status = document.getElementById('status');
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
-        const welcomeOverlay = document.getElementById('welcomeOverlay');
 
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
@@ -255,55 +246,28 @@
             }
         }
 
-        // Hàm xử lý logic chính khi nhận tệp video độc lập
-        function processVideoFile(file) {
-            if (!file) return;
-            rawVideoFile = file; 
-            if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-            sharedVideoURL = URL.createObjectURL(file);
-            const tempVideo = document.createElement('video');
-            tempVideo.src = sharedVideoURL;
-            tempVideo.onloadedmetadata = () => {
-                totalVideoDuration = tempVideo.duration;
-                
-                videoContainer.innerHTML = ""; 
-                gridContent.innerHTML = "";
-                clipsMetadata = []; 
-                document.body.classList.remove('has-clips');
-                
-                document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
-                document.getElementById('subTitle').innerHTML = "💡 Nhấn <b>Thêm đoạn</b> hoặc <b>Random</b> để bắt đầu.";
-                
-                status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
-                enableControls();
-            };
-        }
-
         upload.addEventListener('change', (e) => {
-            processVideoFile(e.target.files[0]);
-        });
-
-        // Tích hợp Sự kiện Kéo thả & Click cho Vùng chữ Welcome
-        welcomeOverlay.addEventListener('click', () => {
-            upload.click();
-        });
-
-        welcomeOverlay.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            welcomeOverlay.classList.add('dragover');
-        });
-
-        welcomeOverlay.addEventListener('dragleave', () => {
-            welcomeOverlay.classList.remove('dragover');
-        });
-
-        welcomeOverlay.addEventListener('drop', (e) => {
-            e.preventDefault();
-            welcomeOverlay.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('video/')) {
-                upload.files = files; // Đồng bộ ngược lại input gốc
-                processVideoFile(files[0]);
+            const file = e.target.files[0];
+            if (file) {
+                rawVideoFile = file; 
+                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+                sharedVideoURL = URL.createObjectURL(file);
+                const tempVideo = document.createElement('video');
+                tempVideo.src = sharedVideoURL;
+                tempVideo.onloadedmetadata = () => {
+                    totalVideoDuration = tempVideo.duration;
+                    
+                    videoContainer.innerHTML = ""; 
+                    gridContent.innerHTML = "";
+                    clipsMetadata = []; 
+                    document.body.classList.remove('has-clips');
+                    
+                    document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
+                    document.getElementById('subTitle').innerHTML = "💡 Nhấn <b>Thêm đoạn</b> hoặc <b>Random</b> để bắt đầu.";
+                    
+                    status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
+                    enableControls();
+                };
             }
         });
 
@@ -333,6 +297,7 @@
             });
         }
 
+        // ĐEM QUAY LẠI TỪ V1: Hàm tạo khung phần tử Grid đồng bộ ngay lúc tạo Clip, nạp ảnh nền bất đồng bộ sau
         function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
@@ -407,26 +372,31 @@
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
-            video.onloadedmetadata = () => {
+                        video.onloadedmetadata = () => {
                 if (video.videoHeight > video.videoWidth) {
                     video.classList.add('portrait');
                 }
+                // Khóa chặt kích thước vật lý hiển thị hiện tại của video vào style
                 video.style.width = video.clientWidth + 'px';
                 video.style.height = video.clientHeight + 'px';
                 
                 video.currentTime = start;
 
+                               // KIỂM TRA: Chỉ cuộn nếu đây là video cuối cùng trong danh sách
                 const allWrappers = videoContainer.querySelectorAll('.clip-wrapper');
                 if (allWrappers.length > 0 && allWrappers[allWrappers.length - 1] === wrapper) {
                     setTimeout(() => {
                         wrapper.scrollIntoView({
                             behavior: 'smooth',
-                            block: 'center'
+                            block: 'center' // Đưa video mới vào giữa màn hình để dễ quan sát
                         });
-                    }, 100);
+                    }, 100); // Trì hoãn 100ms để trình duyệt cập nhật lại DOM ổn định
                 }
             };
 
+
+
+            
             video.onseeked = () => {
                 if (currentlyUnmutedVideo === video) {
                     video.play().catch(() => {});
@@ -459,6 +429,7 @@
             
             clipObserver.observe(video);
             
+            // ĐÃ KHÔI PHỤC: Gọi hàm sinh cấu trúc lưới bất đồng bộ ngay lập tức mà không gây đứng luồng
             addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
@@ -468,6 +439,7 @@
             handleClipRehydration();
         });
 
+        // ĐÃ SỬA: Thay thế hàm xử lý click mở Grid thành dạng hiển thị lập tức của v1
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
