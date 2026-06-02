@@ -304,7 +304,7 @@
             });
         }
 
-        function addGridItemAhead(clipId, startTime) {
+                function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
             gridItem.setAttribute('data-grid-id', clipId);
@@ -318,34 +318,42 @@
             gridItem.appendChild(span);
             
             gridItem.onclick = () => {
-    gridOverlay.style.display = 'none';
-    const targetWrapper = document.getElementById(clipId);
-    if (!targetWrapper) return;
-    const targetVideo = targetWrapper.querySelector('video');
+                gridOverlay.style.display = 'none';
+                const targetWrapper = document.getElementById(clipId);
+                if (!targetWrapper) return;
+                const targetVideo = targetWrapper.querySelector('video');
 
-    // 1. Bật cờ khóa chặn ngay lập tức
-    isNavigatingFromGrid = true;
+                // 1. Khóa cứng hàm tối ưu hóa chạy ngầm
+                isNavigatingFromGrid = true;
 
-    // 2. Ép nạp tài nguyên cho video đích
-    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-        targetVideo.src = sharedVideoURL;
-        targetVideo.currentTime = startTime;
-        targetVideo.load();
-    }
+                // 2. Ép nạp tài nguyên cho video mục tiêu
+                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                    targetVideo.src = sharedVideoURL;
+                    targetVideo.currentTime = startTime;
+                    targetVideo.load();
+                }
 
-    // 3. Cuộn tức thời (Chuyển sang 'auto' để triệt tiêu độ trễ hoạt họa gây loạn viewport)
-    targetWrapper.scrollIntoView({ behavior: 'auto', block: 'center' });
-    
-    // 4. Thiết lập trạng thái phát ngay khi màn hình đứng yên
-    setFocusAudio(targetVideo);
-    targetVideo.play().catch(() => {});
-    
-    // 5. Trì hoãn một khoảng ngắn ổn định khung hình rồi mới trả quyền xử lý cho hàm ngầm
-    setTimeout(() => {
-        isNavigatingFromGrid = false;
-        handleClipRehydration(); 
-    }, 100);
-};
+                // 3. Cuộn tức thời (auto) loại bỏ hoàn toàn độ trễ gây tính toán sai lệch của trình duyệt
+                targetWrapper.scrollIntoView({ behavior: 'auto', block: 'center' });
+                
+                // 4. Ưu tiên âm thanh và phát clip mục tiêu ngay lập tức
+                setFocusAudio(targetVideo);
+                targetVideo.play().catch(() => {});
+                
+                // 5. Thả xích cho hàm ngầm sau khi giao diện đã đứng yên hoàn toàn
+                setTimeout(() => {
+                    isNavigatingFromGrid = false;
+                    handleClipRehydration(); 
+                }, 100);
+            };
+            
+            gridContent.appendChild(gridItem);
+
+            captureThumbnail(startTime).then(thumbUrl => {
+                if (thumbUrl) img.src = thumbUrl;
+            });
+        } // Dấu đóng ngoặc hàm addGridItemAhead quan trọng bị thiếu ở mã cũ
+
 
 
         nextBtn.addEventListener('click', () => {
