@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWgnbWVudCBQbGF5ZXIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZmxhdGljb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWgnbWVudCBQbGF5ZXIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZmxhdGljb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sKICAic3RhcnRvdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -38,15 +38,15 @@
         #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; pointer-events: none; }
         body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
-                /* Giữ nguyên .clip-wrapper của bạn nhưng bỏ min-height cố định */
+        
         .clip-wrapper { 
             display: flex; flex-direction: column; align-items: center; 
             margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
             border-radius: 12px; background: #1e1e1e; width: fit-content; 
-            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
         }
-        
-        /* CƠ CẤU MỚI: Container giữ chỗ bọc ngay sát video */
+
+        /* CONTAINER GIỮ KHUNG CỐ ĐỊNH */
         .video-container-box {
             width: auto;
             height: auto;
@@ -58,32 +58,32 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            /* Thuộc tính cốt lõi để giữ đúng kích thước ngay cả khi rỗng */
+            border: 2px solid #444;
+            /* Giữ khung hình luôn ổn định bằng tỷ lệ động từ biến CSS */
             aspect-ratio: var(--aspect-ratio, 16/9); 
         }
         
         /* Khi là video dọc (Portrait) */
-        .video-container-box.portrait {
-            width: 55vw;
-            max-width: 55vw;
-            max-height: 70vh;
+        .video-container-box.portrait { 
+            width: 55vw; 
+            max-width: 55vw; 
+            max-height: 70vh; 
         }
 
-        /* Chuyển các thuộc tính border và shadow từ video sang Container bọc ngoài */
-        .video-container-box { border: 2px solid #444; }
-        .video-container-box.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
+        /* Trạng thái khi bật tiếng (Chuyển từ thẻ video lên container bọc ngoài) */
+        .video-container-box.unmuted { 
+            border-color: #03dac6; 
+            box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); 
+        }
 
-        /* Video lúc này sẽ lấp đầy container bọc nó */
         video { 
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            width: 100%; 
+            height: 100%; 
+            object-fit: contain; 
             cursor: pointer; 
             display: block;
         }
 
-    
-        video.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
         .clip-info { font-size: 0.8em; color: #777; margin: 8px 0 5px 0; font-family: monospace; }
         .button-group { display: flex; gap: 8px; margin-top: 8px; }
         .delete-btn, .download-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
@@ -206,7 +206,6 @@
             randomBtn.innerText = `Random ${val}s`;
         });
 
-        // Tối ưu clipObserver quay về trạng thái mượt của v1
         const clipObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const video = entry.target;
@@ -216,16 +215,15 @@
                     }
                 } else {
                     video.pause();
-                    // Nếu video cuộn ra ngoài không phải video đang unmuted thì tiến hành tắt tiếng để tránh xung đột âm thanh ẩn
                     if (currentlyUnmutedVideo !== video) {
                         video.muted = true;
-                        video.classList.remove('unmuted');
+                        const parentBox = video.closest('.video-container-box');
+                        if (parentBox) parentBox.classList.remove('unmuted');
                     }
                 }
             });
         }, { threshold: 0.1 });
 
-        // SỬA LỖI CHÍNH: Hàm hồi sinh dữ liệu (Virtual Scroll Rehydration)
         function handleClipRehydration() {
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
@@ -238,14 +236,12 @@
                     return (rect.top < viewportHeight && rect.bottom > 0) ? index : -1;
                 }).filter(idx => idx !== -1);
                 
-                // Vùng đệm an toàn để tải trước video (Buffer)
                 const safeStart = visibleIndices.length > 0 ? Math.max(0, visibleIndices[0] - 3) : 0;
                 const safeEnd = visibleIndices.length > 0 ? Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3) : allWrappers.length - 1;
 
                 allWrappers.forEach((wrapper, index) => {
                     const video = wrapper.querySelector('video');
                     
-                    // Nếu nằm trong vùng hiển thị hoặc vùng đệm an toàn, HOẶC là video đang bật tiếng -> Bắt buộc phải giữ/nạp lại src
                     if ((visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) || video === currentlyUnmutedVideo) {
                         if (!video.src || video.src === "" || video.src === window.location.href) {
                             video.src = sharedVideoURL;
@@ -253,7 +249,6 @@
                             video.load();
                         }
                     } else {
-                        // Nằm ngoài vùng an toàn -> Giải phóng bộ nhớ ngay lập tức
                         if (video.src && video.src !== "" && video.src !== window.location.href) {
                             video.pause(); 
                             video.src = ""; 
@@ -269,10 +264,12 @@
         function setFocusAudio(videoElement) {
             if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
                 currentlyUnmutedVideo.muted = true;
-                currentlyUnmutedVideo.classList.remove('unmuted');
+                const oldBox = currentlyUnmutedVideo.closest('.video-container-box');
+                if (oldBox) oldBox.classList.remove('unmuted');
             }
             videoElement.muted = false;
-            videoElement.classList.add('unmuted');
+            const newBox = videoElement.closest('.video-container-box');
+            if (newBox) newBox.classList.add('unmuted');
             currentlyUnmutedVideo = videoElement;
         }
 
@@ -397,8 +394,7 @@
             });
         }
 
-        
-                    nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -414,7 +410,7 @@
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             
-            // TẠO CONTAINER GIỮ KÍCH THƯỚC
+            // TẠO CONTAINER GIỮ KÍCH THƯỚC ĐỘNG
             const videoBox = document.createElement('div');
             videoBox.className = 'video-container-box';
             
@@ -424,38 +420,16 @@
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             
-            // Hàm kích hoạt âm thanh được chuyển đổi sang quản lý class trên videoBox
-            function setFocusAudioLocal(vid, box) {
-                if (currentlyUnmutedVideo && currentlyUnmutedVideo !== vid) {
-                    currentlyUnmutedVideo.muted = true;
-                    const parentBox = currentlyUnmutedVideo.closest('.video-container-box');
-                    if(parentBox) parentBox.classList.remove('unmuted');
-                }
-                vid.muted = false;
-                box.classList.add('unmuted');
-                currentlyUnmutedVideo = vid;
-            }
+            // Gắn tạm thời vào DOM để chuẩn bị logic setFocusAudio hoạt động chính xác
+            videoBox.appendChild(video);
             
-            // Mặc định focus âm thanh cho clip mới tạo
-            setFocusAudio = (vidElement) => {
-                const boxElement = vidElement.closest('.video-container-box');
-                if (currentlyUnmutedVideo && currentlyUnmutedVideo !== vidElement) {
-                    currentlyUnmutedVideo.muted = true;
-                    const parentBox = currentlyUnmutedVideo.closest('.video-container-box');
-                    if(parentBox) parentBox.classList.remove('unmuted');
-                }
-                vidElement.muted = false;
-                if(boxElement) boxElement.classList.add('unmuted');
-                currentlyUnmutedVideo = vidElement;
-            };
-
-            setFocusAudioLocal(video, videoBox);
+            setFocusAudio(video);
             
             video.onclick = () => {
-                if (video.muted) setFocusAudioLocal(video, videoBox);
+                if (video.muted) setFocusAudio(video);
                 else { 
                     video.muted = true; 
-                    videoBox.classList.remove('unmuted'); 
+                    if (videoBox) videoBox.classList.remove('unmuted'); 
                     currentlyUnmutedVideo = null; 
                 }
             };
@@ -469,13 +443,13 @@
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                // Ép tỷ lệ khung hình thực tế vào biến CSS để container giữ form ngay cả khi video rỗng (src = "")
-                const aspect = video.videoWidth / video.videoHeight;
+                // Ép tỷ lệ gốc của video vào biến CSS của container bọc ngoài
                 videoBox.style.setProperty('--aspect-ratio', `${video.videoWidth}/${video.videoHeight}`);
 
                 if (video.videoHeight > video.videoWidth) {
                     videoBox.classList.add('portrait');
                 }
+                
                 video.currentTime = start;
 
                 const allWrappers = videoContainer.querySelectorAll('.clip-wrapper');
@@ -515,31 +489,10 @@
             
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
             
-            // Gắn video vào box bọc, rồi gắn box vào wrapper chung
-            videoBox.appendChild(video);
+            // Sắp xếp các thành phần vào cây DOM
             wrapper.appendChild(videoBox); 
             wrapper.appendChild(info); 
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(btnGroup);
-            
-            videoContainer.appendChild(wrapper);
-            
-            clipObserver.observe(video);
-            addGridItemAhead(clipId, start);
-            
-            startTimeInput.value = formatTime(end);
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
-            handleClipRehydration();
-        });
-
-
-           
-            
-            
-            
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
-            wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
