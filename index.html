@@ -318,41 +318,35 @@
             gridItem.appendChild(span);
             
             gridItem.onclick = () => {
-                gridOverlay.style.display = 'none';
-                const targetWrapper = document.getElementById(clipId);
-                if (!targetWrapper) return;
-                const targetVideo = targetWrapper.querySelector('video');
+    gridOverlay.style.display = 'none';
+    const targetWrapper = document.getElementById(clipId);
+    if (!targetWrapper) return;
+    const targetVideo = targetWrapper.querySelector('video');
 
-                // BẬT CỜ: Khóa toàn bộ tính năng tự hủy src tạm thời khi cuộn trang
-                isNavigatingFromGrid = true;
+    // 1. Bật cờ khóa chặn ngay lập tức
+    isNavigatingFromGrid = true;
 
-                // Nạp sẵn tài nguyên cho video đích ngay lập tức trước khi cuộn
-                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                    targetVideo.src = sharedVideoURL;
-                    targetVideo.currentTime = startTime;
-                    targetVideo.load();
-                }
+    // 2. Ép nạp tài nguyên cho video đích
+    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+        targetVideo.src = sharedVideoURL;
+        targetVideo.currentTime = startTime;
+        targetVideo.load();
+    }
 
-                // Thực hiện cuộn mượt mà
-                targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Chờ hiệu ứng cuộn của trình duyệt hoàn tất (thường mất 400-500ms)
-                setTimeout(() => {
-                    setFocusAudio(targetVideo);
-                    targetVideo.play().catch(() => {});
-                    
-                    // Tắt cờ và giải phóng lại bộ nhớ tài nguyên cho các clip khuất màn hình
-                    isNavigatingFromGrid = false;
-                    handleClipRehydration(); 
-                }, 500);
-            };
-            
-            gridContent.appendChild(gridItem);
+    // 3. Cuộn tức thời (Chuyển sang 'auto' để triệt tiêu độ trễ hoạt họa gây loạn viewport)
+    targetWrapper.scrollIntoView({ behavior: 'auto', block: 'center' });
+    
+    // 4. Thiết lập trạng thái phát ngay khi màn hình đứng yên
+    setFocusAudio(targetVideo);
+    targetVideo.play().catch(() => {});
+    
+    // 5. Trì hoãn một khoảng ngắn ổn định khung hình rồi mới trả quyền xử lý cho hàm ngầm
+    setTimeout(() => {
+        isNavigatingFromGrid = false;
+        handleClipRehydration(); 
+    }, 100);
+};
 
-            captureThumbnail(startTime).then(thumbUrl => {
-                if (thumbUrl) img.src = thumbUrl;
-            });
-        }
 
         nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
