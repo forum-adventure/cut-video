@@ -28,7 +28,11 @@ if (typeof window === 'undefined') {
     (() => {
         const script = document.currentScript;
         if (navigator.serviceWorker) {
-            navigator.serviceWorker.register(window.location.pathname + script.getAttribute("src"))
+            // ĐÃ SỬA: Tính toán chính xác đường dẫn cha (Base Directory) để tránh lỗi dính chữ khi triển khai URL con
+            const currentPath = window.location.pathname;
+            const baseDir = currentPath.substring(0, currentPath.lastIndexOf('/') + 1);
+            
+            navigator.serviceWorker.register(baseDir + script.getAttribute("src"))
                 .then((registration) => {
                     registration.addEventListener("updatefound", () => {
                         window.location.reload();

@@ -10,10 +10,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLA "diHNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
     
     <style>
         body { 
@@ -201,6 +201,8 @@
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
                             video.load();
+                            // ĐÃ SỬA: Đảm bảo phát lại video mượt mà ngay khi được nạp lại src do cuộn màn hình
+                            video.play().catch(() => {});
                         }
                     } else {
                         if (video.src && video.src !== "" && video.src !== window.location.href) {
@@ -257,7 +259,6 @@
             }
         });
 
-        // TỐI ƯU HÓA CAPTURE: Giải phóng RAM triệt để ngay sau khi bóc tách frame
         async function captureThumbnail(startTime) {
             return new Promise((resolve) => {
                 const canvas = document.createElement('canvas');
@@ -284,13 +285,11 @@
             });
         }
 
-        // TẠO SẴN ITEM CHO GRID VIEW NGAY KHI THÊM ĐOẠN
         function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
             gridItem.setAttribute('data-grid-id', clipId);
             
-            // Tạo một thẻ img trống hoặc icon loading tạm thời
             const img = document.createElement('img');
             img.alt = "...";
             gridItem.appendChild(img);
@@ -318,7 +317,6 @@
             
             gridContent.appendChild(gridItem);
 
-            // Chạy ngầm bóc tách ảnh gán vào thẻ img vừa tạo
             captureThumbnail(startTime).then(thumbUrl => {
                 if (thumbUrl) img.src = thumbUrl;
             });
@@ -393,7 +391,6 @@
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
             
-            // KÍCH HOẠT TẠO NGẦM SẴN CHO GRID VIEW NGAY TẠI ĐÂY
             addGridItemAhead(clipId, start);
 
             startTimeInput.value = formatTime(end);
@@ -401,7 +398,6 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        // BẤM VÀO LÀ HIỂN THỊ NGAY LẬP TỨC (0ms CHỜ ĐỢI)
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
@@ -423,8 +419,8 @@
             btn.innerText = '⌛ Đang trích xuất...';
             status.innerText = `⏳ Hệ thống FFmpeg đang cắt đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
+            const { name } = rawVideoFile;
             try {
-                const { name } = rawVideoFile;
                 ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
                 const outputName = `cut_${Date.now()}.mp4`;
                 
@@ -450,6 +446,8 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
+                // ĐÃ SỬA: Giải phóng triệt để RAM ảo WebAssembly bằng cách xóa file video gốc vừa import vào
+                try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
 
