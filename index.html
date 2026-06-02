@@ -10,8 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEy
-eW91Ij4K">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEy">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -301,10 +300,8 @@ eW91Ij4K">
             video.playsInline = true; 
             video.preload = "metadata";
             
-            // THAY ĐỔI QUAN TRỌNG: Thiết lập trạng thái ban đầu là KHÔNG MUTED ngay lúc tạo
-            // Điều này hợp lệ hóa lệnh play có tiếng dưới góc nhìn của bộ lọc tương tác người dùng
-            video.muted = false;
-            
+            // Đặt mặc định ban đầu về câm trước khi đưa vào cây DOM
+            video.muted = true;
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.onclick = () => {
@@ -319,15 +316,19 @@ eW91Ij4K">
             };
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
+            
             video.onloadedmetadata = () => {
                 if (video.videoHeight > video.videoWidth) video.classList.add('portrait');
                 video.currentTime = start;
             };
             
+            // CẬP NHẬT QUAN TRỌNG: Gọi bật tiếng ngay sát sườn lệnh phát trong onloadeddata
             video.onloadeddata = () => { 
-                // Cố gắng phát có tiếng, nếu trình duyệt cực đoan chặn lại, nó sẽ tự hạ cấp xuống phát câm thay vì bị crash
+                setFocusAudio(video); 
                 video.play().catch(() => {
+                    // Cơ chế phòng thủ nếu trình duyệt chặn luồng bất đồng bộ: Hạ cấp xuống phát câm
                     video.muted = true;
+                    video.classList.remove('unmuted');
                     video.play().catch(()=>{});
                 });
             };
@@ -357,8 +358,7 @@ eW91Ij4K">
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
             
-            // FOCUS VÀ HIỂN THỊ VIỀN SÁNG NGAY LẬP TỨC ĐỒNG BỘ 
-            setFocusAudio(video);
+            // Cuộn mượt màn hình tới thẻ wrapper vừa tạo ngay lập tức
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
             startTimeInput.value = formatTime(end);
