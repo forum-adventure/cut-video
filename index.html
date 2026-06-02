@@ -201,6 +201,7 @@
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
                             video.load();
+                            // ĐÃ SỬA: Đảm bảo phát lại video mượt mà ngay khi được nạp lại src do cuộn màn hình
                             video.play().catch(() => {});
                         }
                     } else {
@@ -338,22 +339,10 @@
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             const video = document.createElement('video');
-            
-            // THAY ĐỔI CHÍNH TẠI ĐÂY: Thiết lập bật tiếng (unmuted) ngay lập tức cho video mới
-            video.muted = false; 
-            video.playsInline = true; 
-            video.preload = "metadata";
+            video.muted = true; video.playsInline = true; video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
-            
-            // Đưa video mới này thành Focus Audio duy nhất ngay lập tức, tắt tiếng video cũ trước đó
-            if (currentlyUnmutedVideo) {
-                currentlyUnmutedVideo.muted = true;
-                currentlyUnmutedVideo.classList.remove('unmuted');
-            }
-            video.classList.add('unmuted');
-            currentlyUnmutedVideo = video;
-
+            video.dataset.isInitialLoad = "true";
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
                 else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
@@ -370,6 +359,11 @@
                 video.currentTime = start;
             };
             video.onloadeddata = () => { 
+                if (video.dataset.isInitialLoad === "true") {
+                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setFocusAudio(video);
+                    video.dataset.isInitialLoad = "false";
+                }
                 video.play().catch(() => {});
             };
             const info = document.createElement('div');
@@ -401,9 +395,7 @@
 
             startTimeInput.value = formatTime(end);
             handleClipRehydration();
-            
-            // THAY ĐỔI CHÍNH TẠI ĐÂY: Thực hiện cuộn màn hình xuống vị trí video mới ngay tắp lự
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = () => {
@@ -454,6 +446,7 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
+                // ĐÃ SỬA: Giải phóng triệt để RAM ảo WebAssembly bằng cách xóa file video gốc vừa import vào
                 try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
@@ -465,7 +458,7 @@
             nextBtn.click();
         };
 
-        fn = function formatTime(s) {
+        function formatTime(s) {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
             return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
         }
