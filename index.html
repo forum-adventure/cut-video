@@ -138,14 +138,13 @@
         const ffmpeg = createFFmpeg({ log: true });
         let isFFmpegReady = false;
 
-        let rawVideoFile = null; // Lưu trữ con trỏ file gốc để nạp vào FFmpeg khi cần
+        let rawVideoFile = null; 
         let sharedVideoURL = null; 
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
         let clipsMetadata = [];
 
-        // Khởi động load thư viện xử lý ngầm khi vừa vào ứng dụng
         async function loadFFmpegCore() {
             try {
                 await ffmpeg.load();
@@ -171,13 +170,19 @@
                 const video = entry.target;
                 if (entry.isIntersecting) {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
+                        if (currentlyUnmutedVideo === video) {
+                            video.muted = false;
+                            video.classList.add('unmuted');
+                        }
                         video.play().catch(() => {});
                     }
                 } else {
+                    // SỬA LỖI 1: Nếu là video đang được ưu tiên phát tiếng, bỏ qua không ép pause/mute khi nó mới tạo và chưa kịp cuộn tới
+                    if (currentlyUnmutedVideo === video) return;
+
                     video.pause();
                     video.muted = true;
                     video.classList.remove('unmuted');
-                    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
                 }
             });
         }, { threshold: 0.1 });
@@ -192,13 +197,24 @@
                     const rect = wrapper.getBoundingClientRect();
                     return (rect.top < viewportHeight && rect.bottom > 0) ? index : -1;
                 }).filter(idx => idx !== -1);
-                if (visibleIndices.length === 0) return;
-                const safeStart = Math.max(0, visibleIndices[0] - 3);
-                const safeEnd = Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3);
+                
+                const safeStart = visibleIndices.length > 0 ? Math.max(0, visibleIndices[0] - 3) : 0;
+                const safeEnd = visibleIndices.length > 0 ? Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3) : allWrappers.length - 1;
 
                 allWrappers.forEach((wrapper, index) => {
                     const video = wrapper.querySelector('video');
-                    if (index >= safeStart && index <= safeEnd) {
+                    
+                    // SỬA LỖI 2: Bảo vệ tuyệt đối video đang focus, không cho phép hủy src khi mượt mà cuộn xuống
+                    if (video === currentlyUnmutedVideo) {
+                        if (!video.src || video.src === "" || video.src === window.location.href) {
+                            video.src = sharedVideoURL;
+                            video.currentTime = parseFloat(video.dataset.startTime);
+                            video.load();
+                        }
+                        return;
+                    }
+
+                    if (visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) {
                         if (!video.src || video.src === "" || video.src === window.location.href) {
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
@@ -237,7 +253,7 @@
         upload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                rawVideoFile = file; // Lưu file gốc
+                rawVideoFile = file; 
                 if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
                 sharedVideoURL = URL.createObjectURL(file);
                 const tempVideo = document.createElement('video');
@@ -294,13 +310,12 @@
             wrapper.id = clipId;
             
             const video = document.createElement('video');
-            video.muted = false; // Bật tiếng ngay từ đầu
             video.playsInline = true; 
-            video.preload = "metadata";
+            video.preload = "auto"; 
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             
-            // Kích hoạt tiếng và giao diện unmuted ngay lập tức trong luồng click
+            // Đặt tiêu điểm âm thanh ngay lập tức đồng bộ trong luồng Click chuột
             setFocusAudio(video);
             
             video.onclick = () => {
@@ -315,14 +330,17 @@
             };
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
+            
             video.onloadedmetadata = () => {
                 if (video.videoHeight > video.videoWidth) video.classList.add('portrait');
                 video.currentTime = start;
             };
             
-            // Rút gọn sự kiện onloadeddata
-            video.onloadeddata = () => { 
-                video.play().catch(() => {});
+            // SỬA LỖI LUỒNG: Khi trình duyệt hoàn tất tua (seek) đến đoạn cắt, kích hoạt phát tiếng ngay
+            video.onseeked = () => {
+                if (currentlyUnmutedVideo === video) {
+                    video.play().catch(() => {});
+                }
             };
             
             const info = document.createElement('div');
@@ -331,7 +349,6 @@
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
-            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
             dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
@@ -350,18 +367,20 @@
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
+            
             clipObserver.observe(video);
             startTimeInput.value = formatTime(end);
             
-            // Cuộn mượt ngay lập tức xuống container vừa tạo thay vì chờ tải data
+            // Cuộn mượt ngay lập tức xuống phần tử mới
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
-            // Gọi hàm play() trực tiếp tại đây để trình duyệt ghi nhận User Gesture
+            // Kích hoạt lệnh play() đồng bộ ngay tại đây để vượt qua chính sách Autoplay của trình duyệt
             video.play().catch(() => {});
             
             handleClipRehydration();
         });
 
+        // SỬA LỖI TỐI ƯU CHO DANH SÁCH LƯỚI (GRID VIEW) KHÔNG BỊ MẤT TIẾNG DO TIMEOUT
         gridViewBtn.onclick = async () => {
             gridOverlay.style.display = 'flex';
             const gridTitle = document.getElementById('gridTitle');
@@ -377,16 +396,16 @@
                         gridOverlay.style.display = 'none';
                         const targetWrapper = document.getElementById(item.id);
                         const targetVideo = targetWrapper.querySelector('video');
+                        
+                        if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                            targetVideo.src = sharedVideoURL;
+                            targetVideo.currentTime = item.start;
+                            targetVideo.load();
+                        }
+                        setFocusAudio(targetVideo);
+                        targetVideo.play().catch(() => {});
+
                         targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => {
-                            if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                                targetVideo.src = sharedVideoURL;
-                                targetVideo.currentTime = item.start;
-                                targetVideo.load();
-                            }
-                            setFocusAudio(targetVideo);
-                            targetVideo.play();
-                        }, 400);
                     };
                     gridContent.appendChild(gridItem);
                     item.hasThumb = true; 
@@ -397,7 +416,6 @@
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
-        // TÍNH NĂNG TÍCH HỢP TỪ INDEX_CUT_TOOL.HTML
         async function downloadClipFFmpeg(startTime, duration, btn) {
             if (!isFFmpegReady) {
                 alert("Hệ thống xử lý video chưa sẵn sàng, vui lòng đợi một chút!");
@@ -415,18 +433,11 @@
 
             try {
                 const { name } = rawVideoFile;
-                // Ghi file video gốc vào bộ nhớ ảo của FFmpeg (nếu chưa có)
                 ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
-
                 const outputName = `cut_${Date.now()}.mp4`;
                 
-                // Chạy lệnh cắt stream không re-encode (-c copy) tối ưu siêu tốc từ index_cut_tool
                 await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
-                
-                // Đọc dữ liệu đã cắt từ bộ nhớ ảo
                 const data = ffmpeg.FS('readFile', outputName);
-
-                // Tạo link tải dữ liệu định dạng .mp4
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
                 const a = document.createElement('a');
@@ -436,9 +447,7 @@
                 a.click();
                 document.body.removeChild(a);
 
-                // Xóa file tạm trong FS để giải phóng bộ nhớ RAM ảo của trình duyệt
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-
                 status.innerText = `✨ Xuất thành công đoạn từ ${formatTime(startTime)}!`;
             } catch (err) {
                 console.error(err);
