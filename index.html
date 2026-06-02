@@ -171,12 +171,7 @@
                 const video = entry.target;
                 if (entry.isIntersecting) {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
-                        // Chỉ tự động phát nếu nó đang là video được chọn bật tiếng hoặc chưa có video nào bật tiếng
-                        if (currentlyUnmutedVideo === video || !currentlyUnmutedVideo) {
-                            video.play().catch(() => {});
-                        } else {
-                            video.play().catch(() => {});
-                        }
+                        video.play().catch(() => {});
                     }
                 } else {
                     video.pause();
@@ -281,7 +276,7 @@
             });
         }
 
-        nextBtn.addEventListener('click', () => {
+                nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -293,31 +288,22 @@
             const end = Math.min(start + duration, totalVideoDuration);
             const clipId = "clip-" + Date.now();
             clipsMetadata.push({ id: clipId, start: start, hasThumb: false });
+            
             const wrapper = document.createElement('div');
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
+            
             const video = document.createElement('video');
-            
-            // --- THAY ĐỔI CHIẾN LƯỢC SOUND KHỞI TẠO ---
-            // Thiết lập bật tiếng ngay lập tức cho phần tử video mới trước khi append vào DOM
-            video.muted = false; 
-            video.classList.add('unmuted');
-            
-            // Tắt tiếng phần tử video đang phát trước đó ngay lập tức (UI Feedback phản hồi nhanh)
-            if (currentlyUnmutedVideo) {
-                currentlyUnmutedVideo.muted = true;
-                currentlyUnmutedVideo.classList.remove('unmuted');
-            }
-            currentlyUnmutedVideo = video; // Chuyển con trỏ quản lý âm thanh sang video mới ngay lập tức
-            
-            video.playsInline = true; video.preload = "metadata";
+            video.muted = true; video.playsInline = true; video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
+            
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
                 else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
             };
+            
             let animationFrameId;
             const checkTime = () => {
                 if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
@@ -325,19 +311,59 @@
             };
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
+            
             video.onloadedmetadata = () => {
                 if (video.videoHeight > video.videoWidth) video.classList.add('portrait');
                 video.currentTime = start;
             };
+            
+            // TỐI ƯU TẠI ĐÂY: Loại bỏ lệnh cuộn khỏi onloadeddata để tránh bị trễ
             video.onloadeddata = () => { 
+                if (video.dataset.isInitialLoad === "true") {
+                    setFocusAudio(video);
+                    video.dataset.isInitialLoad = "false";
+                }
                 video.play().catch(() => {});
             };
+            
             const info = document.createElement('div');
             info.className = 'clip-info';
             info.innerText = `${formatTime(start)} - ${formatTime(end)}`;
+            
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
+            const dl = document.createElement('button');
+            dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
+            dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
+            
+            const del = document.createElement('button');
+            del.className = 'delete-btn'; del.innerText = "Xóa clip";
+            del.onclick = () => {
+                clipObserver.unobserve(video); wrapper.remove();
+                clipsMetadata = clipsMetadata.filter(m => m.id !== clipId);
+                const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
+                if (gridItem) gridItem.remove(); 
+                if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
+                handleClipRehydration();
+            };
+            
+            btnGroup.appendChild(dl); btnGroup.appendChild(del);
+            wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
+            videoContainer.appendChild(wrapper);
+            
+            // 🔥 HÀNH ĐỘNG NGAY LẬP TỨC: Cuộn màn hình ngay khi vừa append vào DOM, bất kể video đã load xong hay chưa
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
+            clipObserver.observe(video);
+            startTimeInput.value = formatTime(end);
+            handleClipRehydration();
+            
+            // Xóa bỏ lệnh cuộn window cũ ở cuối hàm vì wrapper.scrollIntoView phía trên đã xử lý chính xác vị trí tâm màn hình.
+        });
+
+            
+            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
             dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
@@ -357,11 +383,8 @@
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
             startTimeInput.value = formatTime(end);
-            
-            // --- THAY ĐỔI VỊ TRÍ CUỘN MÀN HÌNH ---
-            // Đẩy lệnh cuộn màn hình và kích hoạt render Virtual Scroll lên chạy ngay lập tức, không đợi load metadata
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             handleClipRehydration();
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = async () => {
