@@ -374,22 +374,38 @@
             span.innerText = formatTime(startTime);
             gridItem.appendChild(span);
             
-            gridItem.onclick = () => {
+                        gridItem.onclick = () => {
                 gridOverlay.style.display = 'none';
                 const targetWrapper = document.getElementById(clipId);
                 if (!targetWrapper) return;
                 const targetVideo = targetWrapper.querySelector('video');
+                
+                // 1. Tạm thời gỡ bỏ sự kiện scroll để tránh kích hoạt Rehydration khi đang cuộn mượt
+                window.removeEventListener('scroll', handleClipRehydration);
+                
+                // 2. Ép nạp nguồn video ngay lập tức cho mục tiêu trước khi cuộn để kích thước thẻ cố định
+                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                    targetVideo.src = sharedVideoURL;
+                    targetVideo.currentTime = startTime;
+                    targetVideo.load();
+                }
+
+                // 3. Tiến hành cuộn mượt tới clip mục tiêu
                 targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                
+                // 4. Đợi hiệu ứng cuộn mượt hoàn tất (khoảng 400-500ms) rồi xử lý tiếp
                 setTimeout(() => {
-                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                        targetVideo.src = sharedVideoURL;
-                        targetVideo.currentTime = startTime;
-                        targetVideo.load();
-                    }
                     setFocusAudio(targetVideo);
                     targetVideo.play().catch(() => {});
-                }, 400);
+                    
+                    // 5. Gắn lại sự kiện scroll sau khi đã cuộn xong an toàn
+                    window.addEventListener('scroll', handleClipRehydration, { passive: true });
+                    
+                    // 6. Chạy bù lại 1 lần rehydration để đồng bộ trạng thái chuẩn các clip xung quanh
+                    handleClipRehydration();
+                }, 500); // 500ms là thời gian an toàn cho hiệu ứng cuộn smooth kết thúc
             };
+
             
             gridContent.appendChild(gridItem);
 
