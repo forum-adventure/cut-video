@@ -536,7 +536,7 @@ dlGif.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, dlGif);
         
         // Chạy lệnh render GIF: 
         // -ss: mốc thời gian, -t: thời lượng
-        // -vf "fps=12,scale=480:-1": Cấu hình mượt mà, giới hạn 12 khung hình/giây, chiều rộng 480px (chiều cao tự động tỷ lệ) để tránh crash trình duyệt.
+        // -vf "fps=24,scale=480:-1": Cấu hình mượt mà, giới hạn 12 khung hình/giây, chiều rộng 480px (chiều cao tự động tỷ lệ) để tránh crash trình duyệt.
         await ffmpeg.run(
             '-ss', startTime.toString(), 
             '-i', virtualInputName, 
