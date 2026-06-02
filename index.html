@@ -276,7 +276,7 @@
             });
         }
 
-                nextBtn.addEventListener('click', () => {
+        nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -317,7 +317,6 @@
                 video.currentTime = start;
             };
             
-            // TỐI ƯU TẠI ĐÂY: Loại bỏ lệnh cuộn khỏi onloadeddata để tránh bị trễ
             video.onloadeddata = () => { 
                 if (video.dataset.isInitialLoad === "true") {
                     setFocusAudio(video);
@@ -352,39 +351,12 @@
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
-            // 🔥 HÀNH ĐỘNG NGAY LẬP TỨC: Cuộn màn hình ngay khi vừa append vào DOM, bất kể video đã load xong hay chưa
+            // 🔥 ĐÃ GIỮ LẠI TỐI ƯU CỦA V2: Cuộn màn hình ngay lập tức khi tạo cấu trúc DOM
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             
             clipObserver.observe(video);
             startTimeInput.value = formatTime(end);
             handleClipRehydration();
-            
-            // Xóa bỏ lệnh cuộn window cũ ở cuối hàm vì wrapper.scrollIntoView phía trên đã xử lý chính xác vị trí tâm màn hình.
-        });
-
-            
-            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
-            const dl = document.createElement('button');
-            dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
-            dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
-            
-            const del = document.createElement('button');
-            del.className = 'delete-btn'; del.innerText = "Xóa clip";
-            del.onclick = () => {
-                clipObserver.unobserve(video); wrapper.remove();
-                clipsMetadata = clipsMetadata.filter(m => m.id !== clipId);
-                const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
-                if (gridItem) gridItem.remove(); 
-                if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
-                handleClipRehydration();
-            };
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
-            wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
-            videoContainer.appendChild(wrapper);
-            clipObserver.observe(video);
-            startTimeInput.value = formatTime(end);
-            handleClipRehydration();
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = async () => {
