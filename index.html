@@ -10,7 +10,8 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEy
+eW91Ij4K">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -288,22 +289,17 @@
             const end = Math.min(start + duration, totalVideoDuration);
             const clipId = "clip-" + Date.now();
             clipsMetadata.push({ id: clipId, start: start, hasThumb: false });
-            
             const wrapper = document.createElement('div');
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
-            
             const video = document.createElement('video');
             video.muted = true; video.playsInline = true; video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
-            video.dataset.isInitialLoad = "true";
-            
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
                 else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
             };
-            
             let animationFrameId;
             const checkTime = () => {
                 if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
@@ -311,27 +307,20 @@
             };
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
-            
             video.onloadedmetadata = () => {
                 if (video.videoHeight > video.videoWidth) video.classList.add('portrait');
                 video.currentTime = start;
             };
-            
             video.onloadeddata = () => { 
-                if (video.dataset.isInitialLoad === "true") {
-                    setFocusAudio(video);
-                    video.dataset.isInitialLoad = "false";
-                }
                 video.play().catch(() => {});
             };
-            
             const info = document.createElement('div');
             info.className = 'clip-info';
             info.innerText = `${formatTime(start)} - ${formatTime(end)}`;
-            
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
+            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
             dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
@@ -346,15 +335,15 @@
                 if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
                 handleClipRehydration();
             };
-            
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
-            
-            // 🔥 ĐÃ GIỮ LẠI TỐI ƯU CỦA V2: Cuộn màn hình ngay lập tức khi tạo cấu trúc DOM
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            
             clipObserver.observe(video);
+            
+            // TẬP TRUNG (FOCUS & SCROLL) NGAY LẬP TỨC VÀO CLIP VỪA TẠO
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            setFocusAudio(video);
+
             startTimeInput.value = formatTime(end);
             handleClipRehydration();
         });
