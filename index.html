@@ -10,10 +10,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <style>
         body { 
@@ -133,17 +133,19 @@
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
 
+        // Khởi tạo FFmpeg Core từ index_cut_tool
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
         let isFFmpegReady = false;
 
-        let rawVideoFile = null; 
+        let rawVideoFile = null; // Lưu trữ con trỏ file gốc để nạp vào FFmpeg khi cần
         let sharedVideoURL = null; 
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
         let clipsMetadata = [];
 
+        // Khởi động load thư viện xử lý ngầm khi vừa vào ứng dụng
         async function loadFFmpegCore() {
             try {
                 await ffmpeg.load();
@@ -201,8 +203,6 @@
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
                             video.load();
-                            // ĐÃ SỬA: Đảm bảo phát lại video mượt mà ngay khi được nạp lại src do cuộn màn hình
-                            video.play().catch(() => {});
                         }
                     } else {
                         if (video.src && video.src !== "" && video.src !== window.location.href) {
@@ -237,7 +237,7 @@
         upload.addEventListener('change', (e) => {
             const file = e.target.files[0];
             if (file) {
-                rawVideoFile = file; 
+                rawVideoFile = file; // Lưu file gốc
                 if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
                 sharedVideoURL = URL.createObjectURL(file);
                 const tempVideo = document.createElement('video');
@@ -266,59 +266,13 @@
                 v.src = sharedVideoURL;
                 v.currentTime = startTime;
                 v.muted = true;
-                v.playsInline = true;
-                
                 v.onseeked = () => {
                     canvas.width = 160; canvas.height = 160;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    
-                    v.src = "";
-                    v.load();
+                    resolve(canvas.toDataURL('image/jpeg', 0.6));
                     v.remove();
-                    resolve(dataUrl);
                 };
-                v.onerror = () => {
-                    v.src = ""; v.remove(); resolve("");
-                };
-            });
-        }
-
-        function addGridItemAhead(clipId, startTime) {
-            const gridItem = document.createElement('div');
-            gridItem.className = 'grid-item';
-            gridItem.setAttribute('data-grid-id', clipId);
-            
-            const img = document.createElement('img');
-            img.alt = "...";
-            gridItem.appendChild(img);
-            
-            const span = document.createElement('span');
-            span.innerText = formatTime(startTime);
-            gridItem.appendChild(span);
-            
-            gridItem.onclick = () => {
-                gridOverlay.style.display = 'none';
-                const targetWrapper = document.getElementById(clipId);
-                if (!targetWrapper) return;
-                const targetVideo = targetWrapper.querySelector('video');
-                targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                setTimeout(() => {
-                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                        targetVideo.src = sharedVideoURL;
-                        targetVideo.currentTime = startTime;
-                        targetVideo.load();
-                    }
-                    setFocusAudio(targetVideo);
-                    targetVideo.play();
-                }, 400);
-            };
-            
-            gridContent.appendChild(gridItem);
-
-            captureThumbnail(startTime).then(thumbUrl => {
-                if (thumbUrl) img.src = thumbUrl;
             });
         }
 
@@ -333,8 +287,7 @@
             document.body.classList.add('has-clips');
             const end = Math.min(start + duration, totalVideoDuration);
             const clipId = "clip-" + Date.now();
-            clipsMetadata.push({ id: clipId, start: start, hasThumb: true });
-            
+            clipsMetadata.push({ id: clipId, start: start, hasThumb: false });
             const wrapper = document.createElement('div');
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
@@ -372,6 +325,7 @@
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
+            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
             dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
@@ -390,20 +344,47 @@
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
-            
-            addGridItemAhead(clipId, start);
-
             startTimeInput.value = formatTime(end);
             handleClipRehydration();
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        gridViewBtn.onclick = () => {
+        gridViewBtn.onclick = async () => {
             gridOverlay.style.display = 'flex';
+            const gridTitle = document.getElementById('gridTitle');
+            for (const item of clipsMetadata) {
+                if (!item.hasThumb) {
+                    gridTitle.innerText = "Đang tải thêm...";
+                    const thumbUrl = await captureThumbnail(item.start);
+                    const gridItem = document.createElement('div');
+                    gridItem.className = 'grid-item';
+                    gridItem.setAttribute('data-grid-id', item.id);
+                    gridItem.innerHTML = `<img src="${thumbUrl}"><span>${formatTime(item.start)}</span>`;
+                    gridItem.onclick = () => {
+                        gridOverlay.style.display = 'none';
+                        const targetWrapper = document.getElementById(item.id);
+                        const targetVideo = targetWrapper.querySelector('video');
+                        targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                        setTimeout(() => {
+                            if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                                targetVideo.src = sharedVideoURL;
+                                targetVideo.currentTime = item.start;
+                                targetVideo.load();
+                            }
+                            setFocusAudio(targetVideo);
+                            targetVideo.play();
+                        }, 400);
+                    };
+                    gridContent.appendChild(gridItem);
+                    item.hasThumb = true; 
+                }
+            }
+            gridTitle.innerText = "Danh sách đoạn";
         };
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
+        // TÍNH NĂNG TÍCH HỢP TỪ INDEX_CUT_TOOL.HTML
         async function downloadClipFFmpeg(startTime, duration, btn) {
             if (!isFFmpegReady) {
                 alert("Hệ thống xử lý video chưa sẵn sàng, vui lòng đợi một chút!");
@@ -419,14 +400,20 @@
             btn.innerText = '⌛ Đang trích xuất...';
             status.innerText = `⏳ Hệ thống FFmpeg đang cắt đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
-            const { name } = rawVideoFile;
             try {
+                const { name } = rawVideoFile;
+                // Ghi file video gốc vào bộ nhớ ảo của FFmpeg (nếu chưa có)
                 ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
+
                 const outputName = `cut_${Date.now()}.mp4`;
                 
+                // Chạy lệnh cắt stream không re-encode (-c copy) tối ưu siêu tốc từ index_cut_tool
                 await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
+                
+                // Đọc dữ liệu đã cắt từ bộ nhớ ảo
                 const data = ffmpeg.FS('readFile', outputName);
 
+                // Tạo link tải dữ liệu định dạng .mp4
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
                 const a = document.createElement('a');
@@ -436,6 +423,7 @@
                 a.click();
                 document.body.removeChild(a);
 
+                // Xóa file tạm trong FS để giải phóng bộ nhớ RAM ảo của trình duyệt
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
 
                 status.innerText = `✨ Xuất thành công đoạn từ ${formatTime(startTime)}!`;
@@ -446,8 +434,6 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                // ĐÃ SỬA: Giải phóng triệt để RAM ảo WebAssembly bằng cách xóa file video gốc vừa import vào
-                try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
 
