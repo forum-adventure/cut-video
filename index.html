@@ -505,6 +505,89 @@
             const p = t.replace(/[^0-9:]/g, '').split(':').reverse();
             return (parseInt(p[0]) || 0) + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0) * 3600;
         }
+    
+            // ========================================================
+        // GIẢI PHÁP GIỮ TỈNH TÁO: TRÁNH TRÌNH DUYỆT ĐÓNG BĂNG FILE
+        // ========================================================
+        
+        let silentAudioSource = null;
+        let wakeLock = null;
+
+        // 1. Hàm kích hoạt luồng âm thanh im lặng chạy ngầm (Audio Loop)
+        function activateSilentAudioLoop() {
+            if (silentAudioSource) return; // Đã chạy rồi thì không chạy lại
+
+            try {
+                // Khởi tạo AudioContext (Bộ dựng âm thanh của trình duyệt)
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                const audioCtx = new AudioContext();
+                
+                // Tạo một buffer âm thanh trống 2 giây (hoàn toàn im lặng)
+                const buffer = audioCtx.createBuffer(1, audioCtx.sampleRate * 2, audioCtx.sampleRate);
+                
+                // Tạo nguồn phát từ buffer đó
+                const source = audioCtx.createBufferSource();
+                source.buffer = buffer;
+                source.loop = true; // Bật vòng lặp vô hạn
+
+                // Tạo một node chỉnh âm lượng và giảm nó xuống mức cực nhỏ (gần như bằng 0) để an toàn tuyệt đối
+                const gainNode = audioCtx.createGain();
+                gainNode.gain.value = 0.001; 
+                
+                // Kết nối các node lại với nhau và xuất ra loa
+                source.connect(gainNode);
+                gainNode.connect(audioCtx.destination);
+                
+                // Bắt đầu phát ngầm
+                source.start();
+                silentAudioSource = source;
+                
+                console.log("⚡ Đã kích hoạt Vòng lặp âm thanh im lặng để giữ liên kết File ngầm.");
+                status.innerText = "⚡ Chế độ giữ kết nối ngầm (Keep-Alive) đang hoạt động.";
+            } catch (e) {
+                console.error("Không thể khởi tạo Audio ngầm:", e);
+            }
+        }
+
+        // 2. Hàm kích hoạt giữ màn hình không ngủ (Screen Wake Lock)
+        async function requestWakeLock() {
+            if ('wakeLock' in navigator) {
+                try {
+                    wakeLock = await navigator.wakeLock.request('screen');
+                    console.log("🔒 Đã khóa trạng thái Wake Lock: Màn hình sẽ không tự tắt.");
+                    
+                    // Nếu bị hệ thống giải phóng (ví dụ khi quay lại sau thời gian quá lâu), tự động đăng ký lại
+                    wakeLock.addEventListener('release', () => {
+                        console.log("Wake Lock đã bị giải phóng.");
+                    });
+                } catch (err) {
+                    console.warn(`Không thể kích hoạt Wake Lock: ${err.message}`);
+                }
+            }
+        }
+
+        // 3. Kích hoạt tự động khi người dùng tương tác lần đầu tiên vào ứng dụng
+        // (Trình duyệt bắt buộc phải có tương tác thực tế từ người dùng mới cho phát âm thanh)
+        function enableKeepAliveFeatures() {
+            activateSilentAudioLoop();
+            requestWakeLock();
+            
+            // Xóa bỏ các sự kiện lắng nghe sau khi đã kích hoạt thành công để tiết kiệm hiệu năng
+            document.removeEventListener('click', enableKeepAliveFeatures);
+            document.removeEventListener('touchstart', enableKeepAliveFeatures);
+        }
+
+        // Đăng ký lắng nghe hành động click hoặc chạm đầu tiên của bạn trên màn hình ứng dụng
+        document.addEventListener('click', enableKeepAliveFeatures);
+        document.addEventListener('touchstart', enableKeepAliveFeatures);
+
+        // 4. Lắng nghe khi bạn quay lại Tab sau khi thoát nền để khôi phục lại Wake Lock nếu cần
+        document.addEventListener('visibilitychange', async () => {
+            if (document.visibilityState === 'visible' && wakeLock !== null) {
+                await requestWakeLock();
+            }
+        });
+
     </script>
 </body>
 </html>
