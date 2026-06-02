@@ -372,17 +372,28 @@
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
-            video.onloadedmetadata = () => {
-    if (video.videoHeight > video.videoWidth) {
-        video.classList.add('portrait');
-    }
-    // Khóa chặt kích thước vật lý hiển thị hiển tại của video vào style
-    // Điều này giúp thẻ video giữ nguyên diện tích dù src có bị gán thành ""
-    video.style.width = video.clientWidth + 'px';
-    video.style.height = video.clientHeight + 'px';
-    
-    video.currentTime = start;
-};
+                        video.onloadedmetadata = () => {
+                if (video.videoHeight > video.videoWidth) {
+                    video.classList.add('portrait');
+                }
+                // Khóa chặt kích thước vật lý hiển thị hiện tại của video vào style
+                video.style.width = video.clientWidth + 'px';
+                video.style.height = video.clientHeight + 'px';
+                
+                video.currentTime = start;
+
+                // KIỂM TRA: Chỉ cuộn nếu đây là video cuối cùng trong danh sách
+                const allClips = videoContainer.querySelectorAll('video');
+                if (allClips.length > 0 && allClips[allClips.length - 1] === video) {
+                    setTimeout(() => {
+                        window.scrollTo({
+                            top: document.documentElement.scrollHeight,
+                            behavior: 'smooth'
+                        });
+                    }, 100); // Trì hoãn 100ms để trình duyệt cập nhật lại DOM và chiều cao trang chính xác
+                }
+            };
+
 
             
             video.onseeked = () => {
