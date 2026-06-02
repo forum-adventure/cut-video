@@ -143,7 +143,6 @@
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
         let clipsMetadata = [];
-        let isNavigatingFromGrid = false; // Cờ hiệu ngăn cuộn loạn xạ từ Grid
 
         async function loadFFmpegCore() {
             try {
@@ -166,9 +165,6 @@
         });
 
         const clipObserver = new IntersectionObserver((entries) => {
-            // Khi đang trong trạng thái dịch chuyển từ Grid, bỏ qua logic Intersection tự động
-            if (isNavigatingFromGrid) return;
-
             entries.forEach(entry => {
                 const video = entry.target;
                 if (entry.isIntersecting) {
@@ -189,9 +185,6 @@
         }, { threshold: 0.1 });
 
         function handleClipRehydration() {
-            // Nếu click từ Grid, không cho chạy hàm tính toán rehydration ngầm làm hỏng vị trí cuộn
-            if (isNavigatingFromGrid) return;
-
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
                 const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
@@ -304,7 +297,8 @@
             });
         }
 
-                function addGridItemAhead(clipId, startTime) {
+        // ĐEM QUAY LẠI TỪ V1: Hàm tạo khung phần tử Grid đồng bộ ngay lúc tạo Clip, nạp ảnh nền bất đồng bộ sau
+        function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
             gridItem.setAttribute('data-grid-id', clipId);
@@ -322,29 +316,16 @@
                 const targetWrapper = document.getElementById(clipId);
                 if (!targetWrapper) return;
                 const targetVideo = targetWrapper.querySelector('video');
-
-                // 1. Khóa cứng hàm tối ưu hóa chạy ngầm
-                isNavigatingFromGrid = true;
-
-                // 2. Ép nạp tài nguyên cho video mục tiêu
-                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                    targetVideo.src = sharedVideoURL;
-                    targetVideo.currentTime = startTime;
-                    targetVideo.load();
-                }
-
-                // 3. Cuộn tức thời (auto) loại bỏ hoàn toàn độ trễ gây tính toán sai lệch của trình duyệt
-                targetWrapper.scrollIntoView({ behavior: 'auto', block: 'center' });
-                
-                // 4. Ưu tiên âm thanh và phát clip mục tiêu ngay lập tức
-                setFocusAudio(targetVideo);
-                targetVideo.play().catch(() => {});
-                
-                // 5. Thả xích cho hàm ngầm sau khi giao diện đã đứng yên hoàn toàn
+                targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 setTimeout(() => {
-                    isNavigatingFromGrid = false;
-                    handleClipRehydration(); 
-                }, 100);
+                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                        targetVideo.src = sharedVideoURL;
+                        targetVideo.currentTime = startTime;
+                        targetVideo.load();
+                    }
+                    setFocusAudio(targetVideo);
+                    targetVideo.play().catch(() => {});
+                }, 400);
             };
             
             gridContent.appendChild(gridItem);
@@ -352,9 +333,7 @@
             captureThumbnail(startTime).then(thumbUrl => {
                 if (thumbUrl) img.src = thumbUrl;
             });
-        } // Dấu đóng ngoặc hàm addGridItemAhead quan trọng bị thiếu ở mã cũ
-
-
+        }
 
         nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
@@ -394,19 +373,18 @@
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                if (video.videoHeight > video.videoWidth) {
-                    video.classList.add('portrait');
-                }
-                video.style.width = video.clientWidth + 'px';
-                video.style.height = video.clientHeight + 'px';
-                
-                video.currentTime = start;
-                
-                setTimeout(() => {
-                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                }, 100);
-            };
+    if (video.videoHeight > video.videoWidth) {
+        video.classList.add('portrait');
+    }
+    // Khóa chặt kích thước vật lý hiển thị hiển tại của video vào style
+    // Điều này giúp thẻ video giữ nguyên diện tích dù src có bị gán thành ""
+    video.style.width = video.clientWidth + 'px';
+    video.style.height = video.clientHeight + 'px';
+    
+    video.currentTime = start;
+};
 
+            
             video.onseeked = () => {
                 if (currentlyUnmutedVideo === video) {
                     video.play().catch(() => {});
@@ -439,15 +417,17 @@
             
             clipObserver.observe(video);
             
+            // ĐÃ KHÔI PHỤC: Gọi hàm sinh cấu trúc lưới bất đồng bộ ngay lập tức mà không gây đứng luồng
             addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
-            
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             video.play().catch(() => {});
             
             handleClipRehydration();
         });
 
+        // ĐÃ SỬA: Thay thế hàm xử lý click mở Grid thành dạng hiển thị lập tức của v1
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
