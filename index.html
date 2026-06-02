@@ -46,31 +46,35 @@
             max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
         }
 
-        /* CONTAINER GIỮ KHUNG CỐ ĐỊNH */
+        /* ĐÃ SỬA: CONTAINER GIỮ KHUNG CỐ ĐỊNH CHẮC CHẮN */
         .video-container-box {
-            width: auto;
-            height: auto;
-            max-width: 100%;
-            max-height: 50vh;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
+            background: #000;
+            border-radius: 8px;
+            overflow: hidden;
             border: 2px solid #444;
-            /* Giữ khung hình luôn ổn định bằng tỷ lệ động từ biến CSS */
+            box-sizing: border-box;
+
+            /* Mặc định đối với video ngang (Landscape): Thiết lập chiều rộng cố định trước */
+            width: 75vw;
+            max-width: 640px; 
+            height: auto;
+
+            /* Đảm bảo tỉ lệ hoạt động khi video rỗng */
             aspect-ratio: var(--aspect-ratio, 16/9); 
         }
         
-        /* Khi là video dọc (Portrait) */
+        /* ĐÃ SỬA: Đối với video dọc (Portrait) */
         .video-container-box.portrait { 
+            /* Thiết lập chiều cao làm gốc hoặc khống chế lại chiều rộng hẹp hơn */
             width: 55vw; 
-            max-width: 55vw; 
-            max-height: 70vh; 
+            max-width: 380px;
+            height: auto;
         }
 
-        /* Trạng thái khi bật tiếng (Chuyển từ thẻ video lên container bọc ngoài) */
+        /* Trạng thái khi bật tiếng */
         .video-container-box.unmuted { 
             border-color: #03dac6; 
             box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); 
@@ -410,7 +414,6 @@
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             
-            // TẠO CONTAINER GIỮ KÍCH THƯỚC ĐỘNG
             const videoBox = document.createElement('div');
             videoBox.className = 'video-container-box';
             
@@ -420,9 +423,7 @@
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             
-            // Gắn tạm thời vào DOM để chuẩn bị logic setFocusAudio hoạt động chính xác
             videoBox.appendChild(video);
-            
             setFocusAudio(video);
             
             video.onclick = () => {
@@ -443,7 +444,7 @@
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                // Ép tỷ lệ gốc của video vào biến CSS của container bọc ngoài
+                // ĐÃ SỬA: Ép cứng tỉ lệ thực tế vào CSS Custom Property
                 videoBox.style.setProperty('--aspect-ratio', `${video.videoWidth}/${video.videoHeight}`);
 
                 if (video.videoHeight > video.videoWidth) {
@@ -489,7 +490,6 @@
             
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
             
-            // Sắp xếp các thành phần vào cây DOM
             wrapper.appendChild(videoBox); 
             wrapper.appendChild(info); 
             wrapper.appendChild(btnGroup);
