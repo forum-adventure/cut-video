@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition - Fixed)</title>
+    <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition)</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAg|">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -237,21 +237,18 @@
                 const video = entry.target;
                 if (entry.isIntersecting) {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
-                        if (currentlyUnmutedVideo === video) {
-                            video.muted = false;
-                            video.classList.add('unmuted');
-                        }
                         video.play().catch(() => {});
                     }
                 } else {
-                    if (currentlyUnmutedVideo === video) return;
                     video.pause();
                     video.muted = true;
                     video.classList.remove('unmuted');
+                    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
                 }
             });
         }, { threshold: 0.1 });
 
+        // KHÔI PHỤC HOÀN TOÀN CƠ CHẾ REHYDRATION MƯỢT MÀ CỦA PHIÊN BẢN V1
         function handleClipRehydration() {
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
@@ -262,23 +259,13 @@
                     const rect = wrapper.getBoundingClientRect();
                     return (rect.top < viewportHeight && rect.bottom > 0) ? index : -1;
                 }).filter(idx => idx !== -1);
-                
-                const safeStart = visibleIndices.length > 0 ? Math.max(0, visibleIndices[0] - 3) : 0;
-                const safeEnd = visibleIndices.length > 0 ? Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3) : allWrappers.length - 1;
+                if (visibleIndices.length === 0) return;
+                const safeStart = Math.max(0, visibleIndices[0] - 3);
+                const safeEnd = Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3);
 
                 allWrappers.forEach((wrapper, index) => {
                     const video = wrapper.querySelector('video');
-                    
-                    if (video === currentlyUnmutedVideo) {
-                        if (!video.src || video.src === "" || video.src === window.location.href) {
-                            video.src = sharedVideoURL;
-                            video.currentTime = parseFloat(video.dataset.startTime);
-                            video.load();
-                        }
-                        return;
-                    }
-
-                    if (visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) {
+                    if (index >= safeStart && index <= safeEnd) {
                         if (!video.src || video.src === "" || video.src === window.location.href) {
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
@@ -352,10 +339,7 @@
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    
-                    v.src = "";
-                    v.load();
-                    v.remove();
+                    v.src = ""; v.load(); v.remove();
                     resolve(dataUrl);
                 };
                 v.onerror = () => {
@@ -377,10 +361,10 @@
             metaContainer.className = 'grid-meta';
             
             if(labelText) {
-                const labelSpan = document.createElement('span');
-                labelSpan.className = 'grid-label';
-                labelSpan.innerText = labelText;
-                metaContainer.appendChild(labelSpan);
+                const gridLabel = document.createElement('span');
+                gridLabel.className = 'grid-label';
+                gridLabel.innerText = labelText;
+                metaContainer.appendChild(gridLabel);
             }
             
             const timeSpan = document.createElement('span');
@@ -438,14 +422,10 @@
                 wrapper.appendChild(titleTag);
             }
             
-            // FIX CHÍNH: Đồng bộ cơ chế khởi tạo an toàn từ bản v1
             const video = document.createElement('video');
-            video.muted = true; 
-            video.playsInline = true; 
-            video.preload = "metadata"; 
+            video.muted = true; video.playsInline = true; video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
-            video.dataset.label = clipLabel;
             video.dataset.isInitialLoad = "true";
             
             video.onclick = () => {
@@ -455,10 +435,7 @@
             
             let animationFrameId;
             const checkTime = () => {
-                if (video.currentTime >= end) { 
-                    video.currentTime = start; 
-                    video.play().catch(()=>{});
-                }
+                if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
                 if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
             };
 
@@ -473,7 +450,6 @@
                 video.currentTime = start;
             };
             
-            // FIX CHÍNH: Chỉ kích hoạt chạy mượt sau khi dữ liệu phân cảnh load xong hoàn toàn (onloadeddata)
             video.onloadeddata = () => { 
                 if (video.dataset.isInitialLoad === "true") {
                     wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -509,15 +485,12 @@
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
-            
-            // FIX: Trì hoãn xử lý luồng tạo Thumbnail để tránh nghẽn phần cứng giải mã (Decoder)
-            setTimeout(() => {
-                addGridItemAhead(clipId, start, clipLabel);
-            }, 120);
+            addGridItemAhead(clipId, start, clipLabel);
             
             startTimeInput.value = formatTime(end);
             clipLabelInput.value = ""; 
             handleClipRehydration();
+            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = () => {
@@ -548,7 +521,6 @@
 
             try {
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-                
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
                 const data = ffmpeg.FS('readFile', outputName);
