@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLA "diHNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -273,7 +273,6 @@
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     
-                    // Giải phóng liên kết source để trình duyệt thu hồi bộ nhớ RAM ngay lập tức
                     v.src = "";
                     v.load();
                     v.remove();
@@ -282,6 +281,46 @@
                 v.onerror = () => {
                     v.src = ""; v.remove(); resolve("");
                 };
+            });
+        }
+
+        // TẠO SẴN ITEM CHO GRID VIEW NGAY KHI THÊM ĐOẠN
+        function addGridItemAhead(clipId, startTime) {
+            const gridItem = document.createElement('div');
+            gridItem.className = 'grid-item';
+            gridItem.setAttribute('data-grid-id', clipId);
+            
+            // Tạo một thẻ img trống hoặc icon loading tạm thời
+            const img = document.createElement('img');
+            img.alt = "...";
+            gridItem.appendChild(img);
+            
+            const span = document.createElement('span');
+            span.innerText = formatTime(startTime);
+            gridItem.appendChild(span);
+            
+            gridItem.onclick = () => {
+                gridOverlay.style.display = 'none';
+                const targetWrapper = document.getElementById(clipId);
+                if (!targetWrapper) return;
+                const targetVideo = targetWrapper.querySelector('video');
+                targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                        targetVideo.src = sharedVideoURL;
+                        targetVideo.currentTime = startTime;
+                        targetVideo.load();
+                    }
+                    setFocusAudio(targetVideo);
+                    targetVideo.play();
+                }, 400);
+            };
+            
+            gridContent.appendChild(gridItem);
+
+            // Chạy ngầm bóc tách ảnh gán vào thẻ img vừa tạo
+            captureThumbnail(startTime).then(thumbUrl => {
+                if (thumbUrl) img.src = thumbUrl;
             });
         }
 
@@ -296,7 +335,8 @@
             document.body.classList.add('has-clips');
             const end = Math.min(start + duration, totalVideoDuration);
             const clipId = "clip-" + Date.now();
-            clipsMetadata.push({ id: clipId, start: start, hasThumb: false });
+            clipsMetadata.push({ id: clipId, start: start, hasThumb: true });
+            
             const wrapper = document.createElement('div');
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
@@ -352,55 +392,18 @@
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
+            
+            // KÍCH HOẠT TẠO NGẦM SẴN CHO GRID VIEW NGAY TẠI ĐÂY
+            addGridItemAhead(clipId, start);
+
             startTimeInput.value = formatTime(end);
             handleClipRehydration();
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        // SỬA LỖI LAG GRID VIEW: Xử lý tạo thumbnail đồng bộ hàng loạt cực nhanh
-        gridViewBtn.onclick = async () => {
+        // BẤM VÀO LÀ HIỂN THỊ NGAY LẬP TỨC (0ms CHỜ ĐỢI)
+        gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
-            const gridTitle = document.getElementById('gridTitle');
-            
-            // Lọc ra các clip chưa tạo thumbnail
-            const unrenderedClips = clipsMetadata.filter(item => !item.hasThumb);
-            
-            if (unrenderedClips.length > 0) {
-                gridTitle.innerText = `⏳ Đang xử lý nhanh ${unrenderedClips.length} ảnh nhỏ...`;
-                
-                // Kích hoạt song song tất cả các request tạo ảnh (Parallel Execution)
-                const promises = unrenderedClips.map(async (item) => {
-                    const thumbUrl = await captureThumbnail(item.start);
-                    
-                    const gridItem = document.createElement('div');
-                    gridItem.className = 'grid-item';
-                    gridItem.setAttribute('data-grid-id', item.id);
-                    gridItem.innerHTML = `<img src="${thumbUrl}"><span>${formatTime(item.start)}</span>`;
-                    gridItem.onclick = () => {
-                        gridOverlay.style.display = 'none';
-                        const targetWrapper = document.getElementById(item.id);
-                        const targetVideo = targetWrapper.querySelector('video');
-                        targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                        setTimeout(() => {
-                            if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                                targetVideo.src = sharedVideoURL;
-                                targetVideo.currentTime = item.start;
-                                targetVideo.load();
-                            }
-                            setFocusAudio(targetVideo);
-                            targetVideo.play();
-                        }, 400);
-                    };
-                    
-                    gridContent.appendChild(gridItem);
-                    item.hasThumb = true; // Đánh dấu đã dựng xong
-                });
-                
-                // Đợi toàn bộ xử lý song song hoàn tất
-                await Promise.all(promises);
-            }
-            
-            gridTitle.innerText = "Danh sách đoạn";
         };
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
