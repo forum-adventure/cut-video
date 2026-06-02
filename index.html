@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInnNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
@@ -201,7 +201,6 @@
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
                             video.load();
-                            // ĐÃ SỬA: Đảm bảo phát lại video mượt mà ngay khi được nạp lại src do cuộn màn hình
                             video.play().catch(() => {});
                         }
                     } else {
@@ -317,9 +316,12 @@
             
             gridContent.appendChild(gridItem);
 
-            captureThumbnail(startTime).then(thumbUrl => {
-                if (thumbUrl) img.src = thumbUrl;
-            });
+            // TỐI ƯU: Trì hoãn nhẹ tác vụ xử lý đồ họa để tránh xung đột với luồng DOM chính
+            setTimeout(() => {
+                captureThumbnail(startTime).then(thumbUrl => {
+                    if (thumbUrl) img.src = thumbUrl;
+                });
+            }, 100);
         }
 
         nextBtn.addEventListener('click', () => {
@@ -391,11 +393,18 @@
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
             
-            addGridItemAhead(clipId, start);
+            // TỐI ƯU: Gửi tác vụ tạo Grid & Thumbnail vào macro-task xếp hàng để render mượt mà hơn
+            setTimeout(() => {
+                addGridItemAhead(clipId, start);
+            }, 50);
 
             startTimeInput.value = formatTime(end);
-            handleClipRehydration();
+            
+            // TỐI ƯU: Đợi trang cuộn hoàn chỉnh xuống cuối rồi mới cập nhật trạng thái Hydration ảo
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+            setTimeout(() => {
+                handleClipRehydration();
+            }, 300);
         });
 
         gridViewBtn.onclick = () => {
@@ -446,7 +455,6 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                // ĐÃ SỬA: Giải phóng triệt để RAM ảo WebAssembly bằng cách xóa file video gốc vừa import vào
                 try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
