@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Video Segment Player & Cutter - Ncox Hybrid (Fixed Grid & Audio)</title>
+    <title>Video Segment Player & Cutter - Ncox Hybrid (Full Integrated)</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,87 +10,53 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sCiAgInN0YXJ0X3VybCI6ICIuIiwKICAiZGlzcGxheSI6ICJzdGFuZGFsb25lIiwKICAiYmFja2dyb3VuZF9jb2xvciI6ICIjMTIxMjEyIiwKICAidGhlbWVfY29sb3IiOiAiIzEyMTIxMiIKfQ==">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <style>
-        html, body {
-            scroll-behavior: smooth;
-        }
         body { 
             font-family: sans-serif; padding: 20px; background-color: #121212; 
             color: #e0e0e0; margin: 0; padding-bottom: 220px; min-height: 100vh;
             display: flex; flex-direction: column;
         }
-        /* Cấu hình bắt buộc snap cố định khi bật tính năng khóa vị trí */
-        body.snap-enabled {
-            scroll-snap-type: y mandatory;
-        }
-        .clip-wrapper.snap-target {
-            scroll-snap-align: center;
-        }
-
         #welcomeOverlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; z-index: 10; width: 90%; max-width: 600px;
-            pointer-events: auto; cursor: pointer;
-            transition: opacity 0.5s ease, visibility 0.5s, transform 0.2s, border-color 0.2s;
-            border: 2px dashed #444; padding: 40px 20px; border-radius: 16px;
-            background: rgba(30, 30, 30, 0.3);
+            text-align: center; z-index: 0; width: 90%; pointer-events: none;
+            transition: opacity 0.5s ease, visibility 0.5s;
         }
-        #welcomeOverlay.dragover {
-            border-color: #03dac6;
-            background: rgba(3, 218, 198, 0.05);
-            transform: translate(-50%, -50%) scale(1.02);
-        }
-        #welcomeOverlay h1 { font-size: 3em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; pointer-events: none; }
-        #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; pointer-events: none; }
-        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
+        #welcomeOverlay h1 { font-size: 3em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; }
+        #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
-        
         .clip-wrapper { 
-            display: flex; flex-direction: column; align-items: center; 
-            margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
-            border-radius: 12px; background: #1e1e1e; width: fit-content; 
-            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-        }
+    display: flex; flex-direction: column; align-items: center; 
+    margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
+    border-radius: 12px; background: #1e1e1e; width: fit-content; 
+    max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+    
+    /* THAY ĐỔI: Thêm các dòng dưới để giữ kích thước cố định */
+    min-height: auto; 
+    aspect-ratio: var(--clip-ratio); /* Giữ tỉ lệ khung hình cho wrapper */
+}
 
-        .video-container-box {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            background: #000;
-            border-radius: 8px;
-            overflow: hidden;
-            border: 2px solid #444;
-            box-sizing: border-box;
-            width: 75vw;
-            max-width: 640px; 
-            height: auto;
-            aspect-ratio: var(--aspect-ratio, 16/9); 
-        }
-        
-        .video-container-box.portrait { 
-            width: 55vw; 
-            max-width: 380px;
-            height: auto;
-        }
+video { 
+    width: auto; height: auto; max-width: 100%; max-height: 50vh; 
+    border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
+    
+    /* THAY ĐỔI: Thêm aspect-ratio và object-fit cho video */
+    aspect-ratio: var(--video-ratio); 
+    object-fit: contain; 
+}
 
-        .video-container-box.unmuted { 
-            border-color: #03dac6; 
-            box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); 
-        }
+video.portrait { 
+    width: 55vw; max-width: 55vw; max-height: 70vh; 
+    /* THAY ĐỔI: Reset lại tỉ lệ để không bị ghi đè lỗi */
+    height: auto; 
+}
 
-        video { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: contain; 
-            cursor: pointer; 
-            display: block;
-        }
-
+        video.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
         .clip-info { font-size: 0.8em; color: #777; margin: 8px 0 5px 0; font-family: monospace; }
         .button-group { display: flex; gap: 8px; margin-top: 8px; }
         .delete-btn, .download-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
@@ -138,7 +104,7 @@
 
     <div id="welcomeOverlay">
         <h1 id="mainTitle">Tải video lên</h1>
-        <p id="subTitle">Chọn một tệp video hoặc kéo thả vào đây để bắt đầu phân đoạn.</p>
+        <p id="subTitle">Chọn một tệp video để bắt đầu phân đoạn.</p>
     </div>
 
     <div id="videoContainer"></div>
@@ -181,7 +147,6 @@
         const status = document.getElementById('status');
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
-        const welcomeOverlay = document.getElementById('welcomeOverlay');
 
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
@@ -192,10 +157,7 @@
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
-        let isLockRehydration = false; 
-        
-        // Biến trạng thái bổ sung cho tính năng Snap Lock
-        let isSnapLocked = false;
+        let clipsMetadata = [];
 
         async function loadFFmpegCore() {
             try {
@@ -218,31 +180,30 @@
         });
 
         const clipObserver = new IntersectionObserver((entries) => {
-            if (isLockRehydration) return; 
             entries.forEach(entry => {
                 const video = entry.target;
                 if (entry.isIntersecting) {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
+                        if (currentlyUnmutedVideo === video) {
+                            video.muted = false;
+                            video.classList.add('unmuted');
+                        }
                         video.play().catch(() => {});
                     }
                 } else {
+                    if (currentlyUnmutedVideo === video) return;
                     video.pause();
-                    if (currentlyUnmutedVideo !== video) {
-                        video.muted = true;
-                        const parentBox = video.closest('.video-container-box');
-                        if (parentBox) parentBox.classList.remove('unmuted');
-                    }
+                    video.muted = true;
+                    video.classList.remove('unmuted');
                 }
             });
         }, { threshold: 0.1 });
 
         function handleClipRehydration() {
-            if (isLockRehydration) return;
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
                 const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
                 if (allWrappers.length === 0) return;
-                
                 const viewportHeight = window.innerHeight;
                 const visibleIndices = allWrappers.map((wrapper, index) => {
                     const rect = wrapper.getBoundingClientRect();
@@ -255,7 +216,16 @@
                 allWrappers.forEach((wrapper, index) => {
                     const video = wrapper.querySelector('video');
                     
-                    if ((visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) || video === currentlyUnmutedVideo) {
+                    if (video === currentlyUnmutedVideo) {
+                        if (!video.src || video.src === "" || video.src === window.location.href) {
+                            video.src = sharedVideoURL;
+                            video.currentTime = parseFloat(video.dataset.startTime);
+                            video.load();
+                        }
+                        return;
+                    }
+
+                    if (visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) {
                         if (!video.src || video.src === "" || video.src === window.location.href) {
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
@@ -263,9 +233,7 @@
                         }
                     } else {
                         if (video.src && video.src !== "" && video.src !== window.location.href) {
-                            video.pause(); 
-                            video.src = ""; 
-                            video.load(); 
+                            video.pause(); video.src = ""; video.load(); 
                         }
                     }
                 });
@@ -274,33 +242,13 @@
 
         window.addEventListener('scroll', handleClipRehydration, { passive: true });
 
-        // Hàm mở khóa ghim snap cố định khi người dùng có hành động chạm/cuộn màn hình chủ động
-        function unlockSnap() {
-            if (!isSnapLocked) return;
-            isSnapLocked = false;
-            isLockRehydration = false;
-            document.body.classList.remove('snap-enabled');
-            
-            document.querySelectorAll('.clip-wrapper.snap-target').forEach(wrapper => {
-                wrapper.classList.remove('snap-target');
-            });
-            
-            window.removeEventListener('touchstart', unlockSnap);
-            window.removeEventListener('pointerdown', unlockSnap);
-            window.removeEventListener('wheel', unlockSnap);
-            
-            handleClipRehydration();
-        }
-
         function setFocusAudio(videoElement) {
             if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
                 currentlyUnmutedVideo.muted = true;
-                const oldBox = currentlyUnmutedVideo.closest('.video-container-box');
-                if (oldBox) oldBox.classList.remove('unmuted');
+                currentlyUnmutedVideo.classList.remove('unmuted');
             }
             videoElement.muted = false;
-            const newBox = videoElement.closest('.video-container-box');
-            if (newBox) newBox.classList.add('unmuted');
+            videoElement.classList.add('unmuted');
             currentlyUnmutedVideo = videoElement;
         }
 
@@ -313,59 +261,28 @@
             }
         }
 
-        function processVideoFile(file) {
-            if (!file) return;
-            rawVideoFile = file; 
-            if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-            sharedVideoURL = URL.createObjectURL(file);
-            const tempVideo = document.createElement('video');
-            tempVideo.src = sharedVideoURL;
-            tempVideo.onloadedmetadata = () => {
-                totalVideoDuration = tempVideo.duration;
-                
-                gridContent.querySelectorAll('img').forEach(img => {
-                    if (img.src && img.src.startsWith('blob:')) URL.revokeObjectURL(img.src);
-                });
-
-                videoContainer.innerHTML = ""; 
-                gridContent.innerHTML = "";
-                document.body.classList.remove('has-clips');
-                
-                document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
-                document.getElementById('subTitle').innerHTML = "💡 Nhấn <b>Thêm đoạn</b> hoặc <b>Random</b> để bắt đầu.";
-                
-                status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
-                enableControls();
-                
-                tempVideo.src = "";
-                tempVideo.load();
-            };
-        }
-
         upload.addEventListener('change', (e) => {
-            processVideoFile(e.target.files[0]);
-        });
-
-        welcomeOverlay.addEventListener('click', () => {
-            upload.click();
-        });
-
-        welcomeOverlay.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            welcomeOverlay.classList.add('dragover');
-        });
-
-        welcomeOverlay.addEventListener('dragleave', () => {
-            welcomeOverlay.classList.remove('dragover');
-        });
-
-        welcomeOverlay.addEventListener('drop', (e) => {
-            e.preventDefault();
-            welcomeOverlay.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0 && files[0].type.startsWith('video/')) {
-                upload.files = files; 
-                processVideoFile(files[0]);
+            const file = e.target.files[0];
+            if (file) {
+                rawVideoFile = file; 
+                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+                sharedVideoURL = URL.createObjectURL(file);
+                const tempVideo = document.createElement('video');
+                tempVideo.src = sharedVideoURL;
+                tempVideo.onloadedmetadata = () => {
+                    totalVideoDuration = tempVideo.duration;
+                    
+                    videoContainer.innerHTML = ""; 
+                    gridContent.innerHTML = "";
+                    clipsMetadata = []; 
+                    document.body.classList.remove('has-clips');
+                    
+                    document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
+                    document.getElementById('subTitle').innerHTML = "💡 Nhấn <b>Thêm đoạn</b> hoặc <b>Random</b> để bắt đầu.";
+                    
+                    status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
+                    enableControls();
+                };
             }
         });
 
@@ -390,11 +307,12 @@
                     resolve(dataUrl);
                 };
                 v.onerror = () => {
-                    v.src = ""; v.load(); v.remove(); resolve("");
+                    v.src = ""; v.remove(); resolve("");
                 };
             });
         }
 
+        // ĐEM QUAY LẠI TỪ V1: Hàm tạo khung phần tử Grid đồng bộ ngay lúc tạo Clip, nạp ảnh nền bất đồng bộ sau
         function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
@@ -408,62 +326,21 @@
             span.innerText = formatTime(startTime);
             gridItem.appendChild(span);
             
-            // Xử lý sự kiện click thumbnail thiết lập khóa Snap cố định cấu trúc cuộn
             gridItem.onclick = () => {
                 gridOverlay.style.display = 'none';
                 const targetWrapper = document.getElementById(clipId);
                 if (!targetWrapper) return;
                 const targetVideo = targetWrapper.querySelector('video');
-                
-                // Khóa tạm thời tiến trình rehydration tự động cuộn loạn
-                isLockRehydration = true;
-                isSnapLocked = true;
-                
-                // Kích hoạt CSS ghim cứng
-                document.body.classList.add('snap-enabled');
-                targetWrapper.classList.add('snap-target');
-
-                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                    targetVideo.src = sharedVideoURL;
-                    targetVideo.currentTime = startTime;
-                    targetVideo.load();
-                }
-
                 targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                // Đăng ký lắng nghe sự kiện chạm màn hình từ người dùng để tháo gỡ Snap cố định
-                window.addEventListener('touchstart', unlockSnap, { passive: true });
-                window.addEventListener('pointerdown', unlockSnap, { passive: true });
-                window.addEventListener('wheel', unlockSnap, { passive: true });
-
                 setTimeout(() => {
-                    targetVideo.muted = true; 
-                    targetVideo.play().then(() => {
-                        setFocusAudio(targetVideo);
-                    }).catch(err => {
-                        console.log("Autoplay bị hạn chế, video chạy ở chế độ mute.");
-                    });
-                    
-                    // Nếu vẫn đang ghim và chưa bị mở khóa bởi tương tác vuốt, nạp trước tài nguyên xung quanh một cách an toàn
-                    if (isSnapLocked) {
-                        const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
-                        const currentIndex = allWrappers.indexOf(targetWrapper);
-                        if (currentIndex !== -1) {
-                            const safeStart = Math.max(0, currentIndex - 2);
-                            const safeEnd = Math.min(allWrappers.length - 1, currentIndex + 2);
-                            allWrappers.forEach((w, idx) => {
-                                const v = w.querySelector('video');
-                                if (idx >= safeStart && idx <= safeEnd) {
-                                    if (!v.src || v.src === "" || v.src === window.location.href) {
-                                        v.src = sharedVideoURL;
-                                        v.currentTime = parseFloat(v.dataset.startTime);
-                                        v.load();
-                                    }
-                                }
-                            });
-                        }
+                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                        targetVideo.src = sharedVideoURL;
+                        targetVideo.currentTime = startTime;
+                        targetVideo.load();
                     }
-                }, 450);
+                    setFocusAudio(targetVideo);
+                    targetVideo.play().catch(() => {});
+                }, 400);
             };
             
             gridContent.appendChild(gridItem);
@@ -489,60 +366,45 @@
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             
-            const videoBox = document.createElement('div');
-            videoBox.className = 'video-container-box';
-            
             const video = document.createElement('video');
             video.playsInline = true; 
             video.preload = "auto"; 
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             
-            videoBox.appendChild(video);
             setFocusAudio(video);
             
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
-                else { 
-                    video.muted = true; 
-                    if (videoBox) videoBox.classList.remove('unmuted'); 
-                    currentlyUnmutedVideo = null; 
-                }
+                else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
             };
             
             let animationFrameId;
             const checkTime = () => {
-                if (video.currentTime >= end - 0.1 || video.ended) { 
-                    video.currentTime = start; 
-                    video.play().catch(()=>{}); 
-                }
+                if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
                 if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
             };
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                videoBox.style.setProperty('--aspect-ratio', `${video.videoWidth}/${video.videoHeight}`);
+    // Đo kích thước gốc của video
+    const width = video.videoWidth;
+    const height = video.videoHeight;
+    
+    // Gán tỉ lệ vào CSS Variable để khóa kích thước cho video và wrapper
+    video.style.setProperty('--video-ratio', `${width} / ${height}`);
+    wrapper.style.setProperty('--clip-ratio', `${width} / ${height + 60}`); // +60px cho phần nút bấm và text bên dưới
 
-                if (video.videoHeight > video.videoWidth) {
-                    videoBox.classList.add('portrait');
-                }
-                
-                video.currentTime = start;
+    if (height > width) video.classList.add('portrait');
+    video.currentTime = start;
+};
 
-                const allWrappers = videoContainer.querySelectorAll('.clip-wrapper');
-                if (allWrappers.length > 0 && allWrappers[allWrappers.length - 1] === wrapper) {
-                    setTimeout(() => {
-                        wrapper.scrollIntoView({
-                            behavior: 'smooth',
-                            block: 'center'
-                        });
-                    }, 100);
-                }
-            };
-
+            
             video.onseeked = () => {
-                video.play().catch(() => {});
+                if (currentlyUnmutedVideo === video) {
+                    video.play().catch(() => {});
+                }
             };
             
             const info = document.createElement('div');
@@ -558,38 +420,30 @@
             const del = document.createElement('button');
             del.className = 'delete-btn'; del.innerText = "Xóa clip";
             del.onclick = () => {
-                clipObserver.unobserve(video); 
-                
+                clipObserver.unobserve(video); wrapper.remove();
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
-                if (gridItem) {
-                    const gridImg = gridItem.querySelector('img');
-                    if (gridImg && gridImg.src.startsWith('blob:')) URL.revokeObjectURL(gridImg.src);
-                    gridItem.remove(); 
-                }
-                
-                if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
-                
-                wrapper.remove();
+                if (gridItem) gridItem.remove(); 
                 if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
                 handleClipRehydration();
             };
             
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
-            
-            wrapper.appendChild(videoBox); 
-            wrapper.appendChild(info); 
-            wrapper.appendChild(btnGroup);
+            wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
+            
+            // ĐÃ KHÔI PHỤC: Gọi hàm sinh cấu trúc lưới bất đồng bộ ngay lập tức mà không gây đứng luồng
             addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            video.play().catch(() => {});
             
             handleClipRehydration();
         });
 
+        // ĐÃ SỬA: Thay thế hàm xử lý click mở Grid thành dạng hiển thị lập tức của v1
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
@@ -616,14 +470,13 @@
                 ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
                 const outputName = `cut_${Date.now()}.mp4`;
                 
-                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-vcodec', 'libx264', '-acodec', 'aac', '-preset', 'fast', outputName);
+                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
-                const cleanTime = formatTime(startTime).replace(/:/g, '-');
                 const a = document.createElement('a');
                 a.href = videoUrl;
-                a.download = `clip_${cleanTime}.mp4`;
+                a.download = `clip_${formatTime(startTime).replace(/:/g, '-')}.mp4`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
@@ -644,7 +497,7 @@
         randomBtn.onclick = () => {
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
-            startTimeInput.value = formatTime(Math.floor(Math.random() * maxRange));
+            startTimeInput.value = formatTime(Math.random() * maxRange);
             nextBtn.click();
         };
 
