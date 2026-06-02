@@ -121,6 +121,15 @@
             position: absolute; bottom: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.7); font-size: 10px; padding: 2px 0; text-align: center; color: #fff;
         }
+    
+    /* Thêm vào cuối thẻ <style> của bạn */
+body.snap-enabled {
+    scroll-snap-type: y mandatory;
+}
+.clip-wrapper.snap-target {
+    scroll-snap-align: center;
+}
+
     </style>
 </head>
 <body>
@@ -377,41 +386,112 @@
             span.innerText = formatTime(startTime);
             gridItem.appendChild(span);
             
-            gridItem.onclick = () => {
-                gridOverlay.style.display = 'none';
-                const targetWrapper = document.getElementById(clipId);
-                if (!targetWrapper) return;
-                const targetVideo = targetWrapper.querySelector('video');
-                
-                isLockRehydration = true;
+            // ==================== THÊM BIẾN TOÀN CỤC MỚI KHỞI TẠO ====================
+let isSnapLocked = false;
 
-                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                    targetVideo.src = sharedVideoURL;
-                    targetVideo.currentTime = startTime;
-                    targetVideo.load();
-                }
+// Hàm để tắt chế độ Snap Lock khi người dùng tương tác tay
+function unlockSnap() {
+    if (!isSnapLocked) return;
+    isSnapLocked = false;
+    isLockRehydration = false;
+    document.body.classList.remove('snap-enabled');
+    
+    // Gỡ bỏ class ghim của các clip
+    document.querySelectorAll('.clip-wrapper.snap-target').forEach(w => {
+        wrapper.classList.remove('snap-target');
+    });
+    
+    // Gỡ sự kiện để tránh lặp lại vô ích
+    window.removeEventListener('touchstart', unlockSnap);
+    window.removeEventListener('pointerdown', unlockSnap);
+    window.removeEventListener('wheel', unlockSnap);
+    
+    // Gọi lại cập nhật hydration cho chuẩn xác sau khi mở khóa
+    handleClipRehydration();
+}
+// =========================================================================
 
-                targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                
-                setTimeout(() => {
-                    targetVideo.muted = true; 
-                    targetVideo.play().then(() => {
-                        setFocusAudio(targetVideo);
-                    }).catch(err => {
-                        console.log("Autoplay bị hạn chế, video chạy ở chế độ mute.");
-                    });
-                    
-                    isLockRehydration = false;
-                    handleClipRehydration();
-                }, 450);
-            };
-            
-            gridContent.appendChild(gridItem);
+function addGridItemAhead(clipId, startTime) {
+    const gridItem = document.createElement('div');
+    gridItem.className = 'grid-item';
+    gridItem.setAttribute('data-grid-id', clipId);
+    
+    const img = document.createElement('img');
+    img.alt = "...";
+    gridItem.appendChild(img);
+    
+    const span = document.createElement('span');
+    span.innerText = formatTime(startTime);
+    gridItem.appendChild(span);
+    
+    // --- ĐÃ TỐI ƯU HÓA SỰ KIỆN CLICK ĐỂ GHIM CỐ ĐỊNH (SNAP LOCK) ---
+    gridItem.onclick = () => {
+        gridOverlay.style.display = 'none';
+        const targetWrapper = document.getElementById(clipId);
+        if (!targetWrapper) return;
+        const targetVideo = targetWrapper.querySelector('video');
+        
+        // 1. Kích hoạt trạng thái khóa hệ thống rehydration tạm thời
+        isLockRehydration = true;
+        isSnapLocked = true;
+        
+        // 2. Kích hoạt CSS Snap để ép trình duyệt ghim cứng video vào giữa màn hình
+        document.body.classList.add('snap-enabled');
+        targetWrapper.classList.add('snap-target');
 
-            captureThumbnail(startTime).then(thumbUrl => {
-                if (thumbUrl) img.src = thumbUrl;
-            });
+        // 3. Nạp nhanh nguồn video nếu chưa có sẵn 
+        if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+            targetVideo.src = sharedVideoURL;
+            targetVideo.currentTime = startTime;
+            targetVideo.load();
         }
+
+        // 4. Cuộn màn hình đến mục tiêu
+        targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        
+        // 5. Lắng nghe hành vi chạm/cuộn của người dùng để hủy Snap lập tức
+        window.addEventListener('touchstart', unlockSnap, { passive: true });
+        window.addEventListener('pointerdown', unlockSnap, { passive: true });
+        window.addEventListener('wheel', unlockSnap, { passive: true });
+
+        // 6. Phát video sau khi hiệu ứng cuộn tương đối ổn định
+        setTimeout(() => {
+            targetVideo.muted = true; 
+            targetVideo.play().then(() => {
+                setFocusAudio(targetVideo);
+            }).catch(err => {
+                console.log("Autoplay giới hạn.");
+            });
+            
+            // Nếu người dùng chưa chạm màn hình, giữ trạng thái khóa an toàn, chỉ cập nhật nhẹ vùng hiển thị
+            if (isSnapLocked) {
+                // Tạm thời kích hoạt thủ công tài nguyên cho các clip lân cận mà không phá vỡ vị trí cuộn
+                const viewportHeight = window.innerHeight;
+                const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
+                const currentIndex = allWrappers.indexOf(targetWrapper);
+                if (currentIndex !== -1) {
+                    const safeStart = Math.max(0, currentIndex - 2);
+                    const safeEnd = Math.min(allWrappers.length - 1, currentIndex + 2);
+                    allWrappers.forEach((w, idx) => {
+                        const v = w.querySelector('video');
+                        if (idx >= safeStart && idx <= safeEnd) {
+                            if (!v.src || v.src === "" || v.src === window.location.href) {
+                                v.src = sharedVideoURL; v.currentTime = parseFloat(v.dataset.startTime); v.load();
+                            }
+                        }
+                    });
+                }
+            }
+        }, 400);
+    };
+    
+    gridContent.appendChild(gridItem);
+
+    captureThumbnail(startTime).then(thumbUrl => {
+        if (thumbUrl) img.src = thumbUrl;
+    });
+}
+
 
         nextBtn.addEventListener('click', () => {
             if (!sharedVideoURL) return;
