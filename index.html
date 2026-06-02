@@ -171,7 +171,12 @@
                 const video = entry.target;
                 if (entry.isIntersecting) {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
-                        video.play().catch(() => {});
+                        // Chỉ tự động phát nếu nó đang là video được chọn bật tiếng hoặc chưa có video nào bật tiếng
+                        if (currentlyUnmutedVideo === video || !currentlyUnmutedVideo) {
+                            video.play().catch(() => {});
+                        } else {
+                            video.play().catch(() => {});
+                        }
                     }
                 } else {
                     video.pause();
@@ -292,7 +297,20 @@
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             const video = document.createElement('video');
-            video.muted = true; video.playsInline = true; video.preload = "metadata";
+            
+            // --- THAY ĐỔI CHIẾN LƯỢC SOUND KHỞI TẠO ---
+            // Thiết lập bật tiếng ngay lập tức cho phần tử video mới trước khi append vào DOM
+            video.muted = false; 
+            video.classList.add('unmuted');
+            
+            // Tắt tiếng phần tử video đang phát trước đó ngay lập tức (UI Feedback phản hồi nhanh)
+            if (currentlyUnmutedVideo) {
+                currentlyUnmutedVideo.muted = true;
+                currentlyUnmutedVideo.classList.remove('unmuted');
+            }
+            currentlyUnmutedVideo = video; // Chuyển con trỏ quản lý âm thanh sang video mới ngay lập tức
+            
+            video.playsInline = true; video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
@@ -312,11 +330,6 @@
                 video.currentTime = start;
             };
             video.onloadeddata = () => { 
-                if (video.dataset.isInitialLoad === "true") {
-                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setFocusAudio(video);
-                    video.dataset.isInitialLoad = "false";
-                }
                 video.play().catch(() => {});
             };
             const info = document.createElement('div');
@@ -325,7 +338,6 @@
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
-            // Nút tải xuống tích hợp cơ chế Cắt thực tế bằng FFmpeg
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
             dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
@@ -345,8 +357,11 @@
             videoContainer.appendChild(wrapper);
             clipObserver.observe(video);
             startTimeInput.value = formatTime(end);
+            
+            // --- THAY ĐỔI VỊ TRÍ CUỘN MÀN HÌNH ---
+            // Đẩy lệnh cuộn màn hình và kích hoạt render Virtual Scroll lên chạy ngay lập tức, không đợi load metadata
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             handleClipRehydration();
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = async () => {
