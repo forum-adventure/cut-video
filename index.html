@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Video Segment Player & Cutter - Ncox Hybrid (Sửa lỗi Đóng Băng)</title>
+    <title>Video Segment Player & Cutter - Ncox Hybrid (Fixed Grid & Audio)</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWgnbWVudCBQbGF5ZXIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZmxhdGljb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sKICAic3RhcnRvdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWgnbWVudCBQbGF5ZXIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZmxhdGljb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sKICAic3RhcnRvdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0he1lX2NvbG9yIjogIiMxMjEyMTIiwp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -46,7 +46,6 @@
             max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
         }
 
-        /* ĐÃ SỬA: CONTAINER GIỮ KHUNG CỐ ĐỊNH CHẮC CHẮN */
         .video-container-box {
             display: flex;
             align-items: center;
@@ -56,25 +55,18 @@
             overflow: hidden;
             border: 2px solid #444;
             box-sizing: border-box;
-
-            /* Mặc định đối với video ngang (Landscape): Thiết lập chiều rộng cố định trước */
             width: 75vw;
             max-width: 640px; 
             height: auto;
-
-            /* Đảm bảo tỉ lệ hoạt động khi video rỗng */
             aspect-ratio: var(--aspect-ratio, 16/9); 
         }
         
-        /* ĐÃ SỬA: Đối với video dọc (Portrait) */
         .video-container-box.portrait { 
-            /* Thiết lập chiều cao làm gốc hoặc khống chế lại chiều rộng hẹp hơn */
             width: 55vw; 
             max-width: 380px;
             height: auto;
         }
 
-        /* Trạng thái khi bật tiếng */
         .video-container-box.unmuted { 
             border-color: #03dac6; 
             box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); 
@@ -189,6 +181,7 @@
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
+        let isLockRehydration = false; // CỜ KHÓA: Tránh xung đột cuộn khi bấm Grid
 
         async function loadFFmpegCore() {
             try {
@@ -211,6 +204,7 @@
         });
 
         const clipObserver = new IntersectionObserver((entries) => {
+            if (isLockRehydration) return; // Nếu đang trong tiến trình nhảy vị trí grid thì bỏ qua
             entries.forEach(entry => {
                 const video = entry.target;
                 if (entry.isIntersecting) {
@@ -229,6 +223,7 @@
         }, { threshold: 0.1 });
 
         function handleClipRehydration() {
+            if (isLockRehydration) return;
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
                 const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
@@ -305,6 +300,10 @@
                 
                 status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
                 enableControls();
+                
+                // Giải phóng bộ nhớ của thẻ tạm
+                tempVideo.src = "";
+                tempVideo.load();
             };
         }
 
@@ -356,7 +355,7 @@
                     resolve(dataUrl);
                 };
                 v.onerror = () => {
-                    v.src = ""; v.remove(); resolve("");
+                    v.src = ""; v.load(); v.remove(); resolve("");
                 };
             });
         }
@@ -374,38 +373,37 @@
             span.innerText = formatTime(startTime);
             gridItem.appendChild(span);
             
-                        gridItem.onclick = () => {
+            gridItem.onclick = () => {
                 gridOverlay.style.display = 'none';
                 const targetWrapper = document.getElementById(clipId);
                 if (!targetWrapper) return;
                 const targetVideo = targetWrapper.querySelector('video');
                 
-                // 1. Tạm thời gỡ bỏ sự kiện scroll để tránh kích hoạt Rehydration khi đang cuộn mượt
-                window.removeEventListener('scroll', handleClipRehydration);
-                
-                // 2. Ép nạp nguồn video ngay lập tức cho mục tiêu trước khi cuộn để kích thước thẻ cố định
+                // Khóa tạm thời bộ lọc để tránh scroll làm rỗng src
+                isLockRehydration = true;
+
                 if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
                     targetVideo.src = sharedVideoURL;
                     targetVideo.currentTime = startTime;
                     targetVideo.load();
                 }
 
-                // 3. Tiến hành cuộn mượt tới clip mục tiêu
                 targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
                 
-                // 4. Đợi hiệu ứng cuộn mượt hoàn tất (khoảng 400-500ms) rồi xử lý tiếp
                 setTimeout(() => {
-                    setFocusAudio(targetVideo);
-                    targetVideo.play().catch(() => {});
+                    // Để tránh Autoplay policy, chạy ở chế độ tắt tiếng trước, người dùng click vào video sẽ bật tiếng sau
+                    targetVideo.muted = true; 
+                    targetVideo.play().then(() => {
+                        // Nếu trình duyệt chấp nhận cho tương tác gián tiếp này, kích hoạt hiệu ứng focus
+                        setFocusAudio(targetVideo);
+                    }).catch(err => {
+                        console.log("Autoplay bị hạn chế, video chạy ở chế độ mute.");
+                    });
                     
-                    // 5. Gắn lại sự kiện scroll sau khi đã cuộn xong an toàn
-                    window.addEventListener('scroll', handleClipRehydration, { passive: true });
-                    
-                    // 6. Chạy bù lại 1 lần rehydration để đồng bộ trạng thái chuẩn các clip xung quanh
+                    isLockRehydration = false;
                     handleClipRehydration();
-                }, 500); // 500ms là thời gian an toàn cho hiệu ứng cuộn smooth kết thúc
+                }, 450);
             };
-
             
             gridContent.appendChild(gridItem);
 
@@ -460,7 +458,6 @@
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                // ĐÃ SỬA: Ép cứng tỉ lệ thực tế vào CSS Custom Property
                 videoBox.style.setProperty('--aspect-ratio', `${video.videoWidth}/${video.videoHeight}`);
 
                 if (video.videoHeight > video.videoWidth) {
@@ -546,13 +543,15 @@
                 ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
                 const outputName = `cut_${Date.now()}.mp4`;
                 
-                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
+                // ĐÃ SỬA: Loại bỏ `-c copy` và cho phép re-encode tăng tính tương thích chính xác từng giây
+                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-vcodec', 'libx264', '-acodec', 'aac', '-preset', 'fast', outputName);
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
+                const cleanTime = formatTime(startTime).replace(/:/g, '-');
                 const a = document.createElement('a');
                 a.href = videoUrl;
-                a.download = `clip_${formatTime(startTime).replace(/:/g, '-')}.mp4`;
+                a.download = `clip_${cleanTime}.mp4`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
