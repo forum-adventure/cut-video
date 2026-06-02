@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInRpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -271,75 +271,68 @@
             }
         });
 
-        // Hàm bắt thumbnail độc lập bằng DOM riêng biệt, chạy bất đồng bộ
-        function captureThumbnailAsync(startTime) {
+        async function captureThumbnail(startTime) {
             return new Promise((resolve) => {
                 const canvas = document.createElement('canvas');
                 const v = document.createElement('video');
                 v.src = sharedVideoURL;
+                v.currentTime = startTime;
                 v.muted = true;
                 v.playsInline = true;
-                v.preload = "auto";
-                v.currentTime = startTime;
                 
                 v.onseeked = () => {
                     canvas.width = 160; canvas.height = 160;
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    v.src = "";
+                    v.load();
                     v.remove();
                     resolve(dataUrl);
                 };
-
                 v.onerror = () => {
-                    v.remove();
-                    resolve(""); // Trả về chuỗi rỗng nếu lỗi để không crash app
+                    v.src = ""; v.remove(); resolve("");
                 };
             });
         }
 
-        // Tạo sẵn phần tử lưới trống và kích hoạt tiến trình chụp ngầm
-        function generateGridItemPlaceholder(clipId, start) {
+        // ĐEM QUAY LẠI TỪ V1: Hàm tạo khung phần tử Grid đồng bộ ngay lúc tạo Clip, nạp ảnh nền bất đồng bộ sau
+        function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
             gridItem.setAttribute('data-grid-id', clipId);
-            // Sử dụng một ảnh trong suốt 1x1 pixel làm placeholder tạm thời để tránh lỗi hiển thị broken image
-            gridItem.innerHTML = `<img src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Loading..."><span>${formatTime(start)}</span>`;
+            
+            const img = document.createElement('img');
+            img.alt = "...";
+            gridItem.appendChild(img);
+            
+            const span = document.createElement('span');
+            span.innerText = formatTime(startTime);
+            gridItem.appendChild(span);
             
             gridItem.onclick = () => {
                 gridOverlay.style.display = 'none';
                 const targetWrapper = document.getElementById(clipId);
                 if (!targetWrapper) return;
                 const targetVideo = targetWrapper.querySelector('video');
-                
-                if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
-                    targetVideo.src = sharedVideoURL;
-                    targetVideo.currentTime = start;
-                    targetVideo.load();
-                }
-                setFocusAudio(targetVideo);
-                targetVideo.play().catch(() => {});
                 targetWrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    if (!targetVideo.src || targetVideo.src === "" || targetVideo.src === window.location.href) {
+                        targetVideo.src = sharedVideoURL;
+                        targetVideo.currentTime = startTime;
+                        targetVideo.load();
+                    }
+                    setFocusAudio(targetVideo);
+                    targetVideo.play().catch(() => {});
+                }, 400);
             };
             
             gridContent.appendChild(gridItem);
 
-            // Đưa việc render ảnh thật vào hàng đợi background idle của trình duyệt (Không chặn Main Thread)
-            const triggerCapture = async () => {
-                const thumbUrl = await captureThumbnailAsync(start);
-                if (thumbUrl) {
-                    const img = gridItem.querySelector('img');
-                    if (img) img.src = thumbUrl;
-                    const meta = clipsMetadata.find(m => m.id === clipId);
-                    if (meta) meta.hasThumb = true;
-                }
-            };
-
-            if ('requestIdleCallback' in window) {
-                requestIdleCallback(() => triggerCapture());
-            } else {
-                setTimeout(triggerCapture, 50);
-            }
+            captureThumbnail(startTime).then(thumbUrl => {
+                if (thumbUrl) img.src = thumbUrl;
+            });
         }
 
         nextBtn.addEventListener('click', () => {
@@ -353,11 +346,6 @@
             document.body.classList.add('has-clips');
             const end = Math.min(start + duration, totalVideoDuration);
             const clipId = "clip-" + Date.now();
-            
-            clipsMetadata.push({ id: clipId, start: start, hasThumb: false });
-            
-            // Khởi tạo phần tử trên giao diện lưới ngay lập tức để nhận ảnh chụp ngầm
-            generateGridItemPlaceholder(clipId, start);
             
             const wrapper = document.createElement('div');
             wrapper.className = 'clip-wrapper';
@@ -409,7 +397,6 @@
             del.className = 'delete-btn'; del.innerText = "Xóa clip";
             del.onclick = () => {
                 clipObserver.unobserve(video); wrapper.remove();
-                clipsMetadata = clipsMetadata.filter(m => m.id !== clipId);
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
                 if (gridItem) gridItem.remove(); 
                 if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
@@ -421,15 +408,18 @@
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
-            startTimeInput.value = formatTime(end);
             
+            // ĐÃ KHÔI PHỤC: Gọi hàm sinh cấu trúc lưới bất đồng bộ ngay lập tức mà không gây đứng luồng
+            addGridItemAhead(clipId, start);
+            
+            startTimeInput.value = formatTime(end);
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             video.play().catch(() => {});
             
             handleClipRehydration();
         });
 
-        // Bật Grid View ngay lập tức vì cấu trúc HTML và ảnh nền đã được tạo/đang nạp ngầm
+        // ĐÃ SỬA: Thay thế hàm xử lý click mở Grid thành dạng hiển thị lập tức của v1
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
@@ -476,6 +466,7 @@
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
+                try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
 
