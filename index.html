@@ -470,13 +470,6 @@
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
-            const dlGif = document.createElement('button');
-dlGif.className = 'download-btn'; 
-dlGif.style.backgroundColor = '#bb86fc'; // Đổi màu tím phân biệt với nút MP4
-dlGif.innerText = "Tải Ảnh .GIF";
-dlGif.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, dlGif);
-
-            
             const del = document.createElement('button');
             del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
             del.onclick = () => {
@@ -487,10 +480,7 @@ dlGif.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, dlGif);
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(dl); 
-            btnGroup.appendChild(dlGif); // Chèn thêm dòng này
-            btnGroup.appendChild(del);
-            
+            btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -509,71 +499,6 @@ dlGif.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, dlGif);
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
-    
-    async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
-    if (!isFFmpegReady) {
-        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
-        return;
-    }
-    if (!rawVideoFile) {
-        alert("Lỗi: Không tìm thấy file video đầu vào.");
-        return;
-    }
-
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⌛ Đang tạo GIF...';
-    status.innerText = `⏳ Đang trích xuất và tối ưu hóa ảnh GIF [${formatTime(startTime)}]...`;
-
-    const timestamp = Date.now();
-    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-    const virtualInputName = `input_${timestamp}_${cleanFileName}`;
-    const outputName = `render_${timestamp}.gif`;
-
-    try {
-        // Ghi file video gốc vào hệ thống file ảo của FFmpeg
-        ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-        
-        // Chạy lệnh render GIF: 
-        // -ss: mốc thời gian, -t: thời lượng
-        // -vf "fps=24,scale=480:-1": Cấu hình mượt mà, giới hạn 12 khung hình/giây, chiều rộng 480px (chiều cao tự động tỷ lệ) để tránh crash trình duyệt.
-        await ffmpeg.run(
-            '-ss', startTime.toString(), 
-            '-i', virtualInputName, 
-            '-t', duration.toString(), 
-            '-vf', 'fps=12,scale=480:-1:flags=lanczos', 
-            outputName
-        );
-        
-        // Đọc dữ liệu GIF đã xử lý xong
-        const data = ffmpeg.FS('readFile', outputName);
-        const gifUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
-        
-        const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-        const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
-        
-        // Tạo liên kết tải về tự động
-        const a = document.createElement('a');
-        a.href = gifUrl;
-        a.download = downloadName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        try { ffmpeg.FS('unlink', outputName); } catch(e){}
-        status.innerText = `✨ Xuất ảnh GIF thành công: ${downloadName}`;
-    } catch (err) {
-        console.error(err);
-        alert("Có lỗi xảy ra khi tạo ảnh GIF. Vui lòng chọn phân đoạn ngắn hơn (dưới 10 giây) để đạt hiệu suất tốt nhất.");
-        status.innerText = "❌ Lỗi thực thi Render GIF.";
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-        try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
-    }
-}
-
-    
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
             if (!isFFmpegReady) {
                 alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
