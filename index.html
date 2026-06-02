@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Video Cutter Mini</title>
+    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #1e1e24;
+            color: #fff;
+            max-width: 600px;
+            margin: 40px auto;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        h2 { text-align: center; color: #4fc3f7; }
+        .input-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; color: #bbb; }
+        input[type="file"], input[type="text"] {
+            width: 100%;
+            padding: 10px;
+            box-sizing: border-box;
+            background: #2a2a35;
+            border: 1px solid #444;
+            color: #fff;
+            border-radius: 6px;
+        }
+        .time-inputs {
+            display: flex;
+            gap: 10px;
+        }
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #00e676;
+            border: none;
+            color: #000;
+            font-weight: bold;
+            font-size: 16px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+        button:hover { background-color: #00b359; }
+        button:disabled { background-color: #555; color: #aaa; cursor: not-allowed; }
+        #status {
+            margin-top: 15px;
+            text-align: center;
+            font-style: italic;
+            color: #ffb74d;
+        }
+        .result-zone {
+            margin-top: 25px;
+            text-align: center;
+            display: none;
+        }
+        video {
+            width: 100%;
+            border-radius: 8px;
+            background: #000;
+            margin-bottom: 10px;
+        }
+        .download-btn {
+            background-color: #4fc3f7;
+            color: #000;
+            text-decoration: none;
+            display: inline-block;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-weight: bold;
+        }
+        .download-btn:hover { background-color: #03a9f4; }
+    </style>
+</head>
+<body>
+
+    <h2>✂️ Video Cutter Mini</h2>
+    
+    <div class="input-group">
+        <label for="video-input">Chọn Video của bạn:</label>
+        <input type="file" id="video-input" accept="video/*">
+    </div>
+
+    <div class="time-inputs">
+        <div class="input-group" style="flex: 1;">
+            <label for="start-time">Bắt đầu (Giây hoặc hh:mm:ss):</label>
+            <input type="text" id="start-time" value="0">
+        </div>
+        <div class="input-group" style="flex: 1;">
+            <label for="duration">Thời lượng cắt (Số giây):</label>
+            <input type="text" id="duration" value="5">
+        </div>
+    </div>
+
+    <button id="cut-btn" disabled>Đang tải thư viện xử lý...</button>
+    
+    <div id="status"></div>
+
+    <div class="result-zone" id="result-zone">
+        <h3>🎉 Kết quả:</h3>
+        <video id="output-video" controls></video>
+        <br>
+        <a id="download-link" class="download-btn" download="cut_video.mp4">📥 Tải Video Xuống</a>
+    </div>
+
+    <script>
+        const { createFFmpeg, fetchFile } = FFmpeg;
+        // Tạo instance FFmpeg và log tiến độ ra console để theo dõi
+        const ffmpeg = createFFmpeg({ log: true });
+
+        const videoInput = document.getElementById('video-input');
+        const cutBtn = document.getElementById('cut-btn');
+        const startTimeInput = document.getElementById('start-time');
+        const durationInput = document.getElementById('duration');
+        const status = document.getElementById('status');
+        const resultZone = document.getElementById('result-zone');
+        const outputVideo = document.getElementById('output-video');
+        const downloadLink = document.getElementById('download-link');
+
+        // Khởi tạo thư viện FFmpeg.wasm khi trang web load
+        async function loadFFmpeg() {
+            status.innerText = "Đang khởi tạo hệ thống cắt video...";
+            try {
+                await ffmpeg.load();
+                status.innerText = "Hệ thống sẵn sàng!";
+                cutBtn.disabled = false;
+                cutBtn.innerText = "Cắt Video";
+            } catch (error) {
+                console.error(error);
+                status.innerText = "Lỗi khởi tạo. Hãy đảm bảo bạn chạy bằng Server (không click đúp mở file thẳng).";
+            }
+        }
+        loadFFmpeg();
+
+        // Xử lý sự kiện khi bấm nút Cắt
+        cutBtn.addEventListener('click', async () => {
+            const file = videoInput.files[0];
+            if (!file) {
+                alert("Vui lòng chọn một file video trước!");
+                return;
+            }
+
+            const startTime = startTimeInput.value.trim();
+            const duration = durationInput.value.trim();
+
+            cutBtn.disabled = true;
+            status.innerText = "⏳ Đang xử lý video... Vui lòng đợi (Tùy thuộc độ dài video)...";
+            resultZone.style.display = "none";
+
+            // Bước 1: Nạp file video vào hệ thống file ảo của FFmpeg
+            const { name } = file;
+            ffmpeg.FS('writeFile', name, await fetchFile(file));
+
+            // Bước 2: Chạy lệnh cắt video
+            // -ss: thời gian bắt đầu, -t: thời lượng, -c copy: giữ nguyên codec không encode lại (cực nhanh)
+            const outputName = 'output.mp4';
+            try {
+                await ffmpeg.run('-ss', startTime, '-i', name, '-t', duration, '-c', 'copy', outputName);
+                
+                // Bước 3: Đọc file kết quả từ hệ thống file ảo
+                const data = ffmpeg.FS('readFile', outputName);
+
+                // Bước 4: Tạo URL để hiển thị và tải xuống
+                const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                
+                // Hiển thị kết quả
+                outputVideo.src = videoUrl;
+                downloadLink.href = videoUrl;
+                resultZone.style.display = "block";
+                status.innerText = "✨ Cắt video thành công!";
+            } catch (err) {
+                console.error(err);
+                status.innerText = "❌ Có lỗi xảy ra trong quá trình cắt video.";
+            } finally {
+                cutBtn.disabled = false;
+            }
+        });
+    </script>
+</body>
+</html>
