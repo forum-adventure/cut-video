@@ -30,31 +30,26 @@
         #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
         body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
+        
         .clip-wrapper { 
-    display: flex; flex-direction: column; align-items: center; 
-    margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
-    border-radius: 12px; background: #1e1e1e; width: fit-content; 
-    max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-    
-    /* THAY ĐỔI: Thêm các dòng dưới để giữ kích thước cố định */
-    min-height: auto; 
-    aspect-ratio: var(--clip-ratio); /* Giữ tỉ lệ khung hình cho wrapper */
-}
+            display: flex; flex-direction: column; align-items: center; 
+            margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
+            border-radius: 12px; background: #1e1e1e; width: fit-content; 
+            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
+            height: auto; 
+        }
 
-video { 
-    width: auto; height: auto; max-width: 100%; max-height: 50vh; 
-    border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
-    
-    /* THAY ĐỔI: Thêm aspect-ratio và object-fit cho video */
-    aspect-ratio: var(--video-ratio); 
-    object-fit: contain; 
-}
+        video { 
+            width: auto; height: auto; max-width: 100%; max-height: 50vh; 
+            border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
+            aspect-ratio: var(--video-ratio); 
+            object-fit: contain; 
+        }
 
-video.portrait { 
-    width: 55vw; max-width: 55vw; max-height: 70vh; 
-    /* THAY ĐỔI: Reset lại tỉ lệ để không bị ghi đè lỗi */
-    height: auto; 
-}
+        video.portrait { 
+            width: 55vw; max-width: 55vw; max-height: 70vh; 
+            height: auto; 
+        }
 
         video.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
         .clip-info { font-size: 0.8em; color: #777; margin: 8px 0 5px 0; font-family: monospace; }
@@ -157,7 +152,6 @@ video.portrait {
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
-        let clipsMetadata = [];
 
         async function loadFFmpegCore() {
             try {
@@ -274,7 +268,6 @@ video.portrait {
                     
                     videoContainer.innerHTML = ""; 
                     gridContent.innerHTML = "";
-                    clipsMetadata = []; 
                     document.body.classList.remove('has-clips');
                     
                     document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
@@ -312,7 +305,6 @@ video.portrait {
             });
         }
 
-        // ĐEM QUAY LẠI TỪ V1: Hàm tạo khung phần tử Grid đồng bộ ngay lúc tạo Clip, nạp ảnh nền bất đồng bộ sau
         function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
@@ -381,25 +373,26 @@ video.portrait {
             
             let animationFrameId;
             const checkTime = () => {
-                if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
-                if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
+                if (video.currentTime >= end) { 
+                    video.currentTime = start; 
+                }
+                animationFrameId = requestAnimationFrame(checkTime);
             };
-            video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
+
+            video.onplay = () => {
+                cancelAnimationFrame(animationFrameId);
+                animationFrameId = requestAnimationFrame(checkTime);
+            };
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-    // Đo kích thước gốc của video
-    const width = video.videoWidth;
-    const height = video.videoHeight;
-    
-    // Gán tỉ lệ vào CSS Variable để khóa kích thước cho video và wrapper
-    video.style.setProperty('--video-ratio', `${width} / ${height}`);
-    wrapper.style.setProperty('--clip-ratio', `${width} / ${height + 60}`); // +60px cho phần nút bấm và text bên dưới
-
-    if (height > width) video.classList.add('portrait');
-    video.currentTime = start;
-};
-
+                const width = video.videoWidth;
+                const height = video.videoHeight;
+                video.style.setProperty('--video-ratio', `${width} / ${height}`);
+                if (height > width) video.classList.add('portrait');
+            };
+            
+            video.currentTime = start;
             
             video.onseeked = () => {
                 if (currentlyUnmutedVideo === video) {
@@ -432,18 +425,21 @@ video.portrait {
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
-            
-            // ĐÃ KHÔI PHỤC: Gọi hàm sinh cấu trúc lưới bất đồng bộ ngay lập tức mà không gây đứng luồng
             addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
             wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
             video.play().catch(() => {});
             
-            handleClipRehydration();
+            setTimeout(() => {
+                if (currentlyUnmutedVideo === video) {
+                    video.muted = false;
+                    video.classList.add('unmuted');
+                    video.play().catch(() => {});
+                }
+            }, 300);
         });
 
-        // ĐÃ SỬA: Thay thế hàm xử lý click mở Grid thành dạng hiển thị lập tức của v1
         gridViewBtn.onclick = () => {
             gridOverlay.style.display = 'flex';
         };
@@ -465,12 +461,14 @@ video.portrait {
             btn.innerText = '⌛ Đang trích xuất...';
             status.innerText = `⏳ Hệ thống FFmpeg đang cắt đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
+            const timestamp = Date.now();
+            const virtualInputName = `input_${timestamp}_${rawVideoFile.name.replace(/\s+/g, '_')}`;
+            const outputName = `cut_${timestamp}.mp4`;
+
             try {
-                const { name } = rawVideoFile;
-                ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
-                const outputName = `cut_${Date.now()}.mp4`;
+                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+                await ffmpeg.run('-i', virtualInputName, '-ss', startTime.toString(), '-t', duration.toString(), '-c', 'copy', outputName);
                 
-                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
@@ -490,7 +488,8 @@ video.portrait {
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                try { ffmpeg.FS('unlink', name); } catch(e){}
+                /* ĐÃ ĐỒNG BỘ: Đảm bảo xóa đúng tên file ảo virtualInputName để không rò rỉ bộ nhớ */
+                try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
             }
         }
 
@@ -505,9 +504,14 @@ video.portrait {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
             return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
         }
+        
         function parseTime(t) {
             const p = t.replace(/[^0-9:]/g, '').split(':').reverse();
-            return (parseInt(p[0]) || 0) + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0) * 3600;
+            let seconds = 0;
+            if (p[0]) seconds += parseInt(p[0]) || 0;     
+            if (p[1]) seconds += (parseInt(p[1]) || 0) * 60; 
+            if (p[2]) seconds += (parseInt(p[2]) || 0) * 3600; 
+            return seconds;
         }
     </script>
 </body>
