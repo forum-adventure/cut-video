@@ -500,69 +500,54 @@
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
-    if (!isFFmpegReady) {
-        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
-        return;
-    }
-    if (!rawVideoFile) {
-        alert("Lỗi: Không tìm thấy file video đầu vào.");
-        return;
-    }
+            if (!isFFmpegReady) {
+                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+                return;
+            }
+            if (!rawVideoFile) {
+                alert("Lỗi: Không tìm thấy file video đầu vào.");
+                return;
+            }
 
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⌛ Đang xử lý...';
-    status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
+            const originalBtnText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = '⌛ Đang xử lý...';
+            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
-    const timestamp = Date.now();
-    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-    const virtualInputName = `input_${timestamp}_${cleanFileName}`;
-    const outputName = `cut_${timestamp}.mp4`;
+            const timestamp = Date.now();
+            const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
+            const virtualInputName = `input_${timestamp}_${cleanFileName}`;
+            const outputName = `cut_${timestamp}.mp4`;
 
-    try {
-        // Đọc file dạng ArrayBuffer tiết kiệm RAM
-        const fileData = await rawVideoFile.arrayBuffer();
-        ffmpeg.FS('writeFile', virtualInputName, new Uint8Array(fileData));
-        
-        // TỐI ƯU: Đưa -ss lên trước -i giúp FFmpeg nhảy thẳng tới phân đoạn cần cắt, 
-        // không cần giải mã và nạp toàn bộ cấu trúc video nặng hơn 1 tiếng vào luồng xử lý chính.
-        await ffmpeg.run(
-            '-ss', startTime.toString(), 
-            '-i', virtualInputName, 
-            '-t', duration.toString(), 
-            '-c', 'copy', 
-            '-avoid_negative_ts', 'make_zero', // Đảm bảo mốc thời gian (timestamp) của đoạn video mới bắt đầu từ 0
-            outputName
-        );
-        
-        const data = ffmpeg.FS('readFile', outputName);
-        const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-        
-        const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-        const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
-        
-        const a = document.createElement('a');
-        a.href = videoUrl;
-        a.download = downloadName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+            try {
+                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+                await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
+                
+                const data = ffmpeg.FS('readFile', outputName);
+                const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                
+                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+                const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
+                
+                const a = document.createElement('a');
+                a.href = videoUrl;
+                a.download = downloadName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
 
-        // Giải phóng file output ngay lập tức khỏi bộ nhớ ảo
-        try { ffmpeg.FS('unlink', outputName); } catch(e){}
-        status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
-    } catch (err) {
-        console.error(err);
-        alert("Có lỗi xảy ra do video quá lớn vượt hạn mức RAM trình duyệt. Thử lại hoặc dùng video dung lượng thấp hơn.");
-        status.innerText = "❌ Lỗi thực thi Render.";
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-        // BUỘC giải phóng file input để trả lại dung lượng bộ nhớ cho trình duyệt
-        try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
-    }
-}
-
+                try { ffmpeg.FS('unlink', outputName); } catch(e){}
+                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
+            } catch (err) {
+                console.error(err);
+                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+                status.innerText = "❌ Lỗi thực thi Render.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = originalBtnText;
+                try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
+            }
+        }
 
         randomBtn.onclick = () => {
             const d = parseFloat(durationInput.value) || 5;
