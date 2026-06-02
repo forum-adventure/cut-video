@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition)</title>
+    <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition - Fixed)</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,7 +10,7 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAg|">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
@@ -212,7 +212,7 @@
 
         // Keyboard navigation shortcuts
         window.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT') return; // Không can thiệp khi đang gõ chữ
+            if (document.activeElement.tagName === 'INPUT') return; 
             
             if (e.code === 'Space') {
                 e.preventDefault();
@@ -438,14 +438,15 @@
                 wrapper.appendChild(titleTag);
             }
             
+            // FIX CHÍNH: Đồng bộ cơ chế khởi tạo an toàn từ bản v1
             const video = document.createElement('video');
+            video.muted = true; 
             video.playsInline = true; 
-            video.preload = "auto"; 
+            video.preload = "metadata"; 
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.label = clipLabel;
-            
-            setFocusAudio(video);
+            video.dataset.isInitialLoad = "true";
             
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
@@ -456,14 +457,12 @@
             const checkTime = () => {
                 if (video.currentTime >= end) { 
                     video.currentTime = start; 
+                    video.play().catch(()=>{});
                 }
-                animationFrameId = requestAnimationFrame(checkTime);
+                if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
             };
 
-            video.onplay = () => {
-                cancelAnimationFrame(animationFrameId);
-                animationFrameId = requestAnimationFrame(checkTime);
-            };
+            video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
@@ -471,14 +470,17 @@
                 const height = video.videoHeight;
                 video.style.setProperty('--video-ratio', `${width} / ${height}`);
                 if (height > width) video.classList.add('portrait');
+                video.currentTime = start;
             };
             
-            video.currentTime = start;
-            
-            video.onseeked = () => {
-                if (currentlyUnmutedVideo === video) {
-                    video.play().catch(() => {});
+            // FIX CHÍNH: Chỉ kích hoạt chạy mượt sau khi dữ liệu phân cảnh load xong hoàn toàn (onloadeddata)
+            video.onloadeddata = () => { 
+                if (video.dataset.isInitialLoad === "true") {
+                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    setFocusAudio(video);
+                    video.dataset.isInitialLoad = "false";
                 }
+                video.play().catch(() => {});
             };
             
             const info = document.createElement('div');
@@ -507,20 +509,15 @@
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
-            addGridItemAhead(clipId, start, clipLabel);
+            
+            // FIX: Trì hoãn xử lý luồng tạo Thumbnail để tránh nghẽn phần cứng giải mã (Decoder)
+            setTimeout(() => {
+                addGridItemAhead(clipId, start, clipLabel);
+            }, 120);
             
             startTimeInput.value = formatTime(end);
-            clipLabelInput.value = ""; // Clear để gán nhãn cho phân đoạn tiếp theo
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-            video.play().catch(() => {});
-            
-            setTimeout(() => {
-                if (currentlyUnmutedVideo === video) {
-                    video.muted = false;
-                    video.classList.add('unmuted');
-                    video.play().catch(() => {});
-                }
-            }, 300);
+            clipLabelInput.value = ""; 
+            handleClipRehydration();
         });
 
         gridViewBtn.onclick = () => {
@@ -552,13 +549,11 @@
             try {
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
                 
-                // Sử dụng '-ss' trước '-i' để tối ưu tốc độ seek chính xác (Fast Seek)
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
-                // Xây dựng cấu trúc tên file tải về
                 const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
                 const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
                 
@@ -591,8 +586,6 @@
 
         function formatTime(s) {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
-            const ms = Math.floor((s % 1) * 10);
-            // Định dạng hh:mm:ss
             return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
         }
         
