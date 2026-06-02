@@ -382,17 +382,18 @@
                 
                 video.currentTime = start;
 
-                // KIỂM TRA: Chỉ cuộn nếu đây là video cuối cùng trong danh sách
-                const allClips = videoContainer.querySelectorAll('video');
-                if (allClips.length > 0 && allClips[allClips.length - 1] === video) {
+                               // KIỂM TRA: Chỉ cuộn nếu đây là video cuối cùng trong danh sách
+                const allWrappers = videoContainer.querySelectorAll('.clip-wrapper');
+                if (allWrappers.length > 0 && allWrappers[allWrappers.length - 1] === wrapper) {
                     setTimeout(() => {
-                        window.scrollTo({
-                            top: document.documentElement.scrollHeight,
-                            behavior: 'smooth'
+                        wrapper.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center' // Đưa video mới vào giữa màn hình để dễ quan sát
                         });
-                    }, 100); // Trì hoãn 100ms để trình duyệt cập nhật lại DOM và chiều cao trang chính xác
+                    }, 100); // Trì hoãn 100ms để trình duyệt cập nhật lại DOM ổn định
                 }
             };
+
 
 
             
