@@ -31,31 +31,16 @@
         body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
         .clip-wrapper { 
-    display: flex; flex-direction: column; align-items: center; 
-    margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
-    border-radius: 12px; background: #1e1e1e; width: fit-content; 
-    max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); 
-    
-    /* THAY ĐỔI: Thêm các dòng dưới để giữ kích thước cố định */
-    min-height: auto; 
-    aspect-ratio: var(--clip-ratio); /* Giữ tỉ lệ khung hình cho wrapper */
-}
-
-video { 
-    width: auto; height: auto; max-width: 100%; max-height: 50vh; 
-    border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
-    
-    /* THAY ĐỔI: Thêm aspect-ratio và object-fit cho video */
-    aspect-ratio: var(--video-ratio); 
-    object-fit: contain; 
-}
-
-video.portrait { 
-    width: 55vw; max-width: 55vw; max-height: 70vh; 
-    /* THAY ĐỔI: Reset lại tỉ lệ để không bị ghi đè lỗi */
-    height: auto; 
-}
-
+            display: flex; flex-direction: column; align-items: center; 
+            margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
+            border-radius: 12px; background: #1e1e1e; width: fit-content; 
+            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-height: 200px; 
+        }
+        video { 
+            width: auto; height: auto; max-width: 100%; max-height: 50vh; 
+            border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
+        }
+        video.portrait { width: 55vw; max-width: 55vw; max-height: 70vh; }
         video.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
         .clip-info { font-size: 0.8em; color: #777; margin: 8px 0 5px 0; font-family: monospace; }
         .button-group { display: flex; gap: 8px; margin-top: 8px; }
@@ -388,15 +373,14 @@ video.portrait {
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-    // Đo kích thước gốc của video
-    const width = video.videoWidth;
-    const height = video.videoHeight;
+    if (video.videoHeight > video.videoWidth) {
+        video.classList.add('portrait');
+    }
+    // Khóa chặt kích thước vật lý hiển thị hiển tại của video vào style
+    // Điều này giúp thẻ video giữ nguyên diện tích dù src có bị gán thành ""
+    video.style.width = video.clientWidth + 'px';
+    video.style.height = video.clientHeight + 'px';
     
-    // Gán tỉ lệ vào CSS Variable để khóa kích thước cho video và wrapper
-    video.style.setProperty('--video-ratio', `${width} / ${height}`);
-    wrapper.style.setProperty('--clip-ratio', `${width} / ${height + 60}`); // +60px cho phần nút bấm và text bên dưới
-
-    if (height > width) video.classList.add('portrait');
     video.currentTime = start;
 };
 
