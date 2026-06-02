@@ -382,6 +382,11 @@
     video.style.height = video.clientHeight + 'px';
     
     video.currentTime = start;
+                
+// TỰ ĐỘNG CUỘN RA CHÍNH GIỮA: Thực hiện cuộn ngay khi metadata của video đã sẵn sàng
+                setTimeout(() => {
+                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                }, 100); // Trì hoãn 100ms để trình duyệt kịp cập nhật layout CSS mới
 };
 
             
@@ -421,7 +426,7 @@
             addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
-            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
             video.play().catch(() => {});
             
             handleClipRehydration();
