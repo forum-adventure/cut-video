@@ -161,6 +161,95 @@
             display: flex; flex-direction: column; gap: 2px;
         }
         .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+    
+   /* --- TỐI ƯU GIAO DIỆN KHI XOAY NGANG (LANDSCAPE) --- */
+@media (orientation: landscape) and (max-height: 600px) {
+    /* Đảm bảo vùng đệm dưới vừa đủ đẹp, không bị lún video */
+    body {
+        padding-bottom: 75px !important;
+    }
+
+    /* Thanh điều khiển chính dàn hàng ngang, căn đều khoảng cách */
+    .controls {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 15px !important;
+        padding: 8px 20px !important;
+        height: 55px !important;
+    }
+
+    /* Reset các row mặc định để tránh bị bọc đè hoặc chiếm không gian vô ích */
+    .controls > .controls-row {
+        width: auto !important;
+        flex: unset !important;
+    }
+
+    /* Xử lý khối chứa thông số nhập liệu (Cắt từ, Độ dài) */
+    .controls > .controls-row:nth-child(2) {
+        flex-grow: 2 !important;
+        background: transparent !important;
+        padding: 0 !important;
+    }
+
+    /* Ép layout các ô nhập liệu thẳng một hàng ngang không xuống dòng */
+    .controls > .controls-row:nth-child(2) > div {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        background: transparent !important;
+        padding: 0 !important;
+        gap: 12px !important;
+        max-width: none !important;
+        width: 100% !important;
+        justify-content: center !important;
+    }
+
+   
+
+    /* Định hình lại kích thước chuẩn và khoảng đệm bên trong các ô Input */
+    #startTimeInput {
+        width: 80px !important;
+        padding: 6px 4px !important;
+    }
+    #durationInput {
+        width: 35px !important;
+        padding: 6px 4px !important;
+    }
+    #clipLabelInput {
+        width: 160px !important;
+        max-width: 200px !important;
+        padding: 6px 8px !important;
+        text-align: left !important;
+    }
+
+    /* Xử lý khối chứa 3 nút bấm chức năng */
+    .controls > .controls-row:nth-child(3) {
+        flex-grow: 1 !important;
+        justify-content: flex-end !important;
+        gap: 8px !important;
+        flex-wrap: nowrap !important;
+    }
+
+    /* Tối ưu kích cỡ chữ và độ lớn nút bấm vừa vặn */
+    .controls .action-btn, #gridViewBtn {
+        padding: 8px 12px !important;
+        font-size: 0.85em !important;
+        height: 36px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    /* Ẩn chữ trong nút Lưới/Grid để tránh bị đè chữ ra ngoài */
+    #gridViewBtn span {
+        display: none !important;
+    }
+    #gridViewBtn svg {
+        margin-right: 0 !important;
+    }
+}
+
+
     </style>
 </head>
 <body>
