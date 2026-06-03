@@ -77,11 +77,16 @@
 }
 
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            padding: 20px; background-color: #121212; 
-            color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
-            display: flex; flex-direction: column;
-        }
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    padding: 20px; background-color: #121212; 
+    color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
+    display: flex; flex-direction: column;
+    
+    /* CHẶN PULL TO REFRESH TRÊN MOBILE */
+    overscroll-behavior-y: contain; 
+}
+
+    
         #welcomeOverlay {
     position: fixed; 
     top: 40%; 
@@ -1019,6 +1024,37 @@ video.onpause = () => {
             if (p[2]) seconds += (parseInt(p[2]) || 0) * 3600; 
             return seconds;
         }
+            
+            // --- CHẶN HOÀN TOÀN HÀNH VI PULL-TO-REFRESH TRÊN DI ĐỘNG ---
+window.addEventListener('touchstart', (e) => {
+    // Chỉ can thiệp nếu thao tác vuốt bằng 1 ngón tay
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    // Lưu lại điểm bắt đầu vuốt theo trục Y
+    window.initialTouchY = touch.clientY;
+}, { passive: true });
+
+window.addEventListener('touchmove', (e) => {
+    if (window.initialTouchY === undefined) return;
+    
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    const diffY = currentY - window.initialTouchY; // Dương là vuốt xuống, Âm là vuốt lên
+
+    // 1. Nếu đang ở đỉnh trang (scrollTop === 0) và cố tình vuốt xuống để kéo Refresh
+    // 2. Hoặc nếu đang ở đáy trang và bị hiện tượng nảy (Overscroll) khi vuốt lên
+    if ((document.documentElement.scrollTop === 0 && diffY > 0) || 
+        (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight && diffY < 0)) {
+        
+        // Kiểm tra xem vùng cuộn có phải là vùng danh sách lưới (Grid Overlay) hay không
+        // Nếu không phải Grid Overlay đang mở, chặn hành vi kéo nảy mặc định của trình duyệt
+        if (gridOverlay.style.display !== 'flex') {
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+}, { passive: false }); // Bắt buộc phải là false để preventDefault() có tác dụng
+
     </script>
 </body>
 </html>
