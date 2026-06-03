@@ -23,10 +23,40 @@
             display: flex; flex-direction: column;
         }
         #welcomeOverlay {
-            position: fixed; top: 40%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; z-index: 0; width: 90%; pointer-events: none;
-            transition: opacity 0.5s ease, visibility 0.5s;
-        }
+    position: fixed; 
+    top: 40%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    text-align: center; 
+    z-index: 10; 
+    width: 90%; 
+    max-width: 650px; /* Giới hạn chiều rộng để khung viền ôm vừa vặn, đẹp mắt */
+    pointer-events: auto; 
+    cursor: pointer;
+    transition: all 0.3s ease; /* Tạo hiệu ứng mượt mà cho tất cả thay đổi */
+    
+    padding: 50px 30px;
+    
+    /* KHUNG VIỀN NÉT ĐỨT SẴN CÓ */
+    border: 2px dashed #444444; /* Màu xám tối mặc định, tiệp với giao diện tối */
+    border-radius: 16px;       /* Bo góc mượt mà */
+    background-color: rgba(255, 255, 255, 0.02); /* Thêm một lớp nền mờ cực nhẹ */
+}
+
+/* Hiệu ứng khi người dùng di chuột qua (Hover) */
+#welcomeOverlay:hover {
+    border-color: #666666; /* Viền sáng lên một chút để báo hiệu có thể click */
+    background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* Hiệu ứng khi kéo tệp tin đè lên vùng này (Dragover) */
+#welcomeOverlay.dragover {
+    border-color: #03dac6; /* Đổi sang màu xanh neon sáng */
+    background-color: rgba(3, 218, 198, 0.08); /* Nền sáng lên theo tông xanh */
+    box-shadow: 0 0 20px rgba(3, 218, 198, 0.2); /* Thêm hiệu ứng hào quang nhẹ */
+}
+
+
         #welcomeOverlay h1 { font-size: 2.5em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
         #welcomeOverlay p { color: #888; font-size: 1.1em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
         body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
@@ -188,6 +218,48 @@
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
+const welcomeOverlay = document.getElementById('welcomeOverlay');
+
+// 1. Click vào vùng welcome để kích hoạt chọn file
+welcomeOverlay.addEventListener('click', () => {
+    upload.click();
+});
+
+// 2. Xử lý sự kiện kéo thả file (Drag & Drop)
+// Ngăn chặn hành vi mặc định của trình duyệt khi kéo file vào
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
+});
+
+// Thêm class hiệu ứng khi kéo file vào vùng hiển thị
+['dragenter', 'dragover'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, () => {
+        welcomeOverlay.classList.add('dragover');
+    }, false);
+});
+
+// Xóa class hiệu ứng khi kéo file ra ngoài hoặc thả file xong
+['dragleave', 'drop'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, () => {
+        welcomeOverlay.classList.remove('dragover');
+    }, false);
+});
+
+// Xử lý khi thả file (Drop) vào vùng khoanh đỏ
+welcomeOverlay.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0 && files[0].type.startsWith('video/')) {
+        upload.files = files; // Gán file vào input gốc
+        
+        // Kích hoạt lại sự kiện change của upload để chạy logic xử lý video hiện tại của bạn
+        const event = new Event('change', { bubbles: true });
+        upload.dispatchEvent(event);
+    } else {
+        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
+    }
+});
 
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
