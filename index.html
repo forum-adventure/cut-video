@@ -145,8 +145,10 @@
     </style>
 </head>
 <body>
-
+<input type="file" id="videoUpload" accept="video/*" >
     <div id="welcomeOverlay">
+       
+
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Chọn một tệp video từ máy của bạn để bắt đầu xử lý chuẩn dữ liệu nhanh chóng.</p>
     </div>
@@ -154,6 +156,7 @@
     <div id="videoContainer"></div>
 
     <div id="gridOverlay">
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
             <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
@@ -163,7 +166,7 @@
 
     <div class="controls">
         <div class="controls-row">
-            <input type="file" id="videoUpload" accept="video/*">
+            
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
                 <span>Lưới</span>
