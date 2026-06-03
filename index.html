@@ -292,7 +292,7 @@
 <input type="file" id="videoUpload" accept="video/*" >
     <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
     
-<audio id="silentWaker" loop playsinline src="data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==#t=0.0"></audio>
+<audio id="silentAudio" loop playsinline src="data:audio/mp3;base64,SUQzBAAAAAABEVRYWFgAAAAtAAADY29tbWVudABwcmVzZW50ZWQgYnkgdGhlIGFub255bW91cyBmb3J1bXMAVElUMgAAABIAAADYc2lsZW50IGF1ZGlvAGF3YWtlAAAAAA=="></audio>
 
     
     <div id="welcomeOverlay">
@@ -371,16 +371,38 @@
         const clipLabelInput = document.getElementById('clipLabelInput');
 const welcomeOverlay = document.getElementById('welcomeOverlay');
 
-// 1. Click vào vùng welcome để kích hoạt chọn file
+// 1. Click vào vùng welcome để kích hoạt chọn file và kích hoạt luôn Audio ngầm
 welcomeOverlay.addEventListener('click', () => {
+    // Kích hoạt file MP3 không tiếng
+    const silentAudio = document.getElementById('silentAudio');
+    if (silentAudio && silentAudio.paused) {
+        silentAudio.play()
+        .then(() => console.log("🔒 Đã bật Audio Wake Lock ngầm thành công!"))
+        .catch(err => console.log("Không thể kích hoạt Audio ngầm:", err));
+    }
+    
     upload.click();
 });
-
-// 2. Xử lý sự kiện kéo thả file (Drag & Drop)
-// Ngăn chặn hành vi mặc định của trình duyệt khi kéo file vào
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
+// Xử lý khi thả file (Drop) 
+welcomeOverlay.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    // Kích hoạt Audio ngầm nếu dùng kéo thả
+    const silentAudio = document.getElementById('silentAudio');
+    if (silentAudio && silentAudio.paused) {
+        silentAudio.play().catch(()=>{});
+    }
+    
+    if (files.length > 0 && files[0].type.startsWith('video/')) {
+        upload.files = files; 
+        const event = new Event('change', { bubbles: true });
+        upload.dispatchEvent(event);
+    } else {
+        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
+    }
 });
+
 
 // Thêm class hiệu ứng khi kéo file vào vùng hiển thị
 ['dragenter', 'dragover'].forEach(eventName => {
@@ -422,44 +444,6 @@ welcomeOverlay.addEventListener('drop', (e) => {
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
 
-            
-const silentWaker = document.getElementById('silentWaker');
-
-// Hàm kích hoạt luồng âm thanh vô lặng an toàn
-function activateBackgroundRetention() {
-    if (silentWaker && silentWaker.paused) {
-        silentWaker.play()
-            .then(() => {
-                console.log("✨ Đã kích hoạt cơ chế giữ kết nối ngầm thành công.");
-            })
-            .catch(err => {
-                console.warn("⚠️ Trình duyệt chặn tự động phát âm thanh nền:", err);
-            });
-    }
-}
-
-// Kích hoạt khi click vào vùng welcome
-welcomeOverlay.addEventListener('click', () => {
-    activateBackgroundRetention(); // <-- Kích hoạt tại đây
-    upload.click();
-});
-
-// Kích hoạt khi người dùng thả file (Drop) vào
-welcomeOverlay.addEventListener('drop', (e) => {
-    activateBackgroundRetention(); // <-- Kích hoạt tại đây
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    if (files.length > 0 && files[0].type.startsWith('video/')) {
-        upload.files = files;
-        const event = new Event('change', { bubbles: true });
-        upload.dispatchEvent(event);
-    } else {
-        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
-    }
-});
-
-            
         async function loadFFmpegCore() {
             try {
                 await ffmpeg.load();
@@ -896,21 +880,6 @@ welcomeOverlay.addEventListener('drop', (e) => {
             if (p[2]) seconds += (parseInt(p[2]) || 0) * 3600; 
             return seconds;
         }
-            
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        // Người dùng đã quay lại ứng dụng (Mở lại trình duyệt)
-        if (silentWaker && silentWaker.paused) {
-            silentWaker.play().catch(()=>{});
-        }
-        
-        // Khôi phục lại trạng thái hiển thị của các clip đang render trong khung nhìn
-        if (typeof handleClipRehydration === 'function' && sharedVideoURL) {
-            handleClipRehydration();
-        }
-    }
-});
-
     </script>
 </body>
 </html>
