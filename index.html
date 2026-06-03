@@ -22,6 +22,7 @@
             color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
             display: flex; flex-direction: column;
         }
+    
         #welcomeOverlay {
     position: fixed; 
     top: 40%; 
@@ -54,6 +55,7 @@
     border-color: #03dac6; /* Đổi sang màu xanh neon sáng */
     background-color: rgba(3, 218, 198, 0.08); /* Nền sáng lên theo tông xanh */
     box-shadow: 0 0 20px rgba(3, 218, 198, 0.2); /* Thêm hiệu ứng hào quang nhẹ */
+    
 }
 
 
@@ -145,7 +147,7 @@
     </style>
 </head>
 <body>
-
+<input type="file" id="videoUpload" accept="video/*" style="display: none;">
     <div id="welcomeOverlay">
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Chọn một tệp video từ máy của bạn để bắt đầu xử lý chuẩn dữ liệu nhanh chóng.</p>
@@ -163,7 +165,7 @@
 
     <div class="controls">
         <div class="controls-row">
-            <input type="file" id="videoUpload" accept="video/*">
+            
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
                 <span>Lưới</span>
@@ -219,6 +221,13 @@
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
 const welcomeOverlay = document.getElementById('welcomeOverlay');
+            
+            // Khi người dùng bấm vào vùng tạo đoạn (welcomeOverlay), 
+// nó sẽ giả lập cú click vào thẻ input ẩn ở Bước 1 để mở cửa sổ chọn video.
+welcomeOverlay.addEventListener('click', () => {
+    upload.click();
+});
+
 
 // 1. Click vào vùng welcome để kích hoạt chọn file
 welcomeOverlay.addEventListener('click', () => {
