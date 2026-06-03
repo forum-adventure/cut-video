@@ -560,7 +560,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
             }
         });
 
-        async function captureThumbnail(startTime) {
+                async function captureThumbnail(startTime) {
             return new Promise((resolve) => {
                 const canvas = document.createElement('canvas');
                 const v = document.createElement('video');
@@ -569,19 +569,31 @@ welcomeOverlay.addEventListener('drop', (e) => {
                 v.muted = true;
                 v.playsInline = true;
                 
+                // Ép trình duyệt tải trước một chút dữ liệu tại thời điểm đó
+                v.preload = "auto"; 
+                
                 v.onseeked = () => {
-                    canvas.width = 160; canvas.height = 160;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    v.src = ""; v.load(); v.remove();
-                    resolve(dataUrl);
+                    // Thêm một timeout cực nhỏ để đảm bảo frame hình đã render xong trên mobile/trình duyệt chậm
+                    setTimeout(() => {
+                        try {
+                            canvas.width = 160; 
+                            canvas.height = 160;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                            v.src = ""; v.load(); v.remove();
+                            resolve(dataUrl);
+                        } catch(e) {
+                            resolve("");
+                        }
+                    }, 50);
                 };
                 v.onerror = () => {
                     v.src = ""; v.remove(); resolve("");
                 };
             });
         }
+
 
         function addGridItemAhead(clipId, startTime, labelText) {
             const gridItem = document.createElement('div');
@@ -784,12 +796,22 @@ welcomeOverlay.addEventListener('drop', (e) => {
             }
         }
 
-        randomBtn.onclick = () => {
+                randomBtn.onclick = () => {
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
-            startTimeInput.value = formatTime(Math.random() * maxRange);
-            nextBtn.click();
+            
+            // Tính toán thời gian ngẫu nhiên chuẩn xác trước
+            const randomSeconds = Math.random() * maxRange;
+            startTimeInput.value = formatTime(randomSeconds);
+            
+            // Trì hoãn một nhịp nhỏ (macro-task) để đảm bảo dữ liệu input và DOM được đồng bộ
+            setTimeout(() => {
+                if (!nextBtn.disabled) {
+                    nextBtn.click();
+                }
+            }, 50);
         };
+
 
         function formatTime(s) {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
