@@ -691,7 +691,9 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                     gridContent.innerHTML = "";
                     document.body.classList.remove('has-clips');
                     
-                    document.getElementById('mainTitle').innerText = "Video định dạng sẵn sàng";
+                    document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng này để đổi sang màu xanh lá tươi (Emerald)
+
                     document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
                     
                     status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
