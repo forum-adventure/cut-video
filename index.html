@@ -107,7 +107,7 @@
         input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
         input:focus { border-color: #03dac6; }
         #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
-        #durationInput { width: 60px; }
+        #durationInput { width: 40px; }
         #clipLabelInput { width: 150px; text-align: left; }
         
         button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
@@ -185,7 +185,8 @@
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
         <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-            <input type="number" id="durationInput" value="5" min="1" step="0.5" style="flex-grow: 1; width: 100%; min-width: 0;">
+            <input type="number" id="durationInput" value="5" min="1" step="0.5" >
+            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
         </div>
     </div>
     
@@ -198,7 +199,7 @@
         <div class="controls-row">
             
             
-            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)">
+            
             
             <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
