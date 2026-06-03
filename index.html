@@ -564,49 +564,61 @@ welcomeOverlay.addEventListener('drop', (e) => {
     return new Promise((resolve) => {
         const canvas = document.createElement('canvas');
         const v = document.createElement('video');
-        
-        // CẤU HÌNH BẮT BUỘC CHO IOS TRƯỚC KHI GÁN SRC
+        v.src = sharedVideoURL;
         v.muted = true;
         v.playsInline = true;
-        v.setAttribute('playsinline', 'true'); // Ép thuộc tính inline trực tiếp vào DOM
-        v.webkitPlaysInline = true;            // Hỗ trợ các phiên bản iOS cũ hơn
-        v.preload = "auto"; 
+        v.preload = "auto";
         
-        v.src = sharedVideoURL;
-        v.currentTime = startTime;
-        
-        v.onseeked = () => {
-            // Thay vì dùng setTimeout hên xui, ta ép iOS đợi trình duyệt vẽ xong frame hình
-            if ('requestVideoFrameCallback' in v) {
-                // Phương thức hiện đại và chuẩn xác nhất hiện nay cho iOS/Safari
-                v.requestVideoFrameCallback(() => {
-                    executeCapture();
-                });
-            } else {
-                // Phương án dự phòng (Fallback) nếu iOS phiên bản cũ không hỗ trợ
-                setTimeout(executeCapture, 150); // Tăng thời gian chờ lên 150ms để iOS kịp render
-            }
+        // Cần thiết cho iOS: Đảm bảo video không bị tự động thu nhỏ hoặc chạy full màn hình ngầm
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+
+        // [QUAN TRỌNG NHẤT] iOS bắt buộc phải đợi metadata load xong mới được phép set currentTime
+        v.onloadedmetadata = () => {
+            v.currentTime = startTime;
         };
 
-        function executeCapture() {
-            try {
-                canvas.width = 160; 
-                canvas.height = 160;
-                const ctx = canvas.getContext('2d');
-                ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                
-                // Giải phóng bộ nhớ triệt để chống tràn RAM trên iPhone
-                v.src = ""; v.load(); v.remove();
-                resolve(dataUrl);
-            } catch(e) {
-                resolve("");
-            }
-        }
+        v.onseeked = () => {
+            // Tăng delay lên 150ms để engine của iPhone xả frame kịp ra bộ đệm đồ họa
+            setTimeout(() => {
+                try {
+                    // Lấy tỷ lệ thật của video thay vì ép cứng 160x160 (tránh ảnh bị méo tỷ lệ)
+                    const videoWidth = v.videoWidth || 160;
+                    const videoHeight = v.videoHeight || 160;
+                    
+                    // Thu nhỏ tỷ lệ để tối ưu hiệu năng canvas
+                    const scale = 160 / Math.max(videoWidth, videoHeight);
+                    canvas.width = videoWidth * scale; 
+                    canvas.height = videoHeight * scale;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    // Dọn dẹp bộ nhớ
+                    v.removeAttribute('src'); v.load(); v.remove();
+                    resolve(dataUrl);
+                } catch(e) {
+                    console.error("Lỗi vẽ Canvas Thumbnail:", e);
+                    resolve("");
+                }
+            }, 150); 
+        };
 
         v.onerror = () => {
-            v.src = ""; v.remove(); resolve("");
+            v.removeAttribute('src'); v.remove(); resolve("");
         };
+
+        // Kích hoạt tường lửa an toàn (Timeout): Tránh việc Promise bị treo vĩnh viễn trên iOS 
+        // Nếu sau 3 giây không lấy được hình, tự động trả về chuỗi rỗng để không lỗi UI
+        setTimeout(() => {
+            if (v.src) {
+                v.removeAttribute('src'); v.remove(); resolve("");
+            }
+        }, 3000);
+
+        // Chủ động gọi load() để ép iOS bắt đầu nạp luồng video
+        v.load();
     });
 }
 
