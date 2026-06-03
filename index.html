@@ -388,7 +388,7 @@ const welcomeOverlay = document.getElementById('welcomeOverlay');
 
 // 1. Click vào vùng welcome để kích hoạt chọn file
 welcomeOverlay.addEventListener('click', () => {
-    activateAudioWakeLock(); // <--- CHÈN VÀO ĐÂY: Phát file mp3 ngay khi click
+    
     upload.click();
 });
 
@@ -693,6 +693,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
         }
 
         nextBtn.addEventListener('click', () => {
+            activateAudioWakeLock(); // <--- CHÈN VÀO ĐÂY: Kích hoạt khi bắt đầu tạo clip đầu tiên
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -845,6 +846,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
         }
 
                 randomBtn.onclick = () => {
+                    activateAudioWakeLock(); // <--- CHÈN VÀO ĐÂY: Kích hoạt phòng trường hợp họ bấm Random trước
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
             
