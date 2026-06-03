@@ -96,18 +96,47 @@
         .download-btn:not(:disabled):hover { background-color: #01f5dd; }
         .download-btn:active { transform: scale(0.98); }
         
-                .controls { 
-            position: fixed; bottom: 0; left: 0; 
-            width: 100%; /* Giữ nguyên 100% màn hình chuẩn */
+                        .controls { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
             background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
             z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
             box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
-
-            /* Giải pháp thu nhỏ chuẩn tỷ lệ giống zoom trình duyệt */
-            zoom: 0.8;
-            -moz-transform: scale(0.8); /* Dự phòng riêng cho trình duyệt Firefox cũ */
-            -moz-transform-origin: bottom center;
         }
+        /* --- THU NHỎ 80% BẰNG CÁCH GIẢM KÍCH THƯỚC TRÊN ĐIỆN THOẠI (DỌC) --- */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                padding-bottom: 210px !important; /* Thu hẹp khoảng trống đáy để vừa khít thanh controls mới */
+            }
+            .controls {
+                padding: 12px 16px !important; /* Giảm khoảng đệm xung quanh thanh điều khiển */
+                gap: 9px !important;           /* Thu hẹp khoảng cách giữa các hàng */
+            }
+            .controls-row {
+                gap: 6px !important;           /* Thu hẹp khoảng cách giữa các nút */
+            }
+            .controls-row .action-btn, 
+            .controls-row #gridViewBtn {
+                padding: 8px 6px !important;   /* Thu nhỏ nút bấm */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ xuống mức ~80% */
+            }
+            input, select {
+                padding: 6px 10px !important;  /* Thu nhỏ các ô nhập liệu */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ của ô nhập liệu */
+            }
+            #startTimeInput { width: 80px !important; }
+            #durationInput { width: 32px !important; }
+            #clipLabelInput { width: 120px !important; }
+            .tune-btn {
+                padding: 5px 8px !important;   /* Thu nhỏ 2 nút tăng giảm thời gian < và > */
+                font-size: 0.7em !important;
+            }
+            /* Hạ khoảng đệm của khung xám bọc các ô input */
+            .controls > .controls-row:nth-child(2) > div {
+                padding: 9px !important;
+                gap: 8px !important;
+            }
+        }
+
 
         /* Ép dòng controls chứa 3 nút chính luôn nằm trên 1 hàng */
 .controls-row { 
