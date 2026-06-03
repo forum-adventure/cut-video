@@ -709,14 +709,20 @@ welcomeOverlay.addEventListener('drop', (e) => {
                 else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
             };
             
-            let animationFrameId;
-            const checkTime = () => {
-                if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
-                if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
-            };
+            // Sử dụng timeupdate thay vì requestAnimationFrame để hoạt động cả khi chạy ngầm
+video.ontimeupdate = () => {
+    if (video.currentTime >= end) {
+        video.currentTime = start;
+        // Đảm bảo video tiếp tục phát khi bị tua lại
+        video.play().catch(() => {});
+    }
+};
 
-            video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
-            video.onpause = () => cancelAnimationFrame(animationFrameId);
+// Loại bỏ những rác thừa nếu video bị xóa
+video.onpause = () => {
+    // Không cần cancelAnimationFrame nữa
+};
+
             
             video.onloadedmetadata = () => {
                 const width = video.videoWidth;
