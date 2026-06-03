@@ -102,7 +102,26 @@
             z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
             box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
         }
-        .controls-row { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; }
+        /* Ép dòng controls chứa 3 nút chính luôn nằm trên 1 hàng */
+.controls-row { 
+    display: flex; 
+    gap: 8px; /* Giảm khoảng cách giữa các nút một chút trên mobile */
+    align-items: center; 
+    justify-content: center; 
+    flex-wrap: nowrap; /* KHÔNG cho phép xuống dòng */
+    width: 100%; 
+}
+
+/* Tối ưu hóa các nút bấm để tự co giãn mượt mà trên điện thoại */
+.controls-row .action-btn, 
+.controls-row #gridViewBtn {
+    flex: 1; /* Chia đều không gian hàng cho 3 nút */
+    min-width: 0; /* Ngăn nút bị vỡ cấu trúc layout */
+    white-space: nowrap; /* Không cho chữ bên trong nút tự xuống dòng */
+    padding: 10px 8px; /* Thu gọn padding ngang để vừa màn hình nhỏ */
+    font-size: 0.85em; /* Giảm nhẹ size chữ để chắc chắn không bị tràn text */
+}
+
         
         input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
         input:focus { border-color: #03dac6; }
@@ -167,10 +186,7 @@
     <div class="controls">
         <div class="controls-row">
             
-            <button id="gridViewBtn" title="Xem dạng lưới" disabled>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
-                <span>Lưới</span>
-            </button>
+            
         </div>
 
         <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
@@ -199,13 +215,13 @@
             
         </div>
 
-        <div class="controls-row">
-            
-            
-            
-            
+        <div class="controls-row">                                            
             <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
+            <button id="gridViewBtn" title="Xem dạng lưới" disabled>
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
+                <span>Lưới</span>
+            </button>
         </div>
         <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
     </div>
