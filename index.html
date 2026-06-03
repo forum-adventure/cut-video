@@ -476,7 +476,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
                     }
                 } else {
     video.pause();
-    video.volume = 0.01; // Giảm về 1% thay vì tắt tiếng
+    video.volume = 0.001; // Giảm về 1% thay vì tắt tiếng
     video.classList.remove('unmuted');
     if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
 }
@@ -519,7 +519,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
 
         function setFocusAudio(videoElement) {
     if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
-        currentlyUnmutedVideo.volume = 0.01; // Trả về 1%
+        currentlyUnmutedVideo.volume = 0.001; // Trả về 1%
         currentlyUnmutedVideo.classList.remove('unmuted');
     }
     videoElement.volume = 1.0; // Bật 100% âm lượng
@@ -700,7 +700,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
             
             const video = document.createElement('video');
 video.muted = false; // Bắt buộc false để trình duyệt cấp quyền Audio
-video.volume = 0.01; // Để 1% ngay từ đầu
+video.volume = 0.001; // Để 1% ngay từ đầu
 video.playsInline = true; 
 video.preload = "metadata";
             video.src = sharedVideoURL;
@@ -709,7 +709,7 @@ video.preload = "metadata";
             
             video.onclick = () => {
     if (video.volume < 1) setFocusAudio(video);
-    else { video.volume = 0.01; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
+    else { video.volume = 0.001; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
 };
             
             // Sử dụng timeupdate thay vì requestAnimationFrame để hoạt động cả khi chạy ngầm
