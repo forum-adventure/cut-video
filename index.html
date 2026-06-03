@@ -16,6 +16,66 @@
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <style>
+    
+    /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
+#ffmpegLoadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #121212; /* Tiệp màu nền tối của app */
+    z-index: 9999; /* Đảm bảo nằm trên cùng tất cả các thành phần khác */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
+
+/* Khung bọc căn giữa */
+.loader-box {
+    text-align: center;
+    padding: 20px;
+    max-width: 90%;
+}
+
+/* Vòng xoay chuyển động Neon công nghệ */
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(3, 218, 198, 0.1);
+    border-top-color: #03dac6; /* Màu xanh neon đồng bộ với nút bấm của bạn */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 24px auto;
+    box-shadow: 0 0 15px rgba(3, 218, 198, 0.2);
+}
+
+.loader-box h2 {
+    color: #ffffff;
+    font-size: 1.4em;
+    margin: 0 0 10px 0;
+    letter-spacing: 1px;
+}
+
+.loader-box p {
+    color: #888888;
+    font-size: 0.95em;
+    margin: 0;
+}
+
+/* Hiệu ứng ẩn màn hình chờ mượt mà */
+#ffmpegLoadingOverlay.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Định nghĩa chuyển động xoay tròn */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
         body { 
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
             padding: 20px; background-color: #121212; 
@@ -334,6 +394,14 @@
     </style>
 </head>
 <body>
+    <div id="ffmpegLoadingOverlay">
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
+        <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
+    </div>
+</div>
+
 <input type="file" id="videoUpload" accept="video/*" >
     <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
     
@@ -400,11 +468,6 @@
     </div>
     
     <script>
-            console.log("SharedArrayBuffer hỗ trợ không?", typeof SharedArrayBuffer !== "undefined");
-if (typeof SharedArrayBuffer === "undefined") {
-    status.innerText = "Cảnh báo: iPhone đang chặn SharedArrayBuffer. Hệ thống sẽ khởi tạo rất chậm!";
-}
-
         const videoContainer = document.getElementById('videoContainer');
         const upload = document.getElementById('videoUpload');
         const nextBtn = document.getElementById('nextBtn');
@@ -460,10 +523,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
 });
 
         const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ 
-    log: true,
-    corePath: 'https://unpkg.com/@ffmpeg/core-st@0.11.1/dist/ffmpeg-core.js'
-});
+        const ffmpeg = createFFmpeg({ log: true });
         let isFFmpegReady = false;
 
         let rawVideoFile = null; 
@@ -477,19 +537,36 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 
-        async function loadFFmpegCore() {
+                async function loadFFmpegCore() {
+            const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
+            const loadingStatusText = document.getElementById('loadingStatusText');
+
             try {
                 await ffmpeg.load();
                 isFFmpegReady = true;
                 status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
+                
                 if(upload.files[0]) {
                     enableControls();
                 }
+
+                // Chờ một nhịp nhỏ 300ms cho mượt rồi ẩn màn hình Loading
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                }, 300);
+
             } catch (error) {
                 console.error(error);
                 status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
+                
+                // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết
+                if (loadingStatusText) {
+                    loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
+                    loadingStatusText.style.color = "#cf6679"; // Đổi chữ sang màu đỏ rủi ro
+                }
             }
         }
+
         loadFFmpegCore();
 
         durationInput.addEventListener('input', () => {
