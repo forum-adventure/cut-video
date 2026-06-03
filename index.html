@@ -165,6 +165,8 @@
 </head>
 <body>
 <input type="file" id="videoUpload" accept="video/*" >
+    <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
+    
     <div id="welcomeOverlay">
        
 
@@ -189,6 +191,7 @@
             
         </div>
 
+        
         <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
                    <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
     
@@ -220,10 +223,10 @@
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
-                <span>Lưới</span>
+                <span></span>
             </button>
         </div>
-        <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
+        
     </div>
     
     <script>
