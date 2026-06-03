@@ -896,6 +896,21 @@ welcomeOverlay.addEventListener('drop', (e) => {
             if (p[2]) seconds += (parseInt(p[2]) || 0) * 3600; 
             return seconds;
         }
+            
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        // Người dùng đã quay lại ứng dụng (Mở lại trình duyệt)
+        if (silentWaker && silentWaker.paused) {
+            silentWaker.play().catch(()=>{});
+        }
+        
+        // Khôi phục lại trạng thái hiển thị của các clip đang render trong khung nhìn
+        if (typeof handleClipRehydration === 'function' && sharedVideoURL) {
+            handleClipRehydration();
+        }
+    }
+});
+
     </script>
 </body>
 </html>
