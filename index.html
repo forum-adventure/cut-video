@@ -196,13 +196,37 @@
             transition: border-color 0.2s;
         }
 
-        .grid-item:hover { border-color: #03dac6; }
-        .grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .grid-item .grid-meta { 
-            position: absolute; bottom: 0; left: 0; width: 100%; 
-            background: rgba(0,0,0,0.85); font-size: 10px; padding: 4px 0; text-align: center; color: #fff;
-            display: flex; flex-direction: column; gap: 2px;
+                .grid-item:hover { border-color: #03dac6; }
+        
+        /* --- ĐÃ SỬA: Ép ảnh thu gọn chuẩn trong khung, không tràn ra ngoài che chữ --- */
+        .grid-item img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            position: absolute; /* Đưa ảnh về dạng tuyệt đối để nằm dưới thanh meta */
+            top: 0;
+            left: 0;
+            z-index: 1;
         }
+        
+        /* --- ĐÃ SỬA: Đẩy thanh thời gian lên trên ảnh để không bao giờ bị che --- */
+        .grid-item .grid-meta { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.85); 
+            font-size: 11px; 
+            padding: 5px 0; 
+            text-align: center; 
+            color: #fff;
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px;
+            z-index: 2; /* Luôn nổi lên trên tấm hình */
+        }
+
         .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
     
    /* --- TỐI ƯU GIAO DIỆN KHI XOAY NGANG (LANDSCAPE) --- */
