@@ -96,12 +96,19 @@
         .download-btn:not(:disabled):hover { background-color: #01f5dd; }
         .download-btn:active { transform: scale(0.98); }
         
-        .controls { 
-            position: fixed; bottom: 0; left: 0; width: 100%; 
+                .controls { 
+            position: fixed; bottom: 0; left: 0; 
+            width: 100%; /* Giữ nguyên 100% màn hình chuẩn */
             background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
             z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
             box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
+
+            /* Giải pháp thu nhỏ chuẩn tỷ lệ giống zoom trình duyệt */
+            zoom: 0.8;
+            -moz-transform: scale(0.8); /* Dự phòng riêng cho trình duyệt Firefox cũ */
+            -moz-transform-origin: bottom center;
         }
+
         /* Ép dòng controls chứa 3 nút chính luôn nằm trên 1 hàng */
 .controls-row { 
     display: flex; 
