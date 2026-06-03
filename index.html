@@ -561,38 +561,55 @@ welcomeOverlay.addEventListener('drop', (e) => {
         });
 
                 async function captureThumbnail(startTime) {
-            return new Promise((resolve) => {
-                const canvas = document.createElement('canvas');
-                const v = document.createElement('video');
-                v.src = sharedVideoURL;
-                v.currentTime = startTime;
-                v.muted = true;
-                v.playsInline = true;
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const v = document.createElement('video');
+        
+        // CẤU HÌNH BẮT BUỘC CHO IOS TRƯỚC KHI GÁN SRC
+        v.muted = true;
+        v.playsInline = true;
+        v.setAttribute('playsinline', 'true'); // Ép thuộc tính inline trực tiếp vào DOM
+        v.webkitPlaysInline = true;            // Hỗ trợ các phiên bản iOS cũ hơn
+        v.preload = "auto"; 
+        
+        v.src = sharedVideoURL;
+        v.currentTime = startTime;
+        
+        v.onseeked = () => {
+            // Thay vì dùng setTimeout hên xui, ta ép iOS đợi trình duyệt vẽ xong frame hình
+            if ('requestVideoFrameCallback' in v) {
+                // Phương thức hiện đại và chuẩn xác nhất hiện nay cho iOS/Safari
+                v.requestVideoFrameCallback(() => {
+                    executeCapture();
+                });
+            } else {
+                // Phương án dự phòng (Fallback) nếu iOS phiên bản cũ không hỗ trợ
+                setTimeout(executeCapture, 150); // Tăng thời gian chờ lên 150ms để iOS kịp render
+            }
+        };
+
+        function executeCapture() {
+            try {
+                canvas.width = 160; 
+                canvas.height = 160;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                 
-                // Ép trình duyệt tải trước một chút dữ liệu tại thời điểm đó
-                v.preload = "auto"; 
-                
-                v.onseeked = () => {
-                    // Thêm một timeout cực nhỏ để đảm bảo frame hình đã render xong trên mobile/trình duyệt chậm
-                    setTimeout(() => {
-                        try {
-                            canvas.width = 160; 
-                            canvas.height = 160;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                            v.src = ""; v.load(); v.remove();
-                            resolve(dataUrl);
-                        } catch(e) {
-                            resolve("");
-                        }
-                    }, 50);
-                };
-                v.onerror = () => {
-                    v.src = ""; v.remove(); resolve("");
-                };
-            });
+                // Giải phóng bộ nhớ triệt để chống tràn RAM trên iPhone
+                v.src = ""; v.load(); v.remove();
+                resolve(dataUrl);
+            } catch(e) {
+                resolve("");
+            }
         }
+
+        v.onerror = () => {
+            v.src = ""; v.remove(); resolve("");
+        };
+    });
+}
+
 
 
         function addGridItemAhead(clipId, startTime, labelText) {
