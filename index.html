@@ -400,6 +400,11 @@
     </div>
     
     <script>
+            console.log("SharedArrayBuffer hỗ trợ không?", typeof SharedArrayBuffer !== "undefined");
+if (typeof SharedArrayBuffer === "undefined") {
+    status.innerText = "Cảnh báo: iPhone đang chặn SharedArrayBuffer. Hệ thống sẽ khởi tạo rất chậm!";
+}
+
         const videoContainer = document.getElementById('videoContainer');
         const upload = document.getElementById('videoUpload');
         const nextBtn = document.getElementById('nextBtn');
