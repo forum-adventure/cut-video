@@ -463,6 +463,11 @@ welcomeOverlay.addEventListener('drop', (e) => {
         let totalVideoDuration = 0;
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
+            
+            // Hàm kiểm tra xem thiết bị có phải là iPhone, iPad hoặc iPod không
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
 
         async function loadFFmpegCore() {
             try {
@@ -519,12 +524,14 @@ welcomeOverlay.addEventListener('drop', (e) => {
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
                         video.play().catch(() => {});
                     }
-                } else {
-    video.pause();
-    video.volume = 0.001; // Giảm về 1% thay vì tắt tiếng
-    video.classList.remove('unmuted');
-    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
-}
+                        } else {
+            video.pause();
+            if (isIOS) video.muted = true; // Chỉ bật câm trên iPhone khi cuộn qua
+            video.volume = 0.001; 
+            video.classList.remove('unmuted');
+            if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
+        }
+
             });
         }, { threshold: 0.1 });
 
@@ -564,13 +571,16 @@ welcomeOverlay.addEventListener('drop', (e) => {
 
         function setFocusAudio(videoElement) {
     if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
-        currentlyUnmutedVideo.volume = 0.001; // Trả về 1%
+        if (isIOS) currentlyUnmutedVideo.muted = true; // Chỉ ép câm hoàn toàn trên iPhone
+        currentlyUnmutedVideo.volume = 0.001; 
         currentlyUnmutedVideo.classList.remove('unmuted');
     }
-    videoElement.volume = 1.0; // Bật 100% âm lượng
+    if (isIOS) videoElement.muted = false; // Bật lại tiếng trên iPhone
+    videoElement.volume = 1.0; 
     videoElement.classList.add('unmuted');
     currentlyUnmutedVideo = videoElement;
 }
+
 
         function enableControls() {
             if (isFFmpegReady && sharedVideoURL) {
@@ -743,19 +753,31 @@ welcomeOverlay.addEventListener('drop', (e) => {
                 wrapper.appendChild(titleTag);
             }
             
-            const video = document.createElement('video');
-video.muted = false; // Bắt buộc false để trình duyệt cấp quyền Audio
-video.volume = 0.001; // Để 1% ngay từ đầu
+                        const video = document.createElement('video');
+// Luôn để false cho Android/PC theo code cũ của bạn, nhưng RIÊNG iPhone thì phải để true
+video.muted = isIOS ? true : false; 
+video.volume = 0.001; 
 video.playsInline = true; 
 video.preload = "metadata";
+
+
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
             
-            video.onclick = () => {
-    if (video.volume < 1) setFocusAudio(video);
-    else { video.volume = 0.001; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
-};
+                        video.onclick = () => {
+                // Trên iPhone kiểm tra qua thuộc tính 'muted', các máy khác kiểm tra qua 'volume'
+                const isMutedNow = isIOS ? video.muted : (video.volume < 1);
+                
+                if (isMutedNow) setFocusAudio(video);
+                else { 
+                    if (isIOS) video.muted = true; // Tắt tiếng riêng cho iPhone
+                    video.volume = 0.001; 
+                    video.classList.remove('unmuted'); 
+                    currentlyUnmutedVideo = null; 
+                }
+            };
+
             
             // Sử dụng timeupdate thay vì requestAnimationFrame để hoạt động cả khi chạy ngầm
 video.ontimeupdate = () => {
