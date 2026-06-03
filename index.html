@@ -175,41 +175,53 @@
 
         #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
         
-                        #gridOverlay {
+                                /* --- ĐÃ SỬA: Biến toàn bộ giao diện Lưới thành một vùng cuộn độc lập --- */
+        #gridOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(10,10,10,0.98); z-index: 2000;
-            display: none; flex-direction: column; padding: 25px; box-sizing: border-box;
+            display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
+            overflow: hidden; /* Giữ cố định khung bọc ngoài */
         }
-        /* --- ĐÃ MỞ RỘNG CONTAINER: Cho phép cuộn tràn vô hạn, phân bổ không gian thở --- */
+        
+        /* --- ĐÃ SỬA: Giới hạn chiều cao vùng chứa ảnh để kích hoạt thanh cuộn dọc mượt mà --- */
         #gridContent { 
             display: grid; 
-            /* Đổi minmax thành 150px giúp ô chứa ảnh rộng rãi hơn trên mọi thiết bị */
-            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); 
-            gap: 25px;                  /* Tăng khoảng cách giữa các hàng để không lo chạm chữ */
-            overflow-y: auto;           /* Bật chế độ cuộn tự do */
-            flex-grow: 1;               /* Cho phép Grid chiếm trọn không gian trống còn lại của màn hình */
-            padding-bottom: 60px;       /* Thêm phần đệm dày ở đáy để phân đoạn cuối không bị che */
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 16px;                  
+            overflow-y: auto;           /* KÍCH HOẠT THANH CUỘN: Cho phép vuốt lên xuống thoải mái */
+            max-height: calc(100vh - 80px); /* Khống chế chiều cao tối đa không vượt quá đáy màn hình */
+            padding-bottom: 60px;       /* Vùng đệm an toàn dưới đáy để không bị khuất ảnh cuối */
             box-sizing: border-box;
+            -webkit-overflow-scrolling: touch; /* Giúp vuốt cực mượt trên màn hình iPhone/iPad */
         }
 
-                /* --- ĐÃ SỬA: Chuyển sang tỷ lệ 4:3 hoặc tự động để giải phóng chiều cao --- */
+        /* --- ĐÃ SỬA: Đặt khung hình chữ nhật 16:9 mặc định cho video ngang --- */
         .grid-item { 
             cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
             overflow: hidden; position: relative; background: #000; 
-            aspect-ratio: 4 / 3; /* Thay đổi thành tỷ lệ chuẩn màn hình giúp hiển thị video cân đối hơn */
+            aspect-ratio: 16 / 9; 
             transition: border-color 0.2s;
+        }
+
+        /* --- ĐÃ SỬA: Class linh hoạt kích hoạt tỷ lệ 3:4 nếu là video dọc (Shorts/TikTok) --- */
+        .grid-item.portrait {
+            aspect-ratio: 3 / 4 !important; 
         }
 
         .grid-item:hover { border-color: #03dac6; }
         
+        /* --- ĐÃ SỬA: Ép ảnh lùi về phía sau và lấp đầy khung --- */
         .grid-item img { 
             width: 100%; 
             height: 100%; 
             object-fit: cover; 
             display: block; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
         }
         
-        /* --- ĐÃ SỬA: Để thanh meta tự nhiên, không dùng absolute đè lên ảnh nữa --- */
+        /* --- ĐÃ SỬA: Ép thanh mốc thời gian luôn nằm trên ảnh, bám chặt đáy ô --- */
         .grid-item .grid-meta { 
             position: absolute; 
             bottom: 0; 
@@ -223,8 +235,10 @@
             display: flex; 
             flex-direction: column; 
             gap: 2px;
-            z-index: 2;
+            z-index: 2; /* Đảm bảo chữ luôn nổi lên trên, không bao giờ bị đè */
+            box-sizing: border-box;
         }
+
 
 
         .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
