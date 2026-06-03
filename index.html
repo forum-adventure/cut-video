@@ -475,11 +475,11 @@ welcomeOverlay.addEventListener('drop', (e) => {
                         video.play().catch(() => {});
                     }
                 } else {
-                    video.pause();
-                    video.muted = true;
-                    video.classList.remove('unmuted');
-                    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
-                }
+    video.pause();
+    video.volume = 0.01; // Giảm về 1% thay vì tắt tiếng
+    video.classList.remove('unmuted');
+    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
+}
             });
         }, { threshold: 0.1 });
 
@@ -518,14 +518,14 @@ welcomeOverlay.addEventListener('drop', (e) => {
         window.addEventListener('scroll', handleClipRehydration, { passive: true });
 
         function setFocusAudio(videoElement) {
-            if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
-                currentlyUnmutedVideo.muted = true;
-                currentlyUnmutedVideo.classList.remove('unmuted');
-            }
-            videoElement.muted = false;
-            videoElement.classList.add('unmuted');
-            currentlyUnmutedVideo = videoElement;
-        }
+    if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
+        currentlyUnmutedVideo.volume = 0.01; // Trả về 1%
+        currentlyUnmutedVideo.classList.remove('unmuted');
+    }
+    videoElement.volume = 1.0; // Bật 100% âm lượng
+    videoElement.classList.add('unmuted');
+    currentlyUnmutedVideo = videoElement;
+}
 
         function enableControls() {
             if (isFFmpegReady && sharedVideoURL) {
@@ -699,15 +699,18 @@ welcomeOverlay.addEventListener('drop', (e) => {
             }
             
             const video = document.createElement('video');
-            video.muted = true; video.playsInline = true; video.preload = "metadata";
+video.muted = false; // Bắt buộc false để trình duyệt cấp quyền Audio
+video.volume = 0.01; // Để 1% ngay từ đầu
+video.playsInline = true; 
+video.preload = "metadata";
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
             
             video.onclick = () => {
-                if (video.muted) setFocusAudio(video);
-                else { video.muted = true; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
-            };
+    if (video.volume < 1) setFocusAudio(video);
+    else { video.volume = 0.01; video.classList.remove('unmuted'); currentlyUnmutedVideo = null; }
+};
             
             // Sử dụng timeupdate thay vì requestAnimationFrame để hoạt động cả khi chạy ngầm
 video.ontimeupdate = () => {
