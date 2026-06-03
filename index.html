@@ -292,9 +292,6 @@
 <input type="file" id="videoUpload" accept="video/*" >
     <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
     
-    <audio id="silenceAudio" src="silence.mp3" loop preload="auto" style="display:none;"></audio>
-
-    
     <div id="welcomeOverlay">
        
 
@@ -358,21 +355,6 @@
     </div>
     
     <script>
-            
-            // --- GIỮ ỨNG DỤNG CHẠY NGẦM BẰNG FILE MP3 IM LẶNG ---
-function activateAudioWakeLock() {
-    const silenceAudio = document.getElementById('silenceAudio');
-    if (silenceAudio && silenceAudio.paused) {
-        silenceAudio.play()
-            .then(() => {
-                console.log("🔊 File mp3 im lặng đang phát lặp ngầm để giữ kết nối.");
-            })
-            .catch(err => {
-                console.error("Trình duyệt chặn tự động phát âm thanh:", err);
-            });
-    }
-}
-
         const videoContainer = document.getElementById('videoContainer');
         const upload = document.getElementById('videoUpload');
         const nextBtn = document.getElementById('nextBtn');
@@ -388,7 +370,6 @@ const welcomeOverlay = document.getElementById('welcomeOverlay');
 
 // 1. Click vào vùng welcome để kích hoạt chọn file
 welcomeOverlay.addEventListener('click', () => {
-    
     upload.click();
 });
 
@@ -693,7 +674,6 @@ welcomeOverlay.addEventListener('drop', (e) => {
         }
 
         nextBtn.addEventListener('click', () => {
-            activateAudioWakeLock(); // <--- CHÈN VÀO ĐÂY: Kích hoạt khi bắt đầu tạo clip đầu tiên
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -846,7 +826,6 @@ welcomeOverlay.addEventListener('drop', (e) => {
         }
 
                 randomBtn.onclick = () => {
-                    activateAudioWakeLock(); // <--- CHÈN VÀO ĐÂY: Kích hoạt phòng trường hợp họ bấm Random trước
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
             
