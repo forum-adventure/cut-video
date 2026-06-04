@@ -1077,10 +1077,8 @@ window.addEventListener('touchmove', (e) => {
         }
     }
 }, { passive: false }); // Bắt buộc phải là false để preventDefault() có tác dụng
-
-    </script>
             
-// --- CHẶN HOÀN TOÀN HÀNH VI DOUBLE-TAP TO ZOOM VÀ PINCH ZOOM (ZOMM ĐA ĐIỂM) ---
+            // --- CHẶN HOÀN TOÀN HÀNH VI DOUBLE-TAP TO ZOOM VÀ PINCH ZOOM (ZOMM ĐA ĐIỂM) ---
 
 // 1. Chặn Double-tap (Gõ liên tiếp 2 lần)
 let lastTouchEnd = 0;
@@ -1098,6 +1096,10 @@ document.addEventListener('touchstart', (e) => {
         e.preventDefault(); // Chặn khi có từ 2 ngón tay trở lên chạm vào màn hình
     }
 }, { passive: false });
+
+    </script>
+            
+
 
 </body>
 </html>
