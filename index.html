@@ -176,79 +176,34 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
             z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
             box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
         }
-        /* --- TỐI ƯU THANH ĐIỀU KHIỂN CHO ĐIỆN THOẠI DỌC (PORTRAIT) --- */
-@media (max-width: 768px) and (orientation: portrait) {
-    body {
-        padding-bottom: 220px !important; /* Tạo khoảng trống đáy vừa đủ cho thanh controls */
-    }
-    .controls {
-        padding: 10px 12px !important; /* Thu gọn khoảng cách viền */
-        gap: 8px !important;           /* Thu hẹp khoảng cách giữa các hàng */
-    }
-    .controls-row {
-        gap: 6px !important;
-    }
-    .controls-row .action-btn, 
-    .controls-row #gridViewBtn {
-        padding: 10px 6px !important;   
-        font-size: 0.8em !important;  
-    }
-    input, select {
-        padding: 6px 8px !important;  
-        font-size: 0.8em !important;  
-    }
-}
-
-/* Ép dòng controls chứa 3 nút chính luôn nằm trên 1 hàng phẳng */
-.controls-row { 
-    display: flex; 
-    gap: 8px; 
-    align-items: center; 
-    justify-content: center; 
-    flex-wrap: nowrap; 
-    width: 100%; 
-    box-sizing: border-box; /* Đảm bảo không bị tính tràn viền */
-}
-
-/* Kiểu dáng khối bọc nhóm nhập số liệu (Hàng thứ 2 vùng khoanh đỏ) */
-.input-settings-container {
-    background: #252525; 
-    padding: 10px 12px; 
-    border-radius: 8px; 
-    gap: 8px; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    width: 100%; 
-    max-width: 500px; /* Tăng giới hạn một chút để dàn đều trên màn hình lớn hơn */
-    box-sizing: border-box;
-    margin: 0 auto; /* Đảm bảo khối luôn căn chuẩn chính giữa màn hình */
-}
-
-.input-group-row {
-    display: flex; 
-    gap: 8px; 
-    align-items: center; 
-    width: 100%;
-}
-
-.input-group-row label {
-    font-size: 0.85em; 
-    color: #aaa; 
-    width: 90px; /* Định rộng cố định nhãn text để hai hàng thẳng hàng nhau */
-    text-align: right; 
-    flex-shrink: 0;
-}
-
-.input-field-wrapper {
-    display: flex; 
-    gap: 6px; 
-    align-items: center; 
-    flex-grow: 1;
-    min-width: 0;
-}
-
-    
+        /* --- THU NHỎ 80% BẰNG CÁCH GIẢM KÍCH THƯỚC TRÊN ĐIỆN THOẠI (DỌC) --- */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                padding-bottom: 210px !important; /* Thu hẹp khoảng trống đáy để vừa khít thanh controls mới */
+            }
+            .controls {
+                padding: 12px 16px !important; /* Giảm khoảng đệm xung quanh thanh điều khiển */
+                gap: 9px !important;           /* Thu hẹp khoảng cách giữa các hàng */
+            }
+            .controls-row {
+                gap: 6px !important;           /* Thu hẹp khoảng cách giữa các nút */
+            }
+            .controls-row .action-btn, 
+            .controls-row #gridViewBtn {
+                padding: 8px 6px !important;   /* Thu nhỏ nút bấm */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ xuống mức ~80% */
+            }
+            input, select {
+                padding: 6px 10px !important;  /* Thu nhỏ các ô nhập liệu */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ của ô nhập liệu */
+            }
+            #startTimeInput { width: 80px !important; }
+            #durationInput { width: 32px !important; }
+            #clipLabelInput { width: 120px !important; }
+            .tune-btn {
+                padding: 5px 8px !important;   /* Thu nhỏ 2 nút tăng giảm thời gian < và > */
+                font-size: 0.7em !important;
+            }
             /* Hạ khoảng đệm của khung xám bọc các ô input */
             .controls > .controls-row:nth-child(2) > div {
                 padding: 9px !important;
@@ -392,35 +347,39 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
         padding: 0 !important;
     }
 
-    /* Ép layout các ô nhập liệu thẳng một hàng ngang không xuống dòng */
-    .controls > .controls-row:nth-child(2) > div {
-        flex-direction: row !important;
-        flex-wrap: nowrap !important;
-        background: transparent !important;
-        padding: 0 !important;
-        gap: 12px !important;
-        max-width: none !important;
-        width: 100% !important;
-        justify-content: center !important;
-    }
+   /* --- MÃ MỚI: Chuyển width sang auto để các phần tử tự ôm khít nhau, triệt tiêu hiện tượng lệch sang bên --- */
+.controls > .controls-row:nth-child(2) > div {
+    flex-direction: row !important;
+    flex-wrap: nowrap !important;
+    background: transparent !important;
+    padding: 0 !important;
+    gap: 12px !important;
+    max-width: none !important;
+    width: auto !important; /* Thay đổi từ 100% sang auto */
+    justify-content: center !important;
+}
+
 
    
 
-    /* Định hình lại kích thước chuẩn và khoảng đệm bên trong các ô Input */
-    #startTimeInput {
-        width: 80px !important;
-        padding: 6px 4px !important;
-    }
-    #durationInput {
-        width: 35px !important;
-        padding: 6px 4px !important;
-    }
-    #clipLabelInput {
-        width: 160px !important;
-        max-width: 200px !important;
-        padding: 6px 8px !important;
-        text-align: left !important;
-    }
+    /* --- MÃ MỚI: Khóa cứng kích thước cố định vừa vặn khi xoay ngang, chặn hoàn toàn co giãn tràn viền --- */
+#startTimeInput {
+    width: 85px !important;
+    max-width: 85px !important;
+    padding: 6px 4px !important;
+}
+#durationInput {
+    width: 45px !important;
+    max-width: 45px !important;
+    padding: 6px 4px !important;
+}
+#clipLabelInput {
+    width: 140px !important;
+    max-width: 180px !important;
+    padding: 6px 8px !important;
+    text-align: left !important;
+}
+
 
     /* Xử lý khối chứa 3 nút bấm chức năng */
     .controls > .controls-row:nth-child(3) {
@@ -516,29 +475,39 @@ input, textarea {
         <div id="gridContent"></div>
     </div>
 
-            <div class="controls-row">
-            <div class="input-settings-container">
-    
-                <div class="input-group-row">
-                    <label>Cắt từ:</label>
-                    <div class="input-field-wrapper">
-                        <button class="tune-btn" id="btnPrevTime">&lt;&lt;</button>
-                        <input type="text" id="startTimeInput" value="00:00:00">
-                        <button class="tune-btn" id="btnNextTime">&gt;&gt;</button>
-                    </div>
-                </div>
-                    
-                <div class="input-group-row">
-                    <label>Độ dài (s):</label>
-                    <div class="input-field-wrapper">
-                        <input type="number" id="durationInput" value="5" min="1" step="0.5" style="width: 55px; flex-shrink: 0;">
-                        <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)">
-                    </div>
-                </div>
-                
-            </div>
+    <div class="controls">
+        <div class="controls-row">
+            
+            
         </div>
 
+        
+        <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
+                   <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
+    
+    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
+               <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
+            <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
+            <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
+            <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">>></button>
+        </div>
+
+    </div>
+        
+    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
+        <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
+            <input type="number" id="durationInput" value="5" min="1" step="0.5" >
+            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
+        </div>
+    </div>
+    
+</div>
+
+
+            
+        </div>
 
         <div class="controls-row">                                            
             <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
