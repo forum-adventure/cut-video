@@ -418,6 +418,25 @@ button,
     user-select: none;          /* Tiêu chuẩn chung */
 }
 
+    /* Chặn hành vi tự động chọn văn bản và hiện menu khi bấm giữ */
+body {
+    -webkit-touch-callout: none; /* Khóa menu popup của Safari/iOS */
+    -webkit-user-select: none;   /* Khóa chọn văn bản trên Safari */
+    -khtml-user-select: none;    /* Konqueror HTML */
+    -moz-user-select: none;      /* Firefox */
+    -ms-user-select: none;       /* Internet Explorer/Edge */
+    user-select: none;           /* Trình duyệt chuẩn */
+}
+
+/* Bật lại tính năng chọn/nhập văn bản riêng cho các ô nhập liệu */
+input, textarea {
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
 
     </style>
 </head>
@@ -1097,6 +1116,17 @@ document.addEventListener('touchend', (e) => {
     lastTouchEnd = now;
 }, false);
 
+            // 3. Chặn hoàn toàn Menu ngữ cảnh (Tải xuống/Chia sẻ/In) khi bấm giữ trên Mobile
+document.addEventListener('contextmenu', (e) => {
+    // Nếu bấm giữ vào ô input, cho phép hiện menu mặc định để người dùng dán/sửa văn bản
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    // Chặn menu đối với tất cả các vùng khác (nút bấm, video, nền app)
+    e.preventDefault();
+}, false);
+
+            
 
     </script>
             
