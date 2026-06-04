@@ -613,37 +613,83 @@ welcomeOverlay.addEventListener('drop', (e) => {
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
             
+            // --- KHỞI TẠO CƠ SỞ DỮ LIỆU INDEXEDDB ĐỂ GIỮ FILE VIDEO KHI CHUYỂN TAB ---
+const DB_NAME = "NcoxVideoCutterDB";
+const STORE_NAME = "videoStore";
+
+function openDB() {
+    return new Promise((resolve, reject) => {
+        const request = indexedDB.open(DB_NAME, 1);
+        request.onupgradeneeded = (e) => {
+            const db = e.target.result;
+            if (!db.objectStoreNames.contains(STORE_NAME)) {
+                db.createObjectStore(STORE_NAME);
+            }
+        };
+        request.onsuccess = (e) => resolve(e.target.result);
+        request.onerror = (e) => reject(e.target.error);
+    });
+}
+
+async function saveVideoToStorage(file) {
+    try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, "readwrite");
+        tx.objectStore(STORE_NAME).put(file, "currentVideo");
+        return new Promise((resolve) => tx.oncomplete = () => resolve(true));
+    } catch (e) {
+        console.error("Không thể lưu video vào IndexedDB:", e);
+    }
+}
+
+async function loadVideoFromStorage() {
+    try {
+        const db = await openDB();
+        const tx = db.transaction(STORE_NAME, "readonly");
+        return new Promise((resolve) => {
+            const req = tx.objectStore(STORE_NAME).get("currentVideo");
+            req.onsuccess = () => resolve(req.result);
+        });
+    } catch (e) {
+        console.error("Không thể tải video từ IndexedDB:", e);
+        return null;
+    }
+}
+
             
-            // --- TỰ ĐỘNG HỒI SINH LUỒNG VIDEO KHI QUAY LẠI TAB (ANTI-FREEZE ON MOBILE) ---
-document.addEventListener('visibilitychange', () => {
+            // --- TỰ ĐỘNG KHÔI PHỤC LUỒNG FILE KHI DI CHUYỂN TAB ---
+document.addEventListener('visibilitychange', async () => {
     if (document.visibilityState === 'visible') {
-        console.log("⚡ Đã phát hiện quay lại Tab! Tiến hành kiểm tra và hồi sinh luồng video...");
-        
-        // 1. Kiểm tra nếu có video chính đang chạy ngầm hoặc có luồng URL sẵn dùng
-        if (sharedVideoURL && rawVideoFile) {
-            // Duyệt qua tất cả các video đang hiển thị trong danh sách cắt
-            const allVideos = document.querySelectorAll('.clip-wrapper video');
-            
-            allVideos.forEach(video => {
-                const isPausedBefore = video.paused;
-                const savedTime = video.currentTime; // Giữ lại mốc thời gian đang coi dở
-                
-                // Ép trình duyệt nạp lại nguồn để kích hoạt lại luồng đọc bộ nhớ bị đóng băng
-                video.load();
-                video.currentTime = savedTime;
-                
-                // Nếu trước đó video đang phát thì cho phát tiếp, tránh bị đứng hình khựng chữ
-                if (!isPausedBefore) {
-                    video.play().catch(() => {});
-                }
-            });
-            
-            // 2. Sửa lỗi kẹt lệnh vẽ Canvas Thumbnail (Vấn đề khiến nút "Thêm đoạn" bị đơ)
-            // Nếu có video nào đang chạy ngầm để lấy hình, ta kích hoạt nhẹ một nhịp load
-            status.innerText = "✨ Đã đồng bộ lại kết nối tệp tin!";
+        // Nếu biến file hoặc URL bị mất hiệu lực do trình duyệt đóng băng ngầm
+        if (!rawVideoFile || !sharedVideoURL) {
+            status.innerText = "⏳ Đang kết nối lại luồng video cũ...";
+            const savedFile = await loadVideoFromStorage();
+            if (savedFile) {
+                rawVideoFile = savedFile;
+                initVideoSession(savedFile);
+                status.innerText = "✨ Đã đồng bộ luồng xử lý thành công!";
+            }
         }
     }
 });
+
+// Tự động kiểm tra khi mở ứng dụng lần đầu (Nếu có video cũ thì nạp luôn không cần chọn lại file)
+window.addEventListener('DOMContentLoaded', async () => {
+    const savedFile = await loadVideoFromStorage();
+    if (savedFile) {
+        rawVideoFile = savedFile;
+        // Đợi FFmpeg core sẵn sàng rồi nạp video
+        const checkFFmpeg = setInterval(() => {
+            if (isFFmpegReady) {
+                clearInterval(checkFFmpeg);
+                initVideoSession(savedFile);
+            }
+        }, 200);
+    }
+});
+
+            
+            
 
             
             // Hàm kiểm tra xem thiết bị có phải là iPhone, iPad hoặc iPod không
@@ -839,31 +885,36 @@ if (btnPrevTime && btnNextTime) {
             }
         }
 
-        upload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                rawVideoFile = file; 
-                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-                sharedVideoURL = URL.createObjectURL(file);
-                const tempVideo = document.createElement('video');
-                tempVideo.src = sharedVideoURL;
-                tempVideo.onloadedmetadata = () => {
-                    totalVideoDuration = tempVideo.duration;
-                    
-                    videoContainer.innerHTML = ""; 
-                    gridContent.innerHTML = "";
-                    document.body.classList.remove('has-clips');
-                    
-                    document.getElementById('mainTitle').innerText = "Video sẵn sàng";
-document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng này để đổi sang màu xanh lá tươi (Emerald)
+        upload.addEventListener('change', async (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        rawVideoFile = file; 
+        await saveVideoToStorage(file); // Lưu ngay vào IndexedDB để chống đóng băng
+        initVideoSession(file);
+    }
+});
 
-                    document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
-                    
-                    status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                    enableControls();
-                };
-            }
-        });
+// Tách logic khởi tạo thành hàm riêng để tái sử dụng khi quay lại tab
+function initVideoSession(file) {
+    if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+    sharedVideoURL = URL.createObjectURL(file);
+    const tempVideo = document.createElement('video');
+    tempVideo.src = sharedVideoURL;
+    tempVideo.onloadedmetadata = () => {
+        totalVideoDuration = tempVideo.duration;
+        videoContainer.innerHTML = ""; 
+        gridContent.innerHTML = "";
+        document.body.classList.remove('has-clips');
+        
+        document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+        document.getElementById('mainTitle').style.color = "#2ecc71";
+        document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+        
+        status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
+        enableControls();
+    };
+}
+
 
                 async function captureThumbnail(startTime) {
     return new Promise((resolve) => {
