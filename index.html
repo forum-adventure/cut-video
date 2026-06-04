@@ -484,9 +484,18 @@ input, textarea {
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
         <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-            <button class="tune-btn" onclick="adjustTime(-1)" style="flex-shrink: 0;"><<</button>
-            <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
-            <button class="tune-btn" onclick="adjustTime(1)" style="flex-shrink: 0;">>></button>
+            <button class="tune-btn" 
+        onmousedown="startHold(-1)" onmouseup="stopHold()" onmouseleave="stopHold()"
+        ontouchstart="startHold(-1)" ontouchend="stopHold()"
+        style="flex-shrink: 0;"><<</button>
+        
+<input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
+
+<button class="tune-btn" 
+        onmousedown="startHold(1)" onmouseup="stopHold()" onmouseleave="stopHold()"
+        ontouchstart="startHold(1)" ontouchend="stopHold()"
+        style="flex-shrink: 0;">>></button>
+
         </div>
     </div>
         
@@ -622,7 +631,45 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             randomBtn.innerText = `Random ${val}s`;
         });
 
-        function adjustTime(amount) {
+                function adjustTime(amount) {
+            let currentSeconds = parseTime(startTimeInput.value);
+            currentSeconds = Math.max(0, Math.min(totalVideoDuration, currentSeconds + amount));
+            startTimeInput.value = formatTime(currentSeconds);
+        }
+
+        // --- ĐOẠN THÊM MỚI: XỬ LÝ BẤM GIỮ NÚT MŨI TÊN CHẠY NHANH LIÊN TỤC ---
+        let holdInterval = null;
+        let holdTimeout = null;
+
+        function startHold(amount) {
+            // Ngăn chặn việc lặp lại sự kiện ngoài ý muốn khi chạm trên mobile
+            if (holdTimeout || holdInterval) return; 
+
+            // 1. Kích hoạt ngay 1 phát bấm đầu tiên (bấm phát ăn ngay)
+            adjustTime(amount);
+
+            // 2. Chờ 400ms (xác định xem người dùng đang "Bấm giữ" hay chỉ "Click")
+            holdTimeout = setTimeout(() => {
+                // Sau 400ms, nếu vẫn giữ tay, bắt đầu vòng lặp tăng/giảm liên tục mỗi 60ms
+                holdInterval = setInterval(() => {
+                    // Mẹo: Càng giữ lâu, bước nhảy có thể tăng lên nếu muốn, ở đây giữ nguyên amount (1 giây hoặc -1 giây)
+                    adjustTime(amount); 
+                }, 60); // 60ms tương đương tốc độ mượt mà của khung hình
+            }, 400);
+        }
+
+        function stopHold() {
+            // Xóa bỏ tất cả các bộ đếm thời gian khi nhả tay/nhả chuột ra
+            if (holdTimeout) {
+                clearTimeout(holdTimeout);
+                holdTimeout = null;
+            }
+            if (holdInterval) {
+                clearInterval(holdInterval);
+                holdInterval = null;
+            }
+        }
+
             let currentSeconds = parseTime(startTimeInput.value);
             currentSeconds = Math.max(0, Math.min(totalVideoDuration, currentSeconds + amount));
             startTimeInput.value = formatTime(currentSeconds);
