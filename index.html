@@ -819,31 +819,74 @@ if (btnPrevTime && btnNextTime) {
             }
         }
 
-        upload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                rawVideoFile = file; 
-                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-                sharedVideoURL = URL.createObjectURL(file);
-                const tempVideo = document.createElement('video');
-                tempVideo.src = sharedVideoURL;
-                tempVideo.onloadedmetadata = () => {
-                    totalVideoDuration = tempVideo.duration;
+        // --- ĐÃ CẬP NHẬT: TỰ ĐỘNG GIỮ LẠI CÁC ĐOẠN ĐÃ CẮT KHI KẾT NỐI LẠI VIDEO ---
+upload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        rawVideoFile = file; 
+        if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+        sharedVideoURL = URL.createObjectURL(file);
+        
+        const tempVideo = document.createElement('video');
+        tempVideo.src = sharedVideoURL;
+        tempVideo.onloadedmetadata = () => {
+            totalVideoDuration = tempVideo.duration;
+            
+            // Kiểm tra xem trước đó người dùng đã cắt đoạn nào chưa
+            const hasExistingClips = videoContainer.children.length > 0;
+            
+            if (!hasExistingClips) {
+                // TRƯỜNG HỢP 1: Đây là lần đầu tiên nạp video vào app
+                videoContainer.innerHTML = ""; 
+                gridContent.innerHTML = "";
+                document.body.classList.remove('has-clips');
+                
+                document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+                document.getElementById('mainTitle').style.color = "#2ecc71";
+                document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+            } else {
+                // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
+                console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
+                
+                // Kích hoạt lại toàn bộ các thẻ video cũ trên giao diện với nguồn mới
+                const allVideos = videoContainer.querySelectorAll('video');
+                allVideos.forEach(video => {
+                    const startPos = parseFloat(video.dataset.startTime) || 0;
+                    video.src = sharedVideoURL;
                     
-                    videoContainer.innerHTML = ""; 
-                    gridContent.innerHTML = "";
-                    document.body.classList.remove('has-clips');
-                    
-                    document.getElementById('mainTitle').innerText = "Video sẵn sàng";
-document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng này để đổi sang màu xanh lá tươi (Emerald)
-
-                    document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
-                    
-                    status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                    enableControls();
-                };
+                    video.currentTime = startPos;
+                    video.load();
+                    // Cho phát lại mượt mà nếu danh sách clip đang hiển thị
+                    video.play().catch(() => {});
+                });
+                
+                // Cập nhật lại ảnh Thumbnail dạng lưới cho khớp với video mới nạp
+                const gridItems = gridContent.querySelectorAll('.grid-item');
+                gridItems.forEach(item => {
+                    const clipId = item.getAttribute('data-grid-id');
+                    const targetWrapper = document.getElementById(clipId);
+                    if (targetWrapper) {
+                        const targetVideo = targetWrapper.querySelector('video');
+                        const startTime = parseFloat(targetVideo.dataset.startTime) || 0;
+                        const img = item.querySelector('img');
+                        
+                        // Chụp lại thumbnail mới thay thế ảnh trống
+                        captureThumbnail(startTime).then(thumbUrl => {
+                            if (thumbUrl && img) img.src = thumbUrl;
+                        });
+                    }
+                });
+                
+                // Đảm bảo body giữ nguyên trạng thái hiển thị danh sách
+                document.body.classList.add('has-clips');
             }
-        });
+            
+            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
+            enableControls();
+        };
+    }
+});
+
 
                 async function captureThumbnail(startTime) {
     return new Promise((resolve) => {
@@ -1266,8 +1309,7 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
-if (!isFileAlive) {
-    upload.value = "";
+
 
     </script>
             
