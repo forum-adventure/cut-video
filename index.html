@@ -171,6 +171,7 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
         .download-btn:active { transform: scale(0.98); }
         
                         /* --- THANH ĐIỀU KHIỂN ĐÁY MÀN HÌNH CHUẨN HOÀN HẢO --- */
+/* --- THANH ĐIỀU KHIỂN ĐÁY MÀN HÌNH CHUẨN HOÀN HẢO --- */
 .controls { 
     position: fixed; 
     bottom: 0; 
@@ -185,21 +186,22 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
     gap: 10px; 
     align-items: center; 
     box-shadow: 0 -8px 24px rgba(0,0,0,0.6); 
-    box-sizing: border-box; /* Ép trình duyệt tính toán padding thụt vào trong, chống tràn */
+    box-sizing: border-box; 
 }
 
-/* Ép tất cả các hàng bên trong co giãn tối đa theo chiều rộng màn hình */
+/* Ép các hàng bên trong co giãn tối đa, căn giữa tuyệt đối */
 .controls-row { 
     display: flex; 
     gap: 8px; 
     align-items: center; 
     justify-content: center; 
-    flex-wrap: nowrap; /* Không cho phép xuống dòng làm vỡ khung */
+    flex-wrap: nowrap; 
     width: 100%; 
+    max-width: 800px; /* Thêm dòng này: Giữ thanh điều khiển không bị quá dài bè ra trên màn hình ngang PC/Tablet */
     box-sizing: border-box;
 }
 
-/* Định dạng chung cho ô nhập liệu: Tự động tính toán không gian co giãn */
+/* Định dạng chung cho ô nhập liệu */
 input, select { 
     padding: 8px 10px; 
     background: #2d2d2d; 
@@ -210,17 +212,17 @@ input, select {
     font-size: 0.9em; 
     outline: none; 
     box-sizing: border-box;
-    min-width: 0; /* Thuộc tính quan trọng: Ngăn chặn input chiếm giữ kích thước gốc gây tràn viền */
+    min-width: 0; 
 }
 
 input:focus { border-color: #03dac6; }
 
-/* Định hình độ rộng cố định/co giãn thông minh cho từng loại ô nhập liệu */
+/* Định hình độ rộng co giãn thông minh (ĐÃ XÓA BỎ CÁC ĐỘ RỘNG CO CỨNG CŨ) */
 #startTimeInput { flex-grow: 1; width: 100%; font-family: monospace; font-size: 0.95em; }
-#durationInput { width: 50px; flex-shrink: 0; } /* Khống chế ô nhập giây vừa vặn */
-#clipLabelInput { flex-grow: 1; width: 100%; text-align: left; }
+#durationInput { width: 55px; flex-shrink: 0; } 
+#clipLabelInput { flex-grow: 2; width: 100%; text-align: left; }
 
-/* Tối ưu hóa các nút bấm chức năng chính */
+/* Tối ưu hóa 3 nút bấm chức năng chính chia đều không gian hàng */
 .controls-row .action-btn, 
 .controls-row #gridViewBtn {
     flex: 1; 
@@ -256,6 +258,7 @@ input:focus { border-color: #03dac6; }
         font-size: 0.7em !important;
     }
 }
+
 
 
 
@@ -518,15 +521,15 @@ input, textarea {
         <div id="gridContent"></div>
     </div>
 
-       <div class="controls">
+           <div class="controls">
         <div class="controls-row" style="background: #252525; padding: 10px; border-radius: 8px; flex-direction: column; gap: 8px; width: 100%;">
             
             <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                 <label style="font-size:0.85em; color:#aaa; width: 85px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
                 <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-                    <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
+                    <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><&lt;</button>
                     <input type="text" id="startTimeInput" value="00:00:00">
-                    <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">>></button>
+                    <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">&gt;&gt;</button>
                 </div>
             </div>
                 
@@ -549,6 +552,7 @@ input, textarea {
             </button>
         </div>
     </div>
+
 
     
     <script>
