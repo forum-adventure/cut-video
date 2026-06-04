@@ -966,12 +966,15 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
             if (!sharedVideoURL) return;
             
             // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
-    const isFileAlive = await checkFileConnection();
-    if (!isFileAlive) {
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
-        upload.click(); 
-        return;
-    }
+    
+const isFileAlive = await checkFileConnection();
+if (!isFileAlive) {
+    alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+    upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
+    upload.click(); 
+    return;
+}
+
             
             
             const start = parseTime(startTimeInput.value);
@@ -1166,12 +1169,16 @@ if (rawVideoFile) {
 
                 randomBtn.onclick = async () => { // Thêm chữ 'async' ở đây
     // --- KIỂM TRA ĐỘC LẬP KHI BẤM RANDOM ---
+    
+randomBtn.onclick = async () => {
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
         alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Đảm bảo đồng bộ cho nút Random
         upload.click(); 
         return;
     }
+
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
             
