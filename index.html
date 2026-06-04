@@ -484,17 +484,9 @@ input, textarea {
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
         <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-            <button class="tune-btn" 
-        onmousedown="startHold(-1)" onmouseup="stopHold()" onmouseleave="stopHold()"
-        ontouchstart="startHold(-1)" ontouchend="stopHold()"
-        style="flex-shrink: 0;"><<</button>
-        
+            <button class="tune-btn" id="prevTimeBtn" style="flex-shrink: 0;"><<</button>
 <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
-
-<button class="tune-btn" 
-        onmousedown="startHold(1)" onmouseup="stopHold()" onmouseleave="stopHold()"
-        ontouchstart="startHold(1)" ontouchend="stopHold()"
-        style="flex-shrink: 0;">>></button>
+<button class="tune-btn" id="nextTimeBtn" style="flex-shrink: 0;">>></button>
 
         </div>
     </div>
@@ -631,41 +623,55 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             randomBtn.innerText = `Random ${val}s`;
         });
 
-                function adjustTime(amount) {
+        function adjustTime(amount) {
             
+            // --- LOGIC NHẤN GIỮ ĐỂ CHẠY NHANH THỜI GIAN ---
+let autoTuneInterval = null;
+let autoTuneTimeout = null;
 
-        // --- ĐOẠN THÊM MỚI: XỬ LÝ BẤM GIỮ NÚT MŨI TÊN CHẠY NHANH LIÊN TỤC ---
-        let holdInterval = null;
-        let holdTimeout = null;
-
-        function startHold(amount) {
-            // Ngăn chặn việc lặp lại sự kiện ngoài ý muốn khi chạm trên mobile
-            if (holdTimeout || holdInterval) return; 
-
-            // 1. Kích hoạt ngay 1 phát bấm đầu tiên (bấm phát ăn ngay)
+function startAutoTune(amount) {
+    // Chạy ngay lần đầu tiên khi vừa bấm vào
+    adjustTime(amount);
+    
+    // Đợi 400ms (khoảng thời gian xác định người dùng đang nhấn giữ chứ không phải click)
+    autoTuneTimeout = setTimeout(() => {
+        // Sau 400ms, kích hoạt lặp lại liên tục mỗi 60ms
+        autoTuneInterval = setInterval(() => {
             adjustTime(amount);
+        }, 60); 
+    }, 400);
+}
 
-            // 2. Chờ 400ms (xác định xem người dùng đang "Bấm giữ" hay chỉ "Click")
-            holdTimeout = setTimeout(() => {
-                // Sau 400ms, nếu vẫn giữ tay, bắt đầu vòng lặp tăng/giảm liên tục mỗi 60ms
-                holdInterval = setInterval(() => {
-                    // Mẹo: Càng giữ lâu, bước nhảy có thể tăng lên nếu muốn, ở đây giữ nguyên amount (1 giây hoặc -1 giây)
-                    adjustTime(amount); 
-                }, 60); // 60ms tương đương tốc độ mượt mà của khung hình
-            }, 400);
-        }
+function stopAutoTune() {
+    // Xóa bỏ hoàn toàn các bộ đếm thời gian khi nhả tay/chuột ngoài nút
+    if (autoTuneTimeout) clearTimeout(autoTuneTimeout);
+    if (autoTuneInterval) clearInterval(autoTuneInterval);
+}
 
-        function stopHold() {
-            // Xóa bỏ tất cả các bộ đếm thời gian khi nhả tay/nhả chuột ra
-            if (holdTimeout) {
-                clearTimeout(holdTimeout);
-                holdTimeout = null;
-            }
-            if (holdInterval) {
-                clearInterval(holdInterval);
-                holdInterval = null;
-            }
-        }
+const prevTimeBtn = document.getElementById('prevTimeBtn');
+const nextTimeBtn = document.getElementById('nextTimeBtn');
+
+// Gán sự kiện cho nút giảm thời gian (<<)
+prevTimeBtn.addEventListener('mousedown', () => startAutoTune(-1));
+prevTimeBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Ngăn chặn xung đột click trên mobile
+    startAutoTune(-1);
+});
+
+// Gán sự kiện cho nút tăng thời gian (>>)
+nextTimeBtn.addEventListener('mousedown', () => startAutoTune(1));
+nextTimeBtn.addEventListener('touchstart', (e) => {
+    e.preventDefault(); // Ngăn chặn xung đột click trên mobile
+    startAutoTune(1);
+});
+
+// Dừng chạy khi nhả chuột, nhấc tay, hoặc di chuột ra khỏi phạm vi nút bấm
+[prevTimeBtn, nextTimeBtn].forEach(btn => {
+    btn.addEventListener('mouseup', stopAutoTune);
+    btn.addEventListener('mouseleave', stopAutoTune);
+    btn.addEventListener('touchend', stopAutoTune);
+    btn.addEventListener('touchcancel', stopAutoTune);
+});
 
             let currentSeconds = parseTime(startTimeInput.value);
             currentSeconds = Math.max(0, Math.min(totalVideoDuration, currentSeconds + amount));
