@@ -1085,12 +1085,19 @@ video.onpause = () => {
                 return;
             }
             
-            // --- THÊM ĐOẠN NÀY: Kiểm tra sinh tử kết nối tệp trên Android ---
-    if (rawVideoFile && rawVideoFile.size === 0) {
-        alert("⚠️ Kết nối file đã bị Android ngắt tự động để giải phóng RAM.\nVui lòng nhấn chọn lại video để tiếp tục tác vụ!");
-        upload.click(); // Tự động kích hoạt hộp thoại chọn file lại cho người dùng
+            // --- KIỂM TRA SINH TỬ KẾT NỐI TỆP THỰC TẾ (ANTI-RAM CLEANUP) ---
+if (rawVideoFile) {
+    try {
+        // Đọc thử 1 byte đầu tiên bằng ArrayBuffer để test kết nối thực tế
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+    } catch (fileError) {
+        // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        upload.click(); 
         return;
     }
+}
+
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
