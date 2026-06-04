@@ -1080,22 +1080,23 @@ window.addEventListener('touchmove', (e) => {
             
             // --- CHẶN HOÀN TOÀN HÀNH VI DOUBLE-TAP TO ZOOM VÀ PINCH ZOOM (ZOMM ĐA ĐIỂM) ---
 
-// 1. Chặn Double-tap (Gõ liên tiếp 2 lần)
+// 1. Chặn Double-tap (Gõ liên tiếp 2 lần) nhưng loại trừ các nút bấm điều khiển
 let lastTouchEnd = 0;
 document.addEventListener('touchend', (e) => {
     const now = (new Date()).getTime();
+    
+    // Nếu người dùng đang bấm vào nút mũi tên (.tune-btn) hoặc bất kỳ button nào, 
+    // cho phép xử lý tự nhiên, không được preventDefault làm mất độ nhạy.
+    if (e.target.closest('button') || e.target.closest('.tune-btn') || e.target.closest('input')) {
+        return; 
+    }
+
     if (now - lastTouchEnd <= 300) {
-        e.preventDefault(); // Chặn hành vi kích hoạt zoom khi gõ nhanh
+        if (e.cancelable) e.preventDefault(); // Chỉ chặn zoom ở các vùng trống bên ngoài
     }
     lastTouchEnd = now;
 }, false);
 
-// 2. Chặn Pinch-to-zoom (Dùng 2 ngón tay thu phóng màn hình - Nếu bạn muốn chặn hoàn toàn)
-document.addEventListener('touchstart', (e) => {
-    if (e.touches.length > 1) {
-        e.preventDefault(); // Chặn khi có từ 2 ngón tay trở lên chạm vào màn hình
-    }
-}, { passive: false });
 
     </script>
             
