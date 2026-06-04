@@ -317,96 +317,110 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
 
         .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
     
-   /* --- TỐI ƯU GIAO DIỆN KHI XOAY NGANG (LANDSCAPE) --- */
-@media (orientation: landscape) and (max-height: 600px) {
-    /* Đảm bảo vùng đệm dưới vừa đủ đẹp, không bị lún video */
+   /* --- TỐI ƯU GIAO DIỆN KHI XOAY NGANG (LANDSCAPE) TOÀN DIỆN --- */
+@media (orientation: landscape) {
+    /* Khống chế khoảng trống đáy hợp lý tùy theo độ cao màn hình */
     body {
-        padding-bottom: 75px !important;
+        padding-bottom: var(--body-pad-bottom, 80px) !important;
     }
 
-    /* Thanh điều khiển chính dàn hàng ngang, căn đều khoảng cách */
+    @media (max-height: 600px) {
+        body { --body-pad-bottom: 70px !important; }
+        .controls { height: 55px !important; padding: 6px 16px !important; gap: 10px !important; }
+        #clipLabelInput { max-width: 140px !important; }
+    }
+    
+    @media (min-height: 601px) {
+        body { --body-pad-bottom: 90px !important; }
+        .controls { height: 75px !important; padding: 10px 24px !important; gap: 20px !important; }
+        #clipLabelInput { max-width: 200px !important; }
+    }
+
+    /* Thanh điều khiển chính dàn chữ chữ U: Trái (Trống/Meta) - Giữa (Inputs) - Phải (Buttons) */
     .controls {
         flex-direction: row !important;
         justify-content: space-between !important;
         align-items: center !important;
-        gap: 15px !important;
-        padding: 8px 20px !important;
-        height: 55px !important;
+        box-sizing: border-box !important;
     }
 
-    /* Reset các row mặc định để tránh bị bọc đè hoặc chiếm không gian vô ích */
-    .controls > .controls-row {
-        width: auto !important;
-        flex: unset !important;
-    }
-
-    /* Xử lý khối chứa thông số nhập liệu (Cắt từ, Độ dài) */
+    /* Khối bọc ngoài của dòng Input */
     .controls > .controls-row:nth-child(2) {
-        flex-grow: 2 !important;
         background: transparent !important;
         padding: 0 !important;
+        width: auto !important;
+        flex: 1 !important;
+        display: flex !important;
+        justify-content: center !important;
     }
 
-   /* --- MÃ MỚI: Chuyển width sang auto để các phần tử tự ôm khít nhau, triệt tiêu hiện tượng lệch sang bên --- */
-.controls > .controls-row:nth-child(2) > div {
-    flex-direction: row !important;
-    flex-wrap: nowrap !important;
-    background: transparent !important;
-    padding: 0 !important;
-    gap: 12px !important;
-    max-width: none !important;
-    width: auto !important; /* Thay đổi từ 100% sang auto */
-    justify-content: center !important;
-}
+    /* Khối xám chứa các ô nhập liệu (Cắt từ, Độ dài) */
+    .controls > .controls-row:nth-child(2) > div {
+        flex-direction: row !important;
+        flex-wrap: nowrap !important;
+        background: #252525 !important; /* Giữ lại nền xám bo góc đặc trưng */
+        padding: 6px 12px !important;
+        gap: 12px !important;
+        max-width: none !important;
+        width: auto !important;
+        align-items: center !important;
+        border-radius: 8px !important;
+    }
 
+    /* Tối ưu các phân vùng nhỏ bên trong khối nhập liệu */
+    .controls > .controls-row:nth-child(2) > div > div {
+        width: auto !important;
+        gap: 6px !important;
+    }
 
-   
+    /* Cố định chiều rộng label để không bị co giật chữ */
+    .controls > .controls-row:nth-child(2) label {
+        width: auto !important;
+        flex-shrink: 0 !important;
+    }
 
-    /* --- MÃ MỚI: Khóa cứng kích thước cố định vừa vặn khi xoay ngang, chặn hoàn toàn co giãn tràn viền --- */
-#startTimeInput {
-    width: 85px !important;
-    max-width: 85px !important;
-    padding: 6px 4px !important;
-}
-#durationInput {
-    width: 45px !important;
-    max-width: 45px !important;
-    padding: 6px 4px !important;
-}
-#clipLabelInput {
-    width: 140px !important;
-    max-width: 180px !important;
-    padding: 6px 8px !important;
-    text-align: left !important;
-}
+    /* Định hình lại các ô Input để co giãn mượt mà */
+    #startTimeInput {
+        width: 80px !important;
+        padding: 6px 4px !important;
+    }
+    #durationInput {
+        width: 35px !important;
+        padding: 6px 4px !important;
+    }
+    #clipLabelInput {
+        width: 100% !important;
+        padding: 6px 8px !important;
+        text-align: left !important;
+    }
 
-
-    /* Xử lý khối chứa 3 nút bấm chức năng */
+    /* Khối chứa 3 nút bấm chức năng (Thêm đoạn, Random, Lưới) */
     .controls > .controls-row:nth-child(3) {
-        flex-grow: 1 !important;
+        width: auto !important;
+        flex-shrink: 0 !important;
         justify-content: flex-end !important;
         gap: 8px !important;
         flex-wrap: nowrap !important;
     }
 
-    /* Tối ưu kích cỡ chữ và độ lớn nút bấm vừa vặn */
+    /* Giữ kích thước các nút bấm đồng đều và cân đối */
     .controls .action-btn, #gridViewBtn {
-        padding: 8px 12px !important;
+        padding: 0 14px !important;
         font-size: 0.85em !important;
         height: 36px !important;
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        flex: unset !important; /* Chặn việc nút bị kéo giãn vô lý trên màn hình rộng */
     }
 
-    /* Ẩn chữ trong nút Lưới/Grid để tránh bị đè chữ ra ngoài */
-    #gridViewBtn span {
-        display: none !important;
-    }
-    #gridViewBtn svg {
-        margin-right: 0 !important;
+    /* Ẩn bớt chữ của nút Lưới trên màn hình cực thấp để tránh chật chội */
+    @media (max-height: 500px) {
+        #gridViewBtn span { display: none !important; }
+        #gridViewBtn svg { margin-right: 0 !important; }
     }
 }
+
 
     /* Chặn chọn văn bản cho tất cả các loại nút bấm */
 button, 
