@@ -481,16 +481,6 @@ input, textarea {
     </div>
 </div>
 
-    <div id="rehydrateOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(18, 18, 18, 0.95); z-index: 9998; display: none; align-items: center; justify-content: center; text-align: center;">
-    <div class="loader-box" style="border: 2px dashed #ff9800; padding: 40px 20px; border-radius: 16px; background: rgba(255,255,255,0.01);">
-        <div style="font-size: 40px; margin-bottom: 15px;">⚠️</div>
-        <h2 style="color: #ff9800; margin-bottom: 10px;">Mất kết nối với Video gốc</h2>
-        <p style="color: #bbb; max-width: 400px; margin: 0 auto 24px auto; font-size: 0.95em; line-height: 1.5;">Trình duyệt đã giải phóng bộ nhớ nền. Vui lòng chọn lại tệp video ban đầu để khôi phục và tiếp tục xử lý các phân đoạn!</p>
-        <button id="rehydrateBtn" style="background: #ff9800; color: #000; border: none; padding: 12px 24px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1em;">Chọn lại Video</button>
-    </div>
-</div>
-
-    
 <input type="file" id="videoUpload" accept="video/*" style="display: none;">
 <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
 
@@ -559,10 +549,6 @@ input, textarea {
     </div>
     
     <script>
-            const rehydrateOverlay = document.getElementById('rehydrateOverlay');
-const rehydrateBtn = document.getElementById('rehydrateBtn');
-let isVideoLost = false; // Biến đánh dấu trạng thái mất file
-
         const videoContainer = document.getElementById('videoContainer');
         const upload = document.getElementById('videoUpload');
         const nextBtn = document.getElementById('nextBtn');
@@ -1223,104 +1209,6 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
             
-// Kiểm tra trạng thái kết nối của Video khi người dùng quay lại ứng dụng
-function checkVideoConnection() {
-    // Chỉ kiểm tra nếu trước đó đã từng có clip được tạo
-    if (document.body.classList.contains('has-clips') && sharedVideoURL) {
-        const testVideo = document.createElement('video');
-        testVideo.src = sharedVideoURL;
-        
-        // Nếu kích hoạt lỗi lập tức, chứng tỏ blob URL đã chết
-        testVideo.onerror = () => {
-            isVideoLost = true;
-            rehydrateOverlay.style.display = 'flex'; // Hiện bảng yêu cầu nạp lại file
-            
-            // Tạm thời dừng phát tất cả các clip đang có để tránh lỗi luồng
-            document.querySelectorAll('.clip-wrapper video').forEach(v => v.pause());
-        };
-        
-        // Thử ép load một nhịp ngắn để check link blob
-        testVideo.load();
-    }
-}
-
-// Lắng nghe sự kiện người dùng quay trở lại tab (hoặc mở lại app từ background)
-window.addEventListener('pageshow', checkVideoConnection);
-document.addEventListener('visibilitychange', () => {
-    if (document.visibilityState === 'visible') {
-        checkVideoConnection();
-    }
-});
-
-            
-            // Khi bấm nút yêu cầu nạp lại, mượn chính nút input file gốc để chọn tệp
-rehydrateBtn.addEventListener('click', () => {
-    upload.click();
-});
-
-// Chỉnh sửa lại hàm sự kiện 'change' của nút upload gốc để nhận diện việc hồi sinh
-upload.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        rawVideoFile = file; 
-        if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-        sharedVideoURL = URL.createObjectURL(file);
-        
-        const tempVideo = document.createElement('video');
-        tempVideo.src = sharedVideoURL;
-        tempVideo.onloadedmetadata = () => {
-            totalVideoDuration = tempVideo.duration;
-            enableControls();
-
-            // NẾU LÀ QUÁ TRÌNH HỒI SINH FILE CŨ
-            if (isVideoLost) {
-                isVideoLost = false;
-                rehydrateOverlay.style.display = 'none'; // Ẩn thông báo lỗi
-                status.innerText = `Khôi phục thành công! Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                
-                // Cập nhật lại nguồn blob mới cho tất cả các phân đoạn hiện có
-                document.querySelectorAll('.clip-wrapper').forEach(wrapper => {
-                    const video = wrapper.querySelector('video');
-                    const startTime = parseFloat(video.dataset.startTime);
-                    
-                    video.src = sharedVideoURL;
-                    video.currentTime = startTime;
-                    video.load();
-                });
-
-                // Cập nhật lại hình ảnh Thumbnail trên giao diện Lưới (Grid)
-                document.querySelectorAll('.grid-item').forEach(gridItem => {
-                    const clipId = gridItem.getAttribute('data-grid-id');
-                    const targetWrapper = document.getElementById(clipId);
-                    if (targetWrapper) {
-                        const video = targetWrapper.querySelector('video');
-                        const startTime = parseFloat(video.dataset.startTime);
-                        const img = gridItem.querySelector('img');
-                        
-                        // Chụp lại thumbnail mới đè lên ảnh cũ đã lỗi
-                        captureThumbnail(startTime).then(thumbUrl => {
-                            if (thumbUrl) img.src = thumbUrl;
-                        });
-                    }
-                });
-
-                handleClipRehydration(); // Kích hoạt lại cơ chế lazy-load mượt mà của bạn
-                return; // Kết thúc sớm, không xóa dữ liệu cũ
-            }
-
-            // HOẶC NẾU LÀ CHỌN FILE MỚI HOÀN TOÀN TỪ ĐẦU (Giữ nguyên code cũ của bạn)
-            videoContainer.innerHTML = ""; 
-            gridContent.innerHTML = "";
-            document.body.classList.remove('has-clips');
-            
-            document.getElementById('mainTitle').innerText = "Video sẵn sàng";
-            document.getElementById('mainTitle').style.color = "#2ecc71";
-            document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
-            
-            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-        };
-    }
-});
 
     </script>
             
