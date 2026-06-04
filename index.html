@@ -632,10 +632,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         });
 
                 function adjustTime(amount) {
-            let currentSeconds = parseTime(startTimeInput.value);
-            currentSeconds = Math.max(0, Math.min(totalVideoDuration, currentSeconds + amount));
-            startTimeInput.value = formatTime(currentSeconds);
-        }
+            
 
         // --- ĐOẠN THÊM MỚI: XỬ LÝ BẤM GIỮ NÚT MŨI TÊN CHẠY NHANH LIÊN TỤC ---
         let holdInterval = null;
