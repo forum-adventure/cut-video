@@ -1076,77 +1076,81 @@ video.onpause = () => {
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
-            if (!isFFmpegReady) {
-                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
-                return;
-            }
-            if (!rawVideoFile) {
-                alert("Lỗi: Không tìm thấy file video đầu vào.");
-                return;
-            }
-            
-            // --- THÊM ĐOẠN NÀY: Kiểm tra sinh tử kết nối tệp trên Android ---
-    if (rawVideoFile && rawVideoFile.size === 0) {
-        alert("⚠️ Kết nối file đã bị Android ngắt tự động để giải phóng RAM.\nVui lòng nhấn chọn lại video để tiếp tục tác vụ!");
-        upload.click(); // Tự động kích hoạt hộp thoại chọn file lại cho người dùng
+    if (!isFFmpegReady) {
+        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
         return;
     }
+    if (!rawVideoFile) {
+        alert("Lỗi: Không tìm thấy file video đầu vào.");
+        return;
+    }
+    
+    // ============================================================
+    // KHẮC PHỤC ANDROID: KIỂM TRA SINH TỬ FILE THỰC TẾ
+    // ============================================================
+    try {
+        // Đọc thử 1 byte đầu tiên để ép hệ thống kiểm tra File Descriptor
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+    } catch (e) {
+        alert("⚠️ Kết nối file đã bị Android ngắt tự động để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục tác vụ!");
+        upload.click(); // Tự động mở hộp thoại chọn file
+        return;
+    }
+    // ============================================================
 
-            const originalBtnText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = '⌛ Đang xử lý...';
-            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
+    const originalBtnText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '⌛ Đang xử lý...';
+    status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
-            const timestamp = Date.now();
-            const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-            const virtualInputName = `input_${timestamp}_${cleanFileName}`;
-            const outputName = `cut_${timestamp}.mp4`;
+    const timestamp = Date.now();
+    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
+    const virtualInputName = `input_${timestamp}_${cleanFileName}`;
+    const outputName = `cut_${timestamp}.mp4`;
 
-            try {
-                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-                await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
-                
-                const data = ffmpeg.FS('readFile', outputName);
-                const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
-                
-                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-                const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
-                
-                const a = document.createElement('a');
-                a.href = videoUrl;
-                a.download = downloadName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
-            } catch (err) {
-                console.error(err);
-                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
-                status.innerText = "❌ Lỗi thực thi Render.";
-            } finally {
-                btn.disabled = false;
-                btn.innerText = originalBtnText;
-                try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
-            }
+    try {
+        status.innerText = `⏳ Đang nạp tệp tin vào bộ nhớ đệm...`;
+        const fileData = await fetchFile(rawVideoFile);
+        
+        // Kiểm tra nếu dữ liệu lấy ra bị rỗng (Android ngắt giữa chừng)
+        if (!fileData || fileData.byteLength === 0) {
+            throw new Error("Android_File_Revoked");
         }
 
-                randomBtn.onclick = () => {
-            const d = parseFloat(durationInput.value) || 5;
-            const maxRange = Math.max(0, totalVideoDuration - d);
-            
-            // Tính toán thời gian ngẫu nhiên chuẩn xác trước
-            const randomSeconds = Math.random() * maxRange;
-            startTimeInput.value = formatTime(randomSeconds);
-            
-            // Trì hoãn một nhịp nhỏ (macro-task) để đảm bảo dữ liệu input và DOM được đồng bộ
-            setTimeout(() => {
-                if (!nextBtn.disabled) {
-                    nextBtn.click();
-                }
-            }, 50);
-        };
+        ffmpeg.FS('writeFile', virtualInputName, fileData);
+        await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
+        
+        const data = ffmpeg.FS('readFile', outputName);
+        const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        
+        const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+        const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
+        
+        const a = document.createElement('a');
+        a.href = videoUrl;
+        a.download = downloadName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        try { ffmpeg.FS('unlink', outputName); } catch(e){}
+        status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
+    } catch (err) {
+        console.error(err);
+        if (err.message === "Android_File_Revoked" || err.message.includes("ENOENT")) {
+            alert("⚠️ Không thể đọc dữ liệu video. Kết nối tệp đã bị hệ thống Android thu hồi.\nVui lòng chọn lại file.");
+            upload.click();
+        } else {
+            alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+        }
+        status.innerText = "❌ Lỗi thực thi Render.";
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalBtnText;
+        try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
+    }
+}
+
 
 
         function formatTime(s) {
