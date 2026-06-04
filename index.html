@@ -84,7 +84,16 @@
     
     /* CHẶN PULL TO REFRESH TRÊN MOBILE */
     overscroll-behavior-y: contain; 
+
+    /* THÊM DÒNG NÀY: Chặn double-tap zoom trên toàn bộ trang */
+    touch-action: manipulation; 
 }
+
+/* Áp dụng thêm cho tất cả các nút bấm để chắc chắn không bị dính zoom */
+button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
+    touch-action: manipulation;
+}
+
 
     
         #welcomeOverlay {
@@ -1070,5 +1079,25 @@ window.addEventListener('touchmove', (e) => {
 }, { passive: false }); // Bắt buộc phải là false để preventDefault() có tác dụng
 
     </script>
+            
+// --- CHẶN HOÀN TOÀN HÀNH VI DOUBLE-TAP TO ZOOM VÀ PINCH ZOOM (ZOMM ĐA ĐIỂM) ---
+
+// 1. Chặn Double-tap (Gõ liên tiếp 2 lần)
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = (new Date()).getTime();
+    if (now - lastTouchEnd <= 300) {
+        e.preventDefault(); // Chặn hành vi kích hoạt zoom khi gõ nhanh
+    }
+    lastTouchEnd = now;
+}, false);
+
+// 2. Chặn Pinch-to-zoom (Dùng 2 ngón tay thu phóng màn hình - Nếu bạn muốn chặn hoàn toàn)
+document.addEventListener('touchstart', (e) => {
+    if (e.touches.length > 1) {
+        e.preventDefault(); // Chặn khi có từ 2 ngón tay trở lên chạm vào màn hình
+    }
+}, { passive: false });
+
 </body>
 </html>
