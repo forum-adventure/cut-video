@@ -969,6 +969,7 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
         alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
     }
@@ -1118,6 +1119,7 @@ if (rawVideoFile) {
     } catch (fileError) {
         // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
         alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Khử lỗi không nhận diện trùng file
         upload.click(); 
         return;
     }
@@ -1169,6 +1171,7 @@ if (rawVideoFile) {
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
         alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
     }
