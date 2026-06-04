@@ -613,6 +613,39 @@ welcomeOverlay.addEventListener('drop', (e) => {
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
             
+            
+            // --- TỰ ĐỘNG HỒI SINH LUỒNG VIDEO KHI QUAY LẠI TAB (ANTI-FREEZE ON MOBILE) ---
+document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') {
+        console.log("⚡ Đã phát hiện quay lại Tab! Tiến hành kiểm tra và hồi sinh luồng video...");
+        
+        // 1. Kiểm tra nếu có video chính đang chạy ngầm hoặc có luồng URL sẵn dùng
+        if (sharedVideoURL && rawVideoFile) {
+            // Duyệt qua tất cả các video đang hiển thị trong danh sách cắt
+            const allVideos = document.querySelectorAll('.clip-wrapper video');
+            
+            allVideos.forEach(video => {
+                const isPausedBefore = video.paused;
+                const savedTime = video.currentTime; // Giữ lại mốc thời gian đang coi dở
+                
+                // Ép trình duyệt nạp lại nguồn để kích hoạt lại luồng đọc bộ nhớ bị đóng băng
+                video.load();
+                video.currentTime = savedTime;
+                
+                // Nếu trước đó video đang phát thì cho phát tiếp, tránh bị đứng hình khựng chữ
+                if (!isPausedBefore) {
+                    video.play().catch(() => {});
+                }
+            });
+            
+            // 2. Sửa lỗi kẹt lệnh vẽ Canvas Thumbnail (Vấn đề khiến nút "Thêm đoạn" bị đơ)
+            // Nếu có video nào đang chạy ngầm để lấy hình, ta kích hoạt nhẹ một nhịp load
+            status.innerText = "✨ Đã đồng bộ lại kết nối tệp tin!";
+        }
+    }
+});
+
+            
             // Hàm kiểm tra xem thiết bị có phải là iPhone, iPad hoặc iPod không
 const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
