@@ -881,6 +881,7 @@ upload.addEventListener('change', (e) => {
                 document.body.classList.add('has-clips');
             }
             
+            upload.value = ""; 
             status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
             enableControls();
         };
