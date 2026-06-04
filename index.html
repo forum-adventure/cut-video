@@ -1075,7 +1075,7 @@ video.onpause = () => {
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
-        async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
+         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
     if (!isFFmpegReady) {
         alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
         return;
@@ -1086,12 +1086,23 @@ video.onpause = () => {
     }
     
     // ============================================================
-    // KHẮC PHỤC ANDROID: KIỂM TRA SINH TỬ FILE THỰC TẾ
+    // CẬP NHẬT: KIỂM TRA FILE ĐỒNG BỘ CHUẨN - HẾT LỖI KHÔNG HIỆN VIDEO
     // ============================================================
-    try {
-        // Đọc thử 1 byte đầu tiên để ép hệ thống kiểm tra File Descriptor
-        await rawVideoFile.slice(0, 1).arrayBuffer();
-    } catch (e) {
+    const checkFileAlive = () => {
+        return new Promise((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => {
+                // Nếu đọc thành công (không có lỗi), trả về true
+                resolve(reader.error === null);
+            };
+            // Đọc thử một mẩu dữ liệu nhỏ 10 byte đầu tiên để check quyền
+            reader.readAsArrayBuffer(rawVideoFile.slice(0, 10));
+        });
+    };
+
+    const isFileAlive = await checkFileAlive();
+
+    if (!isFileAlive) {
         alert("⚠️ Kết nối file đã bị Android ngắt tự động để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục tác vụ!");
         upload.click(); // Tự động mở hộp thoại chọn file
         return;
@@ -1110,9 +1121,10 @@ video.onpause = () => {
 
     try {
         status.innerText = `⏳ Đang nạp tệp tin vào bộ nhớ đệm...`;
+        
+        // Nạp file trực tiếp thông qua thư viện FFmpeg
         const fileData = await fetchFile(rawVideoFile);
         
-        // Kiểm tra nếu dữ liệu lấy ra bị rỗng (Android ngắt giữa chừng)
         if (!fileData || fileData.byteLength === 0) {
             throw new Error("Android_File_Revoked");
         }
@@ -1136,12 +1148,12 @@ video.onpause = () => {
         try { ffmpeg.FS('unlink', outputName); } catch(e){}
         status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
     } catch (err) {
-        console.error(err);
-        if (err.message === "Android_File_Revoked" || err.message.includes("ENOENT")) {
+        console.error("FFmpeg Error Detail:", err);
+        if (err.message === "Android_File_Revoked" || (err.message && err.message.includes("ENOENT"))) {
             alert("⚠️ Không thể đọc dữ liệu video. Kết nối tệp đã bị hệ thống Android thu hồi.\nVui lòng chọn lại file.");
             upload.click();
         } else {
-            alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+            alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg. Vui lòng kiểm tra lại cấu trúc video.");
         }
         status.innerText = "❌ Lỗi thực thi Render.";
     } finally {
@@ -1150,6 +1162,7 @@ video.onpause = () => {
         try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
     }
 }
+
 
 
 
