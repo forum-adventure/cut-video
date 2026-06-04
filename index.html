@@ -13,7 +13,7 @@
     <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
-    <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
+    <script src="ffmpeg.min.js"></script>
     
     <style>
     
@@ -603,7 +603,12 @@ welcomeOverlay.addEventListener('drop', (e) => {
 });
 
         const { createFFmpeg, fetchFile } = FFmpeg;
-        const ffmpeg = createFFmpeg({ log: true });
+        
+        // THAY ĐỔI TẠI ĐÂY: Cấu hình FFmpeg nạp lõi corePath từ thư mục gốc Local (GitHub của bạn)
+        const ffmpeg = createFFmpeg({ 
+            log: true,
+            corePath: window.location.origin + window.location.pathname.replace(/[^\/]*$/, '') + 'ffmpeg-core.js'
+        });
         let isFFmpegReady = false;
 
         let rawVideoFile = null; 
@@ -821,7 +826,7 @@ if (btnPrevTime && btnNextTime) {
                     document.body.classList.remove('has-clips');
                     
                     document.getElementById('mainTitle').innerText = "Video sẵn sàng";
-document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng này để đổi sang màu xanh lá tươi (Emerald)
+                    document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng này để đổi sang màu xanh lá tươi (Emerald)
 
                     document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
                     
@@ -1040,10 +1045,26 @@ video.onpause = () => {
             
             const del = document.createElement('button');
             del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
+            
+            // THAY ĐỔI TẠI ĐÂY: Logic tối ưu hóa bộ nhớ RAM triệt để khi bấm "Xóa Đoạn"
             del.onclick = () => {
-                clipObserver.unobserve(video); wrapper.remove();
+                clipObserver.unobserve(video); 
+                
+                // 1. Ép video dừng phát và ngắt hoàn toàn liên kết luồng dữ liệu blob
+                video.pause();
+                video.removeAttribute('src'); 
+                video.load(); // Ép xả bộ đệm RAM giải mã video của thẻ này
+                
+                wrapper.remove();
+                
+                // 2. Dọn dẹp cả dữ liệu ảnh Thumbnail Base64 ngầm trong Lưới
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
-                if (gridItem) gridItem.remove(); 
+                if (gridItem) {
+                    const gridImg = gridItem.querySelector('img');
+                    if (gridImg) gridImg.removeAttribute('src'); 
+                    gridItem.remove(); 
+                }
+                
                 if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
                 handleClipRehydration();
             };
@@ -1086,13 +1107,15 @@ video.onpause = () => {
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
             const virtualInputName = `input_${timestamp}_${cleanFileName}`;
             const outputName = `cut_${timestamp}.mp4`;
+            
+            let videoUrl = null; // Khởi tạo biến để dọn dẹp trong finally
 
             try {
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
                 const data = ffmpeg.FS('readFile', outputName);
-                const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+                videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
                 const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
                 const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
@@ -1114,6 +1137,13 @@ video.onpause = () => {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
                 try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
+                
+                // THAY ĐỔI TẠI ĐÂY: Giải phóng đường dẫn blob của file vừa tải xong để không ngậm RAM bừa bãi
+                if (videoUrl) {
+                    setTimeout(() => {
+                        URL.revokeObjectURL(videoUrl);
+                    }, 5000); // Trì hoãn 5 giây để trình duyệt kịp tải xong file xuống máy rồi hủy luồng RAM
+                }
             }
         }
 
@@ -1207,11 +1237,6 @@ document.addEventListener('contextmenu', (e) => {
     e.preventDefault();
 }, false);
 
-            
-
     </script>
-            
-
-
 </body>
 </html>
