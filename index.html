@@ -561,6 +561,19 @@ input, textarea {
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
 const welcomeOverlay = document.getElementById('welcomeOverlay');
+            
+            // Hàm kiểm tra xem tệp tin có bị Android ngắt kết nối hay không
+async function checkFileConnection() {
+    if (!rawVideoFile) return false;
+    try {
+        // Đọc thử 1 byte đầu tiên để kiểm tra kết nối thực tế với bộ nhớ thiết bị
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+        return true; // Tệp vẫn kết nối tốt
+    } catch (fileError) {
+        return false; // Tệp đã bị ngắt kết nối
+    }
+}
+
 
 // 1. Click vào vùng welcome để kích hoạt chọn file
 welcomeOverlay.addEventListener('click', () => {
@@ -947,8 +960,20 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
             });
         }
 
-        nextBtn.addEventListener('click', () => {
+            
+            
+        nextBtn.addEventListener('click', async () => { // Thêm chữ 'async' ở đây
             if (!sharedVideoURL) return;
+            
+            // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
+    const isFileAlive = await checkFileConnection();
+    if (!isFileAlive) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.click(); 
+        return;
+    }
+            
+            
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
             const clipLabel = clipLabelInput.value.trim();
@@ -1139,7 +1164,14 @@ if (rawVideoFile) {
             }
         }
 
-                randomBtn.onclick = () => {
+                randomBtn.onclick = async () => { // Thêm chữ 'async' ở đây
+    // --- KIỂM TRA ĐỘC LẬP KHI BẤM RANDOM ---
+    const isFileAlive = await checkFileConnection();
+    if (!isFileAlive) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.click(); 
+        return;
+    }
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
             
