@@ -670,7 +670,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
         }, { threshold: 0.1 });
             
             
-            // --- LOGIC NHẤN GIỮ NÚT MŨI TÊN ĐỂ CHẠY NHANH THỜI GIAN ---
+            // --- LOGIC NHẤN GIỮ NÚT MŨI TÊN ĐỂ CHẠY NHANH THỜI GIAN (ĐÃ TỐI ƯU ĐỘ NHẠY) ---
 let autoTuneInterval = null;
 let autoTuneTimeout = null;
 
@@ -694,29 +694,28 @@ function stopAutoTune() {
     autoTuneInterval = null;
 }
 
-// Chờ DOM sẵn sàng rồi gán sự kiện cho 2 nút bấm mới
-setTimeout(() => {
-    const btnPrevTime = document.getElementById('btnPrevTime');
-    const btnNextTime = document.getElementById('btnNextTime');
+// Gán sự kiện trực tiếp ngay lập tức khi file script chạy, đảm bảo bấm là ăn ngay
+const btnPrevTime = document.getElementById('btnPrevTime');
+const btnNextTime = document.getElementById('btnNextTime');
 
-    if (btnPrevTime && btnNextTime) {
-        // Sự kiện xử lý cho nút Lùi Thời Gian (<<)
-        btnPrevTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(-1); });
-        btnPrevTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(-1); }, { passive: false });
+if (btnPrevTime && btnNextTime) {
+    // Sự kiện xử lý cho nút Lùi Thời Gian (<<)
+    btnPrevTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(-1); });
+    btnPrevTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(-1); }, { passive: false });
 
-        // Sự kiện xử lý cho nút Tiến Thời Gian (>>)
-        btnNextTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(1); });
-        btnNextTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(1); }, { passive: false });
+    // Sự kiện xử lý cho nút Tiến Thời Gian (>>)
+    btnNextTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(1); });
+    btnNextTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(1); }, { passive: false });
 
-        // Các sự kiện kết thúc hành vi nhấn giữ để dừng chạy thời gian
-        window.addEventListener('mouseup', stopAutoTune);
-        window.addEventListener('touchend', stopAutoTune);
-        
-        // Đề phòng trường hợp người dùng rê chuột ra khỏi phạm vi nút bấm khi đang giữ
-        btnPrevTime.addEventListener('mouseleave', stopAutoTune);
-        btnNextTime.addEventListener('mouseleave', stopAutoTune);
-    }
-}, 500);
+    // Các sự kiện kết thúc hành vi nhấn giữ để dừng chạy thời gian
+    window.addEventListener('mouseup', stopAutoTune);
+    window.addEventListener('touchend', stopAutoTune);
+    
+    // Đề phòng trường hợp người dùng rê chuột ra khỏi phạm vi nút bấm khi đang giữ
+    btnPrevTime.addEventListener('mouseleave', stopAutoTune);
+    btnNextTime.addEventListener('mouseleave', stopAutoTune);
+}
+
 
 
         // KHÔI PHỤC HOÀN TOÀN CƠ CHẾ REHYDRATION MƯỢT MÀ CỦA PHIÊN BẢN V1
