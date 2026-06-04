@@ -841,24 +841,19 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
         v.playsInline = true;
         v.preload = "auto";
         
-        // Cần thiết cho iOS: Đảm bảo video không bị tự động thu nhỏ hoặc chạy full màn hình ngầm
         v.setAttribute('playsinline', '');
         v.setAttribute('webkit-playsinline', '');
 
-        // [QUAN TRỌNG NHẤT] iOS bắt buộc phải đợi metadata load xong mới được phép set currentTime
         v.onloadedmetadata = () => {
             v.currentTime = startTime;
         };
 
         v.onseeked = () => {
-            // Tăng delay lên 150ms để engine của iPhone xả frame kịp ra bộ đệm đồ họa
             setTimeout(() => {
                 try {
-                    // Lấy tỷ lệ thật của video thay vì ép cứng 160x160 (tránh ảnh bị méo tỷ lệ)
                     const videoWidth = v.videoWidth || 160;
                     const videoHeight = v.videoHeight || 160;
                     
-                    // Thu nhỏ tỷ lệ để tối ưu hiệu năng canvas
                     const scale = 160 / Math.max(videoWidth, videoHeight);
                     canvas.width = videoWidth * scale; 
                     canvas.height = videoHeight * scale;
@@ -867,8 +862,13 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
                     
-                    // Dọn dẹp bộ nhớ
-                    v.removeAttribute('src'); v.load(); v.remove();
+                    // --- ĐÃ TỐI ƯU CHO ANDROID: Ép dọn dẹp luồng chạy ngầm ---
+                    v.pause();
+                    v.src = "";
+                    v.load(); 
+                    v.removeAttribute('src'); 
+                    v.remove();
+                    
                     resolve(dataUrl);
                 } catch(e) {
                     console.error("Lỗi vẽ Canvas Thumbnail:", e);
@@ -878,21 +878,23 @@ document.getElementById('mainTitle').style.color = "#2ecc71"; // Thêm dòng nà
         };
 
         v.onerror = () => {
-            v.removeAttribute('src'); v.remove(); resolve("");
+            // --- ĐÃ TỐI ƯU CHO ANDROID ---
+            v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+            resolve("");
         };
 
-        // Kích hoạt tường lửa an toàn (Timeout): Tránh việc Promise bị treo vĩnh viễn trên iOS 
-        // Nếu sau 3 giây không lấy được hình, tự động trả về chuỗi rỗng để không lỗi UI
         setTimeout(() => {
             if (v.src) {
-                v.removeAttribute('src'); v.remove(); resolve("");
+                // --- ĐÃ TỐI ƯU CHO ANDROID ---
+                v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+                resolve("");
             }
         }, 3000);
 
-        // Chủ động gọi load() để ép iOS bắt đầu nạp luồng video
         v.load();
     });
 }
+
 
 
 
@@ -1042,7 +1044,12 @@ video.onpause = () => {
             const del = document.createElement('button');
             del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
             del.onclick = () => {
-                clipObserver.unobserve(video); wrapper.remove();
+                clipObserver.unobserve(video); 
+                // --- THÊM ĐOẠN NÀY: Ngắt luồng chạy và nạp dữ liệu của video trước khi gỡ bỏ ---
+    video.pause();
+    video.src = "";
+    video.load();
+                wrapper.remove();
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
                 if (gridItem) gridItem.remove(); 
                 if (videoContainer.children.length === 0) document.body.classList.remove('has-clips');
@@ -1077,6 +1084,13 @@ video.onpause = () => {
                 alert("Lỗi: Không tìm thấy file video đầu vào.");
                 return;
             }
+            
+            // --- THÊM ĐOẠN NÀY: Kiểm tra sinh tử kết nối tệp trên Android ---
+    if (rawVideoFile && rawVideoFile.size === 0) {
+        alert("⚠️ Kết nối file đã bị Android ngắt tự động để giải phóng RAM.\nVui lòng nhấn chọn lại video để tiếp tục tác vụ!");
+        upload.click(); // Tự động kích hoạt hộp thoại chọn file lại cho người dùng
+        return;
+    }
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
