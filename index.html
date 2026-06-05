@@ -97,24 +97,103 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
 
 
     
-        #welcomeOverlay
-
-/* Hiệu ứng khi người dùng di chuột qua (Hover) */
-#welcomeOverlay:hover {
-    border-color: #666666; /* Viền sáng lên một chút để báo hiệu có thể click */
-    background-color: rgba(255, 255, 255, 0.04);
+        #welcomeOverlay {
+    position: fixed; 
+    top: 40%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    text-align: center; 
+    z-index: 10; 
+    width: 90%; 
+    max-width: 500px; /* Thu gọn chiều rộng tối đa giúp bố cục cô đọng hơn */
+    pointer-events: auto; 
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Chống tràn viền tuyệt đối trên Mobile */
+    box-sizing: border-box;
+    padding: 40px 20px;
+    
+    /* Giao diện mặc định */
+    border: 2px dashed #444444;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(4px); /* Tạo hiệu ứng kính mờ sang trọng */
+    -webkit-backdrop-filter: blur(4px);
 }
 
-/* Hiệu ứng khi kéo tệp tin đè lên vùng này (Dragover) */
+/* Hiệu ứng khi di chuột qua (Hover) trên Máy tính */
+@media (hover: hover) {
+    #welcomeOverlay:hover {
+        border-color: #888888;
+        background-color: rgba(255, 255, 255, 0.03);
+        transform: translate(-50%, -52%); /* Nhấc nhẹ khung lên tạo chiều sâu */
+    }
+    #welcomeOverlay:hover .upload-icon {
+        color: #ffffff;
+        transform: translateY(-4px); /* Icon nhích nhẹ lên kích thích hành động */
+    }
+}
+
+/* Hiệu ứng cao cấp khi kéo tệp tin đè lên vùng nhận diện (Dragover) */
 #welcomeOverlay.dragover {
-    border-color: #03dac6; /* Đổi sang màu xanh neon sáng */
-    background-color: rgba(3, 218, 198, 0.08); /* Nền sáng lên theo tông xanh */
-    box-shadow: 0 0 20px rgba(3, 218, 198, 0.2); /* Thêm hiệu ứng hào quang nhẹ */
+    border-style: solid; /* Chuyển từ nét đứt sang nét liền */
+    border-color: #03dac6;
+    background-color: rgba(3, 218, 198, 0.06);
+    box-shadow: 0 0 30px rgba(3, 218, 198, 0.25);
+    transform: translate(-50%, -50%) scale(1.02); /* Phình to nhẹ báo hiệu sẵn sàng */
+}
+
+#welcomeOverlay.dragover .upload-icon {
+    color: #03dac6;
+    transform: scale(1.1);
+}
+
+/* Thiết kế Icon kéo thả */
+.upload-icon {
+    color: #666666;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* Tối ưu hóa kích thước chữ để không bị vỡ bố cục trên màn hình nhỏ (<360px) */
+#welcomeOverlay h1 { 
+    font-size: 1.8em; 
+    color: #ffffff; 
+    margin: 0 0 10px 0; 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+}
+#welcomeOverlay p { 
+    color: #888888; 
+    font-size: 0.95em; 
+    line-height: 1.5; 
+    margin: 0; 
+}
+
+/* Thu nhỏ cấu trúc hơn nữa trên điện thoại cực nhỏ */
+@media (max-width: 400px) {
+    #welcomeOverlay {
+        padding: 30px 16px;
+    }
+    #welcomeOverlay h1 {
+        font-size: 1.5em;
+    }
+    #welcomeOverlay p {
+        font-size: 0.85em;
+    }
+    .upload-icon svg {
+        width: 40px;
+        height: 40px;
+    }
 }
 
 
-        #welcomeOverlay h1 { font-size: 2.5em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
-        #welcomeOverlay p { color: #888; font-size: 1.1em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
+
+
         body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
         
         #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
@@ -466,22 +545,20 @@ input, textarea {
 <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
 
     
-    <div id="welcomeOverlay">
-       <!-- Icon đám mây công nghệ -->
-    <div class="upload-icon-box">
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
-            <polyline points="17 8 12 3 7 8" />
-            <line x1="12" y1="3" x2="12" y2="15" />
-        </svg>
-    </div>
-    <h1 id="mainTitle">Phân Đoạn Video</h1>
-    <p id="subTitle">Kéo thả tệp video vào đây hoặc <span class="highlight-text">Nhấp để duyệt</span></p>
-</div>
+        <div id="welcomeOverlay">
+        <!-- Icon SVG thiết kế tối giản, sắc nét -->
+        <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        </div>
 
         <h1 id="mainTitle">Phân Đoạn Video</h1>
-        <p id="subTitle">Chọn một tệp video từ máy của bạn để bắt đầu xử lý chuẩn dữ liệu nhanh chóng.</p>
+        <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
     </div>
+
 
     <div id="videoContainer"></div>
 
