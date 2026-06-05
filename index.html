@@ -546,20 +546,14 @@ input, textarea {
 
     
         <div id="welcomeOverlay">
-    <div class="upload-icon" id="uploadIconWrapper">
-        <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="17 8 12 3 7 8"></polyline>
-            <line x1="12" y1="3" x2="12" y2="15"></line>
-        </svg>
-    </div>
-
-    <div id="fileNameDisplay" style="display: none; font-size: 1.1em; color: #03dac6; font-weight: bold; margin-bottom: 16px; word-break: break-all; padding: 0 10px;"></div>
-
-    <h1 id="mainTitle">Phân Đoạn Video</h1>
-    <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
-</div>
-
+        <!-- Icon SVG thiết kế tối giản, sắc nét -->
+        <div class="upload-icon">
+            <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+        </div>
 
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
@@ -900,16 +894,6 @@ upload.addEventListener('change', (e) => {
         rawVideoFile = file; 
         if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
         sharedVideoURL = URL.createObjectURL(file);
-        
-        // --- ĐOẠN THÊM MỚI: Xử lý thay thế Icon thành Tên File ---
-        const uploadIconWrapper = document.getElementById('uploadIconWrapper');
-        const fileNameDisplay = document.getElementById('fileNameDisplay');
-        if (uploadIconWrapper && fileNameDisplay) {
-            uploadIconWrapper.style.display = 'none'; // Ẩn icon upload đi
-            fileNameDisplay.innerText = `🎬 ${file.name}`; // Chèn tên file kèm icon video
-            fileNameDisplay.style.display = 'block'; // Hiển thị tên file lên màn hình
-        }
-        // --------------------------------------------------------
         
         const tempVideo = document.createElement('video');
         tempVideo.src = sharedVideoURL;
