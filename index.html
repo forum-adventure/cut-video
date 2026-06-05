@@ -173,6 +173,19 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
     line-height: 1.5; 
     margin: 0; 
 }
+    
+    /* Thiết kế ảnh xem trước hình vuông của Video khi đã nạp thành công */
+.upload-preview-img {
+    width: 64px;
+    height: 64px;
+    object-fit: cover; /* Ép ảnh luôn lấp đầy khung vuông không bị méo */
+    border-radius: 12px;
+    border: 2px solid #03dac6; /* Viền neon đồng bộ */
+    box-shadow: 0 0 15px rgba(3, 218, 198, 0.3);
+    margin-bottom: 16px;
+    display: none; /* Mặc định ẩn đi, chỉ hiện khi có video */
+}
+
 
 /* Thu nhỏ cấu trúc hơn nữa trên điện thoại cực nhỏ */
 @media (max-width: 400px) {
@@ -554,6 +567,8 @@ input, textarea {
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
         </div>
+            
+            <img class="upload-preview-img" id="uploadPreview" alt="Video Preview">
 
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
@@ -897,7 +912,7 @@ upload.addEventListener('change', (e) => {
         
         const tempVideo = document.createElement('video');
         tempVideo.src = sharedVideoURL;
-        tempVideo.onloadedmetadata = () => {
+                tempVideo.onloadedmetadata = () => {
             totalVideoDuration = tempVideo.duration;
             
             // Kiểm tra xem trước đó người dùng đã cắt đoạn nào chưa
@@ -912,6 +927,20 @@ upload.addEventListener('change', (e) => {
                 document.getElementById('mainTitle').innerText = "Video sẵn sàng";
                 document.getElementById('mainTitle').style.color = "#2ecc71";
                 document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+
+                // XỬ LÝ ĐỔI ICON THÀNH ẢNH VUÔNG CỦA VIDEO VỪA TẢI
+                const uploadIcon = welcomeOverlay.querySelector('.upload-icon');
+                const uploadPreview = document.getElementById('uploadPreview');
+                
+                // Gọi hàm chụp ảnh thumbnail ở giây đầu tiên (0) của video
+                captureThumbnail(0).then(thumbUrl => {
+                    if (thumbUrl && uploadPreview) {
+                        uploadPreview.src = thumbUrl;
+                        uploadPreview.style.display = 'inline-block'; // Hiện ảnh vuông
+                        if (uploadIcon) uploadIcon.style.display = 'none'; // Ẩn icon đám mây đi
+                    }
+                });
+
             } else {
                 // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
                 console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
@@ -953,8 +982,9 @@ upload.addEventListener('change', (e) => {
             status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
             enableControls();
         };
-    }
-});
+
+                
+                
 
 
                 async function captureThumbnail(startTime) {
