@@ -31,11 +31,7 @@ if (typeof window === 'undefined') {
     (() => {
         const script = document.currentScript;
         if (navigator.serviceWorker) {
-            // SỬA ĐỔI TẠI ĐÂY: Sử dụng đối tượng URL để tính toán chính xác đường dẫn chạy trên GitHub Pages phụ (Sub-folder)
-            const scriptSrc = script.getAttribute("src");
-            const swUrl = new URL(scriptSrc, window.location.href).href;
-
-            navigator.serviceWorker.register(swUrl)
+            navigator.serviceWorker.register(window.location.pathname + script.getAttribute("src"))
                 .then((registration) => {
                     registration.addEventListener("updatefound", () => {
                         window.location.reload();
@@ -43,9 +39,6 @@ if (typeof window === 'undefined') {
                     if (registration.active && !navigator.serviceWorker.controller) {
                         window.location.reload();
                     }
-                })
-                .catch((err) => {
-                    console.error("❌ Không thể đăng ký Service Worker do sai đường dẫn:", err);
                 });
         }
     })();
