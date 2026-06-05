@@ -556,7 +556,8 @@ input, textarea {
         </div>
 
         <div id="uploadPreviewContainer" style="display: none; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 16px;">
-        <video id="uploadedThumbnailVideo" muted playsinline preload="metadata" style="width: 120px; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; border: 2px solid #03dac6; box-shadow: 0 0 10px rgba(3, 218, 198, 0.3); pointer-events: none;"></video>
+        <video id="uploadedThumbnailVideo" autoplay muted playsinline preload="auto" crossorigin="anonymous" style="width: 120px; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; border: 2px solid #03dac6; box-shadow: 0 0 10px rgba(3, 218, 198, 0.3); pointer-events: none;"></video>
+
         <span id="uploadedFileName" style="color: #03dac6; font-size: 0.9em; font-weight: bold; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Tên_video.mp4</span>
     </div>
     <h1 id="mainTitle">Phân Đoạn Video</h1>
@@ -931,12 +932,19 @@ upload.addEventListener('change', (e) => {
                     // 2. Cập nhật tên tệp tin video vừa chọn
                     uploadedName.innerText = file.name;
                     
-                    // 3. Gán luồng URL trực tiếp vào video mini (Trình duyệt tự render mượt mà)
-                    uploadedVideoThumb.src = sharedVideoURL;
-                    uploadedVideoThumb.currentTime = 0;
-                    
-                    // 4. Bật hiển thị vùng chứa preview lên dạng flex
-                    previewContainer.style.display = 'flex';
+                    // 3. Gán luồng URL trực tiếp vào video mini và ép tải dữ liệu hình ảnh
+uploadedVideoThumb.src = sharedVideoURL;
+uploadedVideoThumb.currentTime = 0;
+uploadedVideoThumb.load(); // Lệnh ép trình duyệt đọc dữ liệu từ bộ nhớ RAM
+
+// Khóa video lại ngay khi nó tải xong khung hình đầu tiên để làm ảnh tĩnh (Thumbnail)
+uploadedVideoThumb.onloadeddata = () => {
+    uploadedVideoThumb.pause(); 
+};
+
+// 4. Bật hiển thị vùng chứa preview lên dạng flex
+previewContainer.style.display = 'flex';
+
                 }
                 // ==================================================
                 
