@@ -546,24 +546,22 @@ input, textarea {
 
     
         <div id="welcomeOverlay">
-    <!-- Vùng chứa icon hoặc ảnh thumbnail thay thế -->
-    <div class="upload-icon">
-        <!-- Thẻ chứa icon gốc -->
-        <span id="uploadIconSvg">
+        <!-- Icon SVG thiết kế tối giản, sắc nét -->
+        <div class="upload-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-        </span>
-        <!-- Thẻ hình ảnh vuông nhỏ sẽ hiển thị sau khi upload -->
-        <img id="previewThumb" src="" alt="Video Preview" style="display: none; width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 2px solid #03dac6; box-shadow: 0 0 10px rgba(3, 218, 198, 0.3);">
-    </div>
+        </div>
 
+        <div id="uploadPreviewContainer" style="display: none; flex-direction: column; align-items: center; gap: 12px; margin-bottom: 16px;">
+        <video id="uploadedThumbnailVideo" muted playsinline preload="metadata" style="width: 120px; height: auto; aspect-ratio: 16/9; object-fit: cover; border-radius: 8px; border: 2px solid #03dac6; box-shadow: 0 0 10px rgba(3, 218, 198, 0.3); pointer-events: none;"></video>
+        <span id="uploadedFileName" style="color: #03dac6; font-size: 0.9em; font-weight: bold; max-width: 90%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block;">Tên_video.mp4</span>
+    </div>
     <h1 id="mainTitle">Phân Đoạn Video</h1>
     <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
 </div>
-
 
 
     <div id="videoContainer"></div>
@@ -906,21 +904,6 @@ upload.addEventListener('change', (e) => {
         tempVideo.onloadedmetadata = () => {
             totalVideoDuration = tempVideo.duration;
             
-            // --- ĐOẠN THÊM MỚI: Xử lý thay thế icon thành hình ảnh vuông nhỏ ---
-            const uploadIconSvg = document.getElementById('uploadIconSvg');
-            const previewThumb = document.getElementById('previewThumb');
-            
-            if (uploadIconSvg && previewThumb) {
-                // Chụp ảnh thumbnail tại giây thứ 0 của video mới upload
-                captureThumbnail(0).then(thumbUrl => {
-                    if (thumbUrl) {
-                        previewThumb.src = thumbUrl;
-                        previewThumb.style.display = 'block'; // Hiện ảnh thumbnail
-                        uploadIconSvg.style.display = 'none'; // Ẩn icon SVG gốc
-                    }
-                });
-            }
-            
             // Kiểm tra xem trước đó người dùng đã cắt đoạn nào chưa
             const hasExistingClips = videoContainer.children.length > 0;
             
@@ -933,6 +916,30 @@ upload.addEventListener('change', (e) => {
                 document.getElementById('mainTitle').innerText = "Video sẵn sàng";
                 document.getElementById('mainTitle').style.color = "#2ecc71";
                 document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+                
+                // ====================================================
+                // CHÈN THÊM ĐOẠN LOGIC THAY THẾ ICON THÀNH PREVIEW Ở ĐÂY:
+                const defaultIcon = document.getElementById('defaultUploadIcon');
+                const previewContainer = document.getElementById('uploadPreviewContainer');
+                const uploadedVideoThumb = document.getElementById('uploadedThumbnailVideo');
+                const uploadedName = document.getElementById('uploadedFileName');
+
+                if (defaultIcon && previewContainer && uploadedVideoThumb && uploadedName) {
+                    // 1. Ẩn icon SVG mặc định đi
+                    defaultIcon.style.display = 'none';
+                    
+                    // 2. Cập nhật tên tệp tin video vừa chọn
+                    uploadedName.innerText = file.name;
+                    
+                    // 3. Gán luồng URL trực tiếp vào video mini (Trình duyệt tự render mượt mà)
+                    uploadedVideoThumb.src = sharedVideoURL;
+                    uploadedVideoThumb.currentTime = 0;
+                    
+                    // 4. Bật hiển thị vùng chứa preview lên dạng flex
+                    previewContainer.style.display = 'flex';
+                }
+                // ==================================================
+                
             } else {
                 // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
                 console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
