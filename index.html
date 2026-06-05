@@ -537,8 +537,8 @@ input, textarea {
     <div id="ffmpegLoadingOverlay">
     <div class="loader-box">
         <div class="spinner"></div>
-        <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
-        <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
+        <h2 id="loadingStatusText">Initializing FFmpeg.wasm...</h2>
+        <p>Please wait a moment while the system loads the video processing library.</p>
     </div>
 </div>
 
@@ -556,8 +556,8 @@ input, textarea {
             </svg>
         </div>
 
-        <h1 id="mainTitle">Phân Đoạn Video</h1>
-        <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
+        <h1 id="mainTitle">Video Segmenter</h1>
+        <p id="subTitle">Drag and drop your video file here or tap to select from device</p>
     </div>
 
 
@@ -566,8 +566,8 @@ input, textarea {
     <div id="gridOverlay">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
-            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
+            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Segment List</h3>
+            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Close Grid</button>
         </div>
         <div id="gridContent"></div>
     </div>
@@ -583,7 +583,7 @@ input, textarea {
                    <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
     
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Start from:</label>
                <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
             <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
@@ -593,10 +593,11 @@ input, textarea {
     </div>
         
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Duration (s):
+</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <input type="number" id="durationInput" value="5" min="1" step="0.5" >
-            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
+            <input type="text" id="clipLabelInput" placeholder="Segment label (optional)"style="flex-grow: 1; width: 100%; min-width: 0;">
         </div>
     </div>
     
@@ -607,9 +608,9 @@ input, textarea {
         </div>
 
         <div class="controls-row">                                            
-            <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
+            <button id="nextBtn" class="action-btn" disabled>Loading Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
-            <button id="gridViewBtn" title="Xem dạng lưới" disabled>
+            <button id="gridViewBtn" title="Grid view" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
                 <span></span>
             </button>
@@ -638,7 +639,7 @@ const welcomeOverlay = document.getElementById('welcomeOverlay');
                 if (granted) {
                     console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững cho App!");
                     // Cập nhật trạng thái ngầm lên giao diện nếu cần để bạn dễ theo dõi
-                    if (status) status.innerText = "✓ Chế độ lưu trữ bền vững đã kích hoạt.";
+                    if (status) status.innerText = "✓ Persistent storage mode activated.";
                 } else {
                     console.log("⚠️ Chế độ lưu trữ vẫn có thể bị hệ thống dọn dẹp.");
                 }
@@ -696,7 +697,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
         const event = new Event('change', { bubbles: true });
         upload.dispatchEvent(event);
     } else {
-        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
+        alert("Please drop a valid Video file format!");
     }
 });
 
@@ -722,7 +723,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             try {
                 await ffmpeg.load();
                 isFFmpegReady = true;
-                status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
+                status.innerText = "Core system is ready! Please select a Video.";
                 
                 if(upload.files[0]) {
                     enableControls();
@@ -735,11 +736,11 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 
             } catch (error) {
                 console.error(error);
-                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
+                status.innerText = "Core initialization error. Ensure running via GitHub Pages (HTTPS) or Local Server Cross-Origin.";
                 
                 // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết
                 if (loadingStatusText) {
-                    loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
+                    loadingStatusText.innerText = "❌ Processing system initialization failed!";
                     loadingStatusText.style.color = "#cf6679"; // Đổi chữ sang màu đỏ rủi ro
                 }
             }
@@ -899,7 +900,7 @@ if (btnPrevTime && btnNextTime) {
                 nextBtn.disabled = false;
                 randomBtn.disabled = false;
                 gridViewBtn.disabled = false;
-                nextBtn.innerText = "Thêm đoạn";
+                nextBtn.innerText = "Add Segment";
             }
         }
 
@@ -925,12 +926,12 @@ upload.addEventListener('change', (e) => {
                 gridContent.innerHTML = "";
                 document.body.classList.remove('has-clips');
                 
-                document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+                document.getElementById('mainTitle').innerText = "Video Ready";
                 document.getElementById('mainTitle').style.color = "#2ecc71";
-                document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+                document.getElementById('subTitle').innerHTML = "💡 Set the start timestamp, assign a label, then press <b>Add Segment</b>.";
             } else {
                 // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
-                console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
+                console.log("🔄 Rehydrating data source for existing segments...");
                 
                 // Kích hoạt lại toàn bộ các thẻ video cũ trên giao diện với nguồn mới
                 const allVideos = videoContainer.querySelectorAll('video');
@@ -966,7 +967,7 @@ upload.addEventListener('change', (e) => {
             }
             
             upload.value = ""; 
-            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
+            status.innerText = `Video duration: ${formatTime(totalVideoDuration)}`;
             enableControls();
         };
     }
@@ -1096,7 +1097,7 @@ upload.addEventListener('change', (e) => {
             // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        alert("⚠️ The system has disconnected the file to free up RAM.\nPlease reselect the exact original video to continue segmenting!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
@@ -1108,7 +1109,7 @@ upload.addEventListener('change', (e) => {
             const clipLabel = clipLabelInput.value.trim();
 
             if (start >= totalVideoDuration) {
-                alert("Thời gian bắt đầu vượt quá tổng độ dài video!");
+                alert("Start time exceeds total video duration!");
                 return;
             }
             document.body.classList.add('has-clips');
@@ -1192,11 +1193,11 @@ video.onpause = () => {
             btnGroup.className = 'button-group';
             
             const dl = document.createElement('button');
-            dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
+            dl.className = 'download-btn'; dl.innerText = "Download .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
             const del = document.createElement('button');
-            del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
+            del.className = 'delete-btn'; del.innerText = "Delete Segment";
             del.onclick = () => {
                 clipObserver.unobserve(video); 
                 // --- THÊM ĐOẠN NÀY: Ngắt luồng chạy và nạp dữ liệu của video trước khi gỡ bỏ ---
@@ -1231,11 +1232,11 @@ video.onpause = () => {
 
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
             if (!isFFmpegReady) {
-                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+                alert("FFmpeg core system is loading, please try again in a few seconds!");
                 return;
             }
             if (!rawVideoFile) {
-                alert("Lỗi: Không tìm thấy file video đầu vào.");
+                alert("Error: Input video file not found.");
                 return;
             }
             
@@ -1246,7 +1247,7 @@ if (rawVideoFile) {
         await rawVideoFile.slice(0, 1).arrayBuffer();
     } catch (fileError) {
         // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        alert("⚠️ The system has disconnected the file to free up RAM.\nPlease reselect the video to continue exporting!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Khử lỗi không nhận diện trùng file
         upload.click(); 
         return;
@@ -1256,8 +1257,8 @@ if (rawVideoFile) {
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛ Đang xử lý...';
-            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
+            btn.innerText = '⌛ Processing...';
+            status.innerText = `⏳ Executing segment extraction [${formatTime(startTime)}] duration ${duration}s...`;
 
             const timestamp = Date.now();
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1282,11 +1283,11 @@ if (rawVideoFile) {
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
+                status.innerText = `✨ Export successful: ${downloadName}`;
             } catch (err) {
                 console.error(err);
-                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
-                status.innerText = "❌ Lỗi thực thi Render.";
+                alert("An error occurred during FFmpeg command execution.");
+                status.innerText = "❌ Render execution error.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
