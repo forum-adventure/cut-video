@@ -97,26 +97,7 @@ button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
 
 
     
-        #welcomeOverlay {
-    position: fixed; 
-    top: 40%; 
-    left: 50%; 
-    transform: translate(-50%, -50%);
-    text-align: center; 
-    z-index: 10; 
-    width: 90%; 
-    max-width: 650px; /* Giới hạn chiều rộng để khung viền ôm vừa vặn, đẹp mắt */
-    pointer-events: auto; 
-    cursor: pointer;
-    transition: all 0.3s ease; /* Tạo hiệu ứng mượt mà cho tất cả thay đổi */
-    
-    padding: 50px 30px;
-    
-    /* KHUNG VIỀN NÉT ĐỨT SẴN CÓ */
-    border: 2px dashed #444444; /* Màu xám tối mặc định, tiệp với giao diện tối */
-    border-radius: 16px;       /* Bo góc mượt mà */
-    background-color: rgba(255, 255, 255, 0.02); /* Thêm một lớp nền mờ cực nhẹ */
-}
+        #welcomeOverlay
 
 /* Hiệu ứng khi người dùng di chuột qua (Hover) */
 #welcomeOverlay:hover {
@@ -486,7 +467,17 @@ input, textarea {
 
     
     <div id="welcomeOverlay">
-       
+       <!-- Icon đám mây công nghệ -->
+    <div class="upload-icon-box">
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+            <polyline points="17 8 12 3 7 8" />
+            <line x1="12" y1="3" x2="12" y2="15" />
+        </svg>
+    </div>
+    <h1 id="mainTitle">Phân Đoạn Video</h1>
+    <p id="subTitle">Kéo thả tệp video vào đây hoặc <span class="highlight-text">Nhấp để duyệt</span></p>
+</div>
 
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Chọn một tệp video từ máy của bạn để bắt đầu xử lý chuẩn dữ liệu nhanh chóng.</p>
