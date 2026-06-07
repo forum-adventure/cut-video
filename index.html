@@ -1451,103 +1451,66 @@ async function downloadClipAsGif(videoElement, startTime, endTime, labelText, bt
 
     let currentFrameIndex = 0;
 
-    // Hàm đệ quy bốc tách từng khung hình chuẩn xác bằng sự kiện onseeked
-    async function extractNextFrame() {
-        if (currentFrameIndex >= totalFrames) {
-            // Sau khi đã bốc đủ các khung hình dạng Base64, tiến hành compile thành GIF
-            btn.innerText = '⚙️ Đang xử lý GIF...';
-            status.innerText = `📦 Đang nén dữ liệu ảnh và xuất file GIF (${totalFrames} khung hình)...`;
+   
+    async function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
+    const originalBtnText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '⏳ Đang khởi tạo...';
+    status.innerText = '🎬 Đang chuẩn bị trích xuất GIF trực tiếp...';
+
+    const duration = endTime - startTime;
+    
+    // Thiết lập các thông số tối ưu mặc định từ file index_gif_toot
+    const fps = 10; 
+    const computedNumFrames = Math.floor(duration * fps);
+    const computedInterval = 1 / fps;
+    
+    // Cấu hình kích thước và chất lượng (mặc định lấy mức cân bằng)
+    const targetWidth = 480; 
+    const sampleInterval = 10; 
+
+    // Tính tỷ lệ chiều cao giữ nguyên aspect ratio của video ban đầu
+    const videoW = videoElement.videoWidth || 480;
+    const videoH = videoElement.videoHeight || 270;
+    const targetHeight = Math.round((targetWidth / videoW) * videoH);
+
+    // Kích hoạt xử lý GIF trực tiếp qua URL blob của video
+    gifshot.createGIF({
+        video: [sharedVideoURL], // Sử dụng link Blob video tổng đang chạy ngầm
+        offset: startTime, 
+        numFrames: computedNumFrames, 
+        interval: computedInterval,   
+        gifWidth: targetWidth, 
+        gifHeight: targetHeight,
+        sampleInterval: sampleInterval, 
+        numWorkers: 4 // Tận dụng tối đa 4 luồng chạy ngầm để tăng tốc trên điện thoại
+    }, function (obj) {
+        if (!obj.error) {
+            const gifUrl = obj.image;
+            const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+            const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
             
-            // Giải phóng video ngầm ngay lập tức để hồi RAM trước khi compile
-            hiddenVideo.pause();
-            hiddenVideo.src = "";
-            hiddenVideo.load();
-            hiddenVideo.remove();
+            // Tự động tải file xuống
+            const a = document.createElement('a');
+            a.href = gifUrl;
+            a.download = downloadName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
 
-            compileGif();
-            return;
+            status.innerText = `✨ Tải thành công ảnh GIF: ${downloadName}`;
+        } else {
+            console.error("Gifshot Error:", obj.errorMsg);
+            alert("Không thể đóng gói tệp tin GIF bằng cơ chế trực tiếp.");
+            status.innerText = "❌ Lỗi đóng gói GIF.";
         }
-
-        // Tính toán mốc thời gian của khung hình tiếp theo
-        const targetTime = startTime + (currentFrameIndex * interval);
-        if (targetTime >= totalVideoDuration) {
-            compileGif();
-            return;
-        }
-
-        btn.innerText = `⌛ Khung hình: ${currentFrameIndex}/${totalFrames}`;
-        hiddenVideo.currentTime = targetTime;
-    }
-
-    // Xử lý sự kiện khi video nhảy đến khung hình thành công
-    hiddenVideo.onseeked = () => {
-        // Chờ một nhịp cực nhỏ (50ms) để luồng đồ họa Android/iOS vẽ kịp hình lên canvas
-        setTimeout(() => {
-            try {
-                ctx.drawImage(hiddenVideo, 0, 0, canvas.width, canvas.height);
-                capturedFrames.push(canvas.toDataURL('image/jpeg', 0.7)); // Dùng jpeg 70% để tiết kiệm bộ nhớ tối đa
-                currentFrameIndex++;
-                extractNextFrame();
-            } catch (canvasErr) {
-                console.error("Lỗi trích xuất Canvas khung hình:", canvasErr);
-                cleanupAndReset("❌ Lỗi xử lý canvas.");
-            }
-        }, 50);
-    };
-
-    hiddenVideo.onerror = () => {
-        cleanupAndReset("❌ Lỗi nạp nguồn video chạy ngầm.");
-    };
-
-    // Bắt đầu kích hoạt luồng chạy giải mã
-    hiddenVideo.onloadedmetadata = () => {
-        extractNextFrame();
-    };
-    hiddenVideo.load();
-
-    // 3. Hàm đóng gói thành quả bằng Gifshot
-    function compileGif() {
-        gifshot.createGIF({
-            images: capturedFrames,
-            gifWidth: gifWidth,
-            gifHeight: gifHeight,
-            interval: interval,
-            numWorkers: 2 // Giới hạn 2 luồng để không gây đơ/đóng ứng dụng trên trình duyệt di động
-        }, function (obj) {
-            if (!obj.error) {
-                const gifUrl = obj.image;
-                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-                const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
-                
-                // Kích hoạt hành vi tải file tự động
-                const a = document.createElement('a');
-                a.href = gifUrl;
-                a.download = downloadName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                status.innerText = `✨ Tải thành công ảnh GIF: ${downloadName}`;
-            } else {
-                console.error("Gifshot Error:", obj.errorMsg);
-                alert("Không thể đóng gói tệp tin GIF. Có thể do thiết bị thiếu bộ nhớ trống.");
-                status.innerText = "❌ Lỗi đóng gói GIF.";
-            }
-            cleanupAndReset();
-        });
-    }
-
-    // Hàm dọn dẹp biến tạm giải phóng rác cho RAM bộ nhớ sau khi hoàn thành hoặc lỗi
-    function cleanupAndReset(errorMessage) {
+        
+        // Trả trạng thái nút bấm về ban đầu
         btn.disabled = false;
         btn.innerText = originalBtnText;
-        if (errorMessage) status.innerText = errorMessage;
-        
-        // Gán mảng rác về rỗng hoàn toàn để bộ gom rác (Garbage Collector) dọn ngay
-        capturedFrames.length = 0; 
-        canvas.remove();
-    }
+    });
 }
+
 
 
     </script>
