@@ -1425,16 +1425,22 @@ document.addEventListener('contextmenu', (e) => {
     const videoH = videoElement.videoHeight || 270;
     const targetHeight = Math.round((targetWidth / videoW) * videoH);
 
-    // Kích hoạt xử lý GIF trực tiếp qua URL blob của video
+    // Lưu lại trạng thái thời gian và trạng thái phát hiện tại của phân đoạn
+    const originalTime = videoElement.currentTime;
+    const wasPaused = videoElement.paused;
+    
+    // Đưa video về mốc bắt đầu cắt để gifshot tiến hành quét hình ảnh
+    videoElement.currentTime = startTime;
+
+    // KÍCH HOẠT XỬ LÝ: Truyền thẳng đối tượng Element vào thay vì đường link URL
     gifshot.createGIF({
-        video: [sharedVideoURL], // Sử dụng link Blob video tổng đang chạy ngầm
-        offset: startTime, 
+        video: videoElement, // <--- THAY ĐỔI QUAN TRỌNG: Truyền đối tượng HTMLVideoElement trực tiếp
         numFrames: computedNumFrames, 
         interval: computedInterval,   
         gifWidth: targetWidth, 
         gifHeight: targetHeight,
         sampleInterval: sampleInterval, 
-        numWorkers: 4 // Tận dụng tối đa 4 luồng chạy ngầm để tăng tốc trên điện thoại
+        numWorkers: 2 // Giảm xuống 2 workers trên giao diện để tránh xung đột với coi-serviceworker
     }, function (obj) {
         if (!obj.error) {
             const gifUrl = obj.image;
@@ -1452,10 +1458,16 @@ document.addEventListener('contextmenu', (e) => {
             status.innerText = `✨ Tải thành công ảnh GIF: ${downloadName}`;
         } else {
             console.error("Gifshot Error:", obj.errorMsg);
-            alert("Không thể đóng gói tệp tin GIF bằng cơ chế trực tiếp.");
+            alert("Không thể đóng gói tệp tin GIF. Lỗi: " + obj.errorMsg);
             status.innerText = "❌ Lỗi đóng gói GIF.";
         }
         
+        // Trả lại trạng thái ban đầu cho video phân đoạn
+        videoElement.currentTime = originalTime;
+        if (!wasPaused) {
+            videoElement.play().catch(() => {});
+        }
+
         // Trả trạng thái nút bấm về ban đầu
         btn.disabled = false;
         btn.innerText = originalBtnText;
