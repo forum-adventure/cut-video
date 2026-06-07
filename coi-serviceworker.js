@@ -3,11 +3,6 @@ if (typeof window === 'undefined') {
     self.addEventListener("install", () => self.skipWaiting());
     self.addEventListener("activate", (event) => event.waitUntil(self.clients.claim()));
     self.addEventListener("fetch", (event) => {
-        // KHÔNG can thiệp vào các request tải xuống nội bộ hoặc request dạng blob/data
-        if (event.request.url.startsWith('blob:') || event.request.url.startsWith('data:')) {
-            return;
-        }
-
         if (event.request.cache === "only-if-cached" && event.request.mode !== "same-origin") {
             return;
         }
@@ -20,6 +15,7 @@ if (typeof window === 'undefined') {
                     const newHeaders = new Headers(response.headers);
                     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
                     newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
+                    // BỔ SUNG DÒNG NÀY ĐỂ FIX LỖI CHẶN SCRIPT CDN
                     newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin"); 
                     
                     return new Response(response.body, {
