@@ -11,412 +11,308 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInMpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
 
     <style>
-        /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
-        #ffmpegLoadingOverlay {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: #121212;
-            z-index: 9999;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            transition: opacity 0.5s ease, visibility 0.5s ease;
-        }
+    /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
+    #ffmpegLoadingOverlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(18, 18, 18, 0.95); /* Tiệp màu nền tối của app */
+        z-index: 9999; /* Đảm bảo nằm trên cùng tất cả các thành phần khác */
+        display: none; /* MẶC ĐỊNH ẨN: Chỉ hiện khi bấm nút tải xuống */
+        align-items: center;
+        justify-content: center;
+        transition: opacity 0.3s ease, visibility 0.3s ease;
+    }
 
-        .loader-box {
-            text-align: center;
-            padding: 20px;
-            max-width: 90%;
-        }
+    .loader-box {
+        text-align: center;
+        padding: 20px;
+        max-width: 90%;
+    }
 
-        .spinner {
-            width: 60px;
-            height: 60px;
-            border: 4px solid rgba(3, 218, 198, 0.1);
-            border-top-color: #03dac6;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 24px auto;
-            box-shadow: 0 0 15px rgba(3, 218, 198, 0.2);
-        }
+    .spinner {
+        width: 60px;
+        height: 60px;
+        border: 4px solid rgba(3, 218, 198, 0.1);
+        border-top-color: #03dac6; /* Màu xanh neon đồng bộ với nút bấm của bạn */
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+        margin: 0 auto 24px auto;
+        box-shadow: 0 0 15px rgba(3, 218, 198, 0.2);
+    }
 
-        .loader-box h2 {
+    .loader-box h2 {
+        color: #ffffff;
+        font-size: 1.4em;
+        margin: 0 0 10px 0;
+        letter-spacing: 1px;
+    }
+
+    .loader-box p {
+        color: #888888;
+        font-size: 0.95em;
+        margin: 0;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    body { 
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+        padding: 20px; background-color: #121212; 
+        color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
+        display: flex; flex-direction: column;
+        overscroll-behavior-y: contain; 
+        touch-action: manipulation; 
+    }
+
+    button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
+        touch-action: manipulation;
+    }
+
+    #welcomeOverlay {
+        position: fixed; 
+        top: 40%; 
+        left: 50%; 
+        transform: translate(-50%, -50%);
+        text-align: center; 
+        z-index: 10; 
+        width: 90%; 
+        max-width: 500px;
+        pointer-events: auto; 
+        cursor: pointer;
+        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        box-sizing: border-box;
+        padding: 40px 20px;
+        border: 2px dashed #444444;
+        border-radius: 16px;
+        background-color: rgba(255, 255, 255, 0.01);
+        backdrop-filter: blur(4px);
+        -webkit-backdrop-filter: blur(4px);
+    }
+
+    @media (hover: hover) {
+        #welcomeOverlay:hover {
+            border-color: #888888;
+            background-color: rgba(255, 255, 255, 0.03);
+            transform: translate(-50%, -52%);
+        }
+        #welcomeOverlay:hover .upload-icon {
             color: #ffffff;
-            font-size: 1.4em;
-            margin: 0 0 10px 0;
-            letter-spacing: 1px;
+            transform: translateY(-4px);
         }
+    }
 
-        .loader-box p {
-            color: #888888;
-            font-size: 0.95em;
-            margin: 0;
-        }
+    #welcomeOverlay.dragover {
+        border-style: solid;
+        border-color: #03dac6;
+        background-color: rgba(3, 218, 198, 0.06);
+        box-shadow: 0 0 30px rgba(3, 218, 198, 0.25);
+        transform: translate(-50%, -50%) scale(1.02);
+    }
 
-        #ffmpegLoadingOverlay.fade-out {
-            opacity: 0;
-            visibility: hidden;
-            pointer-events: none;
-        }
+    #welcomeOverlay.dragover .upload-icon {
+        color: #03dac6;
+        transform: scale(1.1);
+    }
 
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
+    .upload-icon {
+        color: #666666;
+        margin-bottom: 16px;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+    }
 
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            padding: 20px; background-color: #121212; 
-            color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
-            display: flex; flex-direction: column;
-            overscroll-behavior-y: contain; 
-            touch-action: manipulation; 
-        }
+    #welcomeOverlay h1 { 
+        font-size: 1.8em; 
+        color: #ffffff; 
+        margin: 0 0 10px 0; 
+        text-transform: uppercase; 
+        letter-spacing: 1.5px; 
+    }
+    #welcomeOverlay p { 
+        color: #888888; 
+        font-size: 0.95em; 
+        line-height: 1.5; 
+        margin: 0; 
+    }
 
-        button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
-            touch-action: manipulation;
-        }
+    @media (max-width: 400px) {
+        #welcomeOverlay { padding: 30px 16px; }
+        #welcomeOverlay h1 { font-size: 1.5em; }
+        #welcomeOverlay p { font-size: 0.85em; }
+        .upload-icon svg { width: 40px; height: 40px; }
+    }
+
+    body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
+    #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
     
-        #welcomeOverlay {
-            position: fixed; 
-            top: 40%; 
-            left: 50%; 
-            transform: translate(-50%, -50%);
-            text-align: center; 
-            z-index: 10; 
-            width: 90%; 
-            max-width: 500px;
-            pointer-events: auto; 
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            box-sizing: border-box;
-            padding: 40px 20px;
-            border: 2px dashed #444444;
-            border-radius: 16px;
-            background-color: rgba(255, 255, 255, 0.01);
-            backdrop-filter: blur(4px);
-            -webkit-backdrop-filter: blur(4px);
-        }
+    .clip-wrapper { 
+        display: flex; flex-direction: column; align-items: center; 
+        border: 1px solid #2a2a2a; padding: 16px; 
+        border-radius: 16px; background: #1e1e1e; width: fit-content; 
+        max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
+        height: auto; transition: transform 0.2s ease;
+    }
 
-        @media (hover: hover) {
-            #welcomeOverlay:hover {
-                border-color: #888888;
-                background-color: rgba(255, 255, 255, 0.03);
-                transform: translate(-50%, -52%);
-            }
-            #welcomeOverlay:hover .upload-icon {
-                color: #ffffff;
-                transform: translateY(-4px);
-            }
-        }
+    video { 
+        width: auto; height: auto; max-width: 100%; max-height: 45vh; 
+        border: 2px solid #333; border-radius: 10px; background: #000; cursor: pointer; display: block;
+        aspect-ratio: var(--video-ratio); 
+        object-fit: contain; 
+    }
 
-        #welcomeOverlay.dragover {
-            border-style: solid;
-            border-color: #03dac6;
-            background-color: rgba(3, 218, 198, 0.06);
-            box-shadow: 0 0 30px rgba(3, 218, 198, 0.25);
-            transform: translate(-50%, -50%) scale(1.02);
-        }
-
-        #welcomeOverlay.dragover .upload-icon {
-            color: #03dac6;
-            transform: scale(1.1);
-        }
-
-        .upload-icon {
-            color: #666666;
-            margin-bottom: 16px;
-            transition: all 0.3s ease;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        #welcomeOverlay h1 { 
-            font-size: 1.8em; 
-            color: #ffffff; 
-            margin: 0 0 10px 0; 
-            text-transform: uppercase; 
-            letter-spacing: 1.5px; 
-        }
-        #welcomeOverlay p { 
-            color: #888888; 
-            font-size: 0.95em; 
-            line-height: 1.5; 
-            margin: 0; 
-        }
-
-        @media (max-width: 400px) {
-            #welcomeOverlay { padding: 30px 16px; }
-            #welcomeOverlay h1 { font-size: 1.5em; }
-            #welcomeOverlay p { font-size: 0.85em; }
-            .upload-icon svg { width: 40px; height: 40px; }
-        }
-
-        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
-        
-        #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
-        
-        .clip-wrapper { 
-            display: flex; flex-direction: column; align-items: center; 
-            border: 1px solid #2a2a2a; padding: 16px; 
-            border-radius: 16px; background: #1e1e1e; width: fit-content; 
-            max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
-            height: auto; transition: transform 0.2s ease;
-        }
-
-        video { 
-            width: auto; height: auto; max-width: 100%; max-height: 45vh; 
-            border: 2px solid #333; border-radius: 10px; background: #000; cursor: pointer; display: block;
-            aspect-ratio: var(--video-ratio); 
-            object-fit: contain; 
-        }
-
-        video.portrait { 
-            width: 50vw; max-width: 50vw; max-height: 65vh; 
-            height: auto; 
-        }
-
-        video.unmuted { border-color: #03dac6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.4); }
-        
-        .clip-title-tag { font-size: 0.95em; color: #fff; font-weight: bold; margin-bottom: 6px; align-self: flex-start; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; }
-        .clip-info { font-size: 0.85em; color: #999; margin: 8px 0; font-family: monospace; background: #292929; padding: 4px 8px; border-radius: 4px; }
-        .button-group { display: flex; gap: 10px; margin-top: 4px; width: 100%; }
-        
-        .delete-btn, .download-btn { border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; flex: 1; transition: background 0.2s, transform 0.1s; }
-        .delete-btn { background-color: #cf6679; color: #000; }
-        .delete-btn:active { transform: scale(0.98); }
-        .download-btn { background-color: #03dac6; color: #000; }
-        .download-btn:not(:disabled):hover { background-color: #01f5dd; }
-        .download-btn:active { transform: scale(0.98); }
-        
-        .controls { 
-            position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
-            z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
-            box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
-        }
-
-        @media (max-width: 768px) and (orientation: portrait) {
-            body { padding-bottom: 210px !important; }
-            .controls { padding: 12px 16px !important; gap: 9px !important; }
-            .controls-row { gap: 6px !important; }
-            .controls-row .action-btn, .controls-row #gridViewBtn { padding: 8px 6px !important; font-size: 0.75em !important; }
-            input, select { padding: 6px 10px !important; font-size: 0.75em !important; }
-            #startTimeInput { width: 80px !important; }
-            #durationInput { width: 32px !important; }
-            #clipLabelInput { width: 120px !important; }
-            .tune-btn { padding: 5px 8px !important; font-size: 0.7em !important; }
-            .controls > .controls-row:nth-child(2) > div { padding: 9px !important; gap: 8px !important; }
-        }
-
-        .controls-row { 
-            display: flex; 
-            gap: 8px; 
-            align-items: center; 
-            justify-content: center; 
-            flex-wrap: nowrap; 
-            width: 100%; 
-        }
-
-        .controls-row .action-btn, .controls-row #gridViewBtn {
-            flex: 1; 
-            min-width: 0; 
-            white-space: nowrap; 
-            padding: 10px 8px; 
-            font-size: 0.85em; 
-        }
-        
-        input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
-        input:focus { border-color: #03dac6; }
-        #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
-        #durationInput { width: 40px; }
-        #clipLabelInput { width: 150px; text-align: left; }
-        
-        button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
-        #nextBtn { background-color: #03dac6; }
-        #randomBtn { background-color: #bb86fc; }
-        .tune-btn { background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-        .tune-btn:hover { background: #4a4a4a; }
-        
-        button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; }
-
-        #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
-        
-        #gridOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10,10,10,0.98); z-index: 2000;
-            display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
-            overflow: hidden; 
-        }
-        
-        #gridContent { 
-            display: grid; 
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-            gap: 16px;                  
-            overflow-y: auto;           
-            max-height: calc(100vh - 80px); 
-            padding-bottom: 60px;       
-            box-sizing: border-box;
-            -webkit-overflow-scrolling: touch; 
-        }
-
-        .grid-item { 
-            cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
-            overflow: hidden; position: relative; background: #000; 
-            aspect-ratio: 16 / 9; 
-            transition: border-color 0.2s;
-        }
-
-        .grid-item.portrait {
-            aspect-ratio: 3 / 4 !important; 
-        }
-
-        .grid-item:hover { border-color: #03dac6; }
-        
-        .grid-item img { 
-            width: 100%; 
-            height: 100%; 
-            object-fit: cover; 
-            display: block; 
-            position: absolute;
-            top: 0; left: 0;
-            z-index: 1;
-        }
-        
-        .grid-item .grid-meta { 
-            position: absolute; 
-            bottom: 0; 
-            left: 0; 
-            width: 100%; 
-            background: rgba(0, 0, 0, 0.85); 
-            font-size: 11px; 
-            padding: 6px 0; 
-            text-align: center; 
-            color: #fff;
-            display: flex; 
-            flex-direction: column; 
-            gap: 2px;
-            z-index: 2; 
-            box-sizing: border-box;
-        }
-
-        .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+    video.portrait { width: 50vw; max-width: 50vw; max-height: 65vh; height: auto; }
+    video.unmuted { border-color: #03dac6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.4); }
     
-        @media (orientation: landscape) {
-            body { padding-bottom: 70px !important; }
-            .controls {
-                flex-direction: row !important;
-                justify-content: space-between !important;
-                align-items: center !important;
-                gap: 12px !important;
-                padding: 6px 16px !important;
-                height: 56px !important;
-                box-sizing: border-box !important;
-            }
-            .controls > .controls-row:nth-child(1) { display: none !important; }
-            .controls > .controls-row:nth-child(2) {
-                background: transparent !important;
-                padding: 0 !important;
-                margin: 0 !important;
-                width: auto !important;
-                flex: 1 !important; 
-                display: flex !important;
-                justify-content: center !important;
-            }
-            .controls > .controls-row:nth-child(2) > div {
-                flex-direction: row !important; 
-                flex-wrap: nowrap !important;
-                background: #252525 !important; 
-                padding: 4px 10px !important;
-                gap: 15px !important;
-                max-width: none !important;
-                width: auto !important;
-                align-items: center !important;
-                border-radius: 8px !important;
-            }
-            .controls > .controls-row:nth-child(2) > div > div {
-                flex-direction: row !important;
-                align-items: center !important;
-                width: auto !important;
-                gap: 6px !important;
-            }
-            .controls > .controls-row:nth-child(2) label {
-                width: auto !important;
-                text-align: left !important;
-                font-size: 0.8em !important;
-                white-space: nowrap !important;
-            }
-            #startTimeInput { width: 75px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
-            #durationInput { width: 32px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
-            #clipLabelInput { width: 130px !important; max-width: 180px !important; padding: 4px 6px !important; font-size: 0.85em !important; }
-            .tune-btn { padding: 4px 6px !important; font-size: 0.75em !important; }
-            .controls > .controls-row:nth-child(3) {
-                width: auto !important;
-                flex-shrink: 0 !important;
-                justify-content: flex-end !important;
-                gap: 6px !important;
-                flex-wrap: nowrap !important;
-            }
-            .controls .action-btn, #gridViewBtn {
-                padding: 0 10px !important;
-                font-size: 0.8em !important;
-                height: 34px !important;
-                line-height: 34px !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                flex: unset !important;
-                white-space: nowrap !important;
-            }
-            #gridViewBtn span { display: none !important; }
-            #gridViewBtn svg { margin-right: 0 !important; }
-        }
+    .clip-title-tag { font-size: 0.95em; color: #fff; font-weight: bold; margin-bottom: 6px; align-self: flex-start; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; }
+    .clip-info { font-size: 0.85em; color: #999; margin: 8px 0; font-family: monospace; background: #292929; padding: 4px 8px; border-radius: 4px; }
+    .button-group { display: flex; gap: 10px; margin-top: 4px; width: 100%; }
+    
+    .delete-btn, .download-btn { border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; flex: 1; transition: background 0.2s, transform 0.1s; }
+    .delete-btn { background-color: #cf6679; color: #000; }
+    .delete-btn:active { transform: scale(0.98); }
+    .download-btn { background-color: #03dac6; color: #000; }
+    .download-btn:not(:disabled):hover { background-color: #01f5dd; }
+    .download-btn:active { transform: scale(0.98); }
+    
+    .controls { 
+        position: fixed; bottom: 0; left: 0; width: 100%; 
+        background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
+        z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
+        box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
+    }
 
-        button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn, #closeGrid {
-            -webkit-user-select: none;  
-            -moz-user-select: none;     
-            -ms-user-select: none;      
-            user-select: none;          
-        }
+    @media (max-width: 768px) and (orientation: portrait) {
+        body { padding-bottom: 210px !important; }
+        .controls { padding: 12px 16px !important; gap: 9px !important; }
+        .controls-row { gap: 6px !important; }
+        .controls-row .action-btn, .controls-row #gridViewBtn { padding: 8px 6px !important; font-size: 0.75em !important; }
+        input, select { padding: 6px 10px !important; font-size: 0.75em !important; }
+        #startTimeInput { width: 80px !important; }
+        #durationInput { width: 32px !important; }
+        #clipLabelInput { width: 120px !important; }
+        .tune-btn { padding: 5px 8px !important; font-size: 0.7em !important; }
+        .controls > .controls-row:nth-child(2) > div { padding: 9px !important; gap: 8px !important; }
+    }
 
-        body {
-            -webkit-touch-callout: none; 
-            -webkit-user-select: none;   
-            -khtml-user-select: none;    
-            -moz-user-select: none;      
-            -ms-user-select: none;       
-            user-select: none;           
-        }
+    .controls-row { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap; width: 100%; }
+    .controls-row .action-btn, .controls-row #gridViewBtn { flex: 1; min-width: 0; white-space: nowrap; padding: 10px 8px; font-size: 0.85em; }
+    
+    input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
+    input:focus { border-color: #03dac6; }
+    #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
+    #durationInput { width: 40px; }
+    #clipLabelInput { width: 150px; text-align: left; }
+    
+    button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
+    #nextBtn { background-color: #03dac6; }
+    #randomBtn { background-color: #bb86fc; }
+    .tune-btn { background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+    .tune-btn:hover { background: #4a4a4a; }
+    
+    button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; }
+    #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
+    
+    #gridOverlay {
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+        background: rgba(10,10,10,0.98); z-index: 2000;
+        display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
+        overflow: hidden;
+    }
+    
+    #gridContent { 
+        display: grid; 
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+        gap: 16px;                  
+        overflow-y: auto;           
+        max-height: calc(100vh - 80px); 
+        padding-bottom: 60px;       
+        box-sizing: border-box;
+        -webkit-overflow-scrolling: touch; 
+    }
 
-        input, textarea {
-            -webkit-user-select: text;
-            -khtml-user-select: text;
-            -moz-user-select: text;
-            -ms-user-select: text;
-            user-select: text;
+    .grid-item { 
+        cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
+        overflow: hidden; position: relative; background: #000; 
+        aspect-ratio: 16 / 9; 
+        transition: border-color 0.2s;
+    }
+
+    .grid-item.portrait { aspect-ratio: 3 / 4 !important; }
+    .grid-item:hover { border-color: #03dac6; }
+    
+    .grid-item img { 
+        width: 100%; height: 100%; object-fit: cover; display: block; 
+        position: absolute; top: 0; left: 0; z-index: 1;
+    }
+    
+    .grid-item .grid-meta { 
+        position: absolute; bottom: 0; left: 0; width: 100%; 
+        background: rgba(0, 0, 0, 0.85); font-size: 11px; padding: 6px 0; 
+        text-align: center; color: #fff; display: flex; flex-direction: column; gap: 2px; z-index: 2;
+        box-sizing: border-box;
+    }
+
+    .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+
+    @media (orientation: landscape) {
+        body { padding-bottom: 70px !important; }
+        .controls {
+            flex-direction: row !important; justify-content: space-between !important;
+            align-items: center !important; gap: 12px !important; padding: 6px 16px !important;
+            height: 56px !important; box-sizing: border-box !important;
         }
+        .controls > .controls-row:nth-child(1) { display: none !important; }
+        .controls > .controls-row:nth-child(2) { background: transparent !important; padding: 0 !important; margin: 0 !important; width: auto !important; flex: 1 !important; display: flex !important; justify-content: center !important; }
+        .controls > .controls-row:nth-child(2) > div { flex-direction: row !important; flex-wrap: nowrap !important; background: #252525 !important; padding: 4px 10px !important; gap: 15px !important; max-width: none !important; width: auto !important; align-items: center !important; border-radius: 8px !important; }
+        .controls > .controls-row:nth-child(2) > div > div { flex-direction: row !important; align-items: center !important; width: auto !important; gap: 6px !important; }
+        .controls > .controls-row:nth-child(2) label { width: auto !important; text-align: left !important; font-size: 0.8em !important; white-space: nowrap !important; }
+        #startTimeInput { width: 75px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
+        #durationInput { width: 32px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
+        #clipLabelInput { width: 130px !important; max-width: 180px !important; padding: 4px 6px !important; font-size: 0.85em !important; }
+        .tune-btn { padding: 4px 6px !important; font-size: 0.75em !important; }
+        .controls > .controls-row:nth-child(3) { width: auto !important; flex-shrink: 0 !important; justify-content: flex-end !important; gap: 6px !important; flex-wrap: nowrap !important; }
+        .controls .action-btn, #gridViewBtn { padding: 0 10px !important; font-size: 0.8em !important; height: 34px !important; line-height: 34px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex: unset !important; white-space: nowrap !important; }
+        #gridViewBtn span { display: none !important; }
+        #gridViewBtn svg { margin-right: 0 !important; }
+    }
+
+    button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn, #closeGrid {
+        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+    }
+
+    body {
+        -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+    }
+
+    input, textarea {
+        -webkit-user-select: text; -khtml-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text;
+    }
     </style>
 </head>
 <body>
-    <div id="ffmpegLoadingOverlay" style="display: none;">
+    <div id="ffmpegLoadingOverlay">
         <div class="loader-box">
             <div class="spinner"></div>
-            <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
-            <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
+            <h2 id="loadingStatusText">Đang cấu trúc lõi FFmpeg...</h2>
+            <p>Hệ thống đang tải thư viện nén video trực tiếp trên RAM.</p>
         </div>
     </div>
 
     <input type="file" id="videoUpload" accept="video/*" style="display: none;">
-    <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
+    <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Hệ thống chạy Local Sẵn Sàng.</p>
 
     <div id="welcomeOverlay">
         <div class="upload-icon">
@@ -442,18 +338,16 @@
 
     <div class="controls">
         <div class="controls-row"></div>
-        
         <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
             <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
                 <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                     <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
                     <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-                        <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><</button>
+                        <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
                         <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
-                        <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">></button>
+                        <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">>></button>
                     </div>
                 </div>
-                    
                 <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
                     <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
                     <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
@@ -465,11 +359,11 @@
         </div>
 
         <div class="controls-row">                                            
-            <button id="nextBtn" class="action-btn" disabled>Đang đợi video...</button>
+            <button id="nextBtn" class="action-btn" disabled>Thêm đoạn</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
-                <span>Lưới</span>
+                <span></span>
             </button>
         </div>
     </div>
@@ -490,10 +384,7 @@
             
         if (navigator.storage && navigator.storage.persist) {
             navigator.storage.persist().then((granted) => {
-                if (granted) {
-                    console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững cho App!");
-                    if (status) status.innerText = "✓ Chế độ lưu trữ bền vững đã kích hoạt.";
-                }
+                if (granted) console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững!");
             });
         }
             
@@ -501,38 +392,31 @@
             if (!rawVideoFile) return false;
             try {
                 await rawVideoFile.slice(0, 1).arrayBuffer();
-                return true; 
+                return true;
             } catch (fileError) {
-                return false; 
+                return false;
             }
         }
 
-        welcomeOverlay.addEventListener('click', () => {
-            upload.click();
-        });
+        welcomeOverlay.addEventListener('click', () => upload.click());
 
         ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
             welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
         });
 
         ['dragenter', 'dragover'].forEach(eventName => {
-            welcomeOverlay.addEventListener(eventName, () => {
-                welcomeOverlay.classList.add('dragover');
-            }, false);
+            welcomeOverlay.addEventListener(eventName, () => welcomeOverlay.classList.add('dragover'), false);
         });
 
         ['dragleave', 'drop'].forEach(eventName => {
-            welcomeOverlay.addEventListener(eventName, () => {
-                welcomeOverlay.classList.remove('dragover');
-            }, false);
+            welcomeOverlay.addEventListener(eventName, () => welcomeOverlay.classList.remove('dragover'), false);
         });
 
         welcomeOverlay.addEventListener('drop', (e) => {
             const dt = e.dataTransfer;
             const files = dt.files;
-            
             if (files.length > 0 && files[0].type.startsWith('video/')) {
-                upload.files = files; 
+                upload.files = files;
                 const event = new Event('change', { bubbles: true });
                 upload.dispatchEvent(event);
             } else {
@@ -541,6 +425,7 @@
         });
 
         const { createFFmpeg, fetchFile } = FFmpeg;
+        // KHỞI TẠO ĐỐI TƯỢNG NHƯNG CHƯA CO RE-LOAD LẬP TỨC
         const ffmpeg = createFFmpeg({ log: true });
         let isFFmpegReady = false;
 
@@ -552,20 +437,6 @@
             
         const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
                       (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
-
-        // Đổi mới: Tải FFmpeg Core hoàn toàn độc lập, không chặn luồng UI chính
-        async function loadFFmpegCore() {
-            try {
-                await ffmpeg.load();
-                isFFmpegReady = true;
-                console.log("⚡ FFmpeg Core loaded successfully in background.");
-                updateButtonStates();
-            } catch (error) {
-                console.error("❌ FFmpeg Core load failed:", error);
-            }
-        }
-
-        loadFFmpegCore();
 
         durationInput.addEventListener('input', () => {
             const val = durationInput.value || 0;
@@ -580,7 +451,6 @@
 
         window.addEventListener('keydown', (e) => {
             if (document.activeElement.tagName === 'INPUT') return; 
-            
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (currentlyUnmutedVideo) {
@@ -608,7 +478,7 @@
                     }
                 } else {
                     video.pause();
-                    if (isIOS) video.muted = true; 
+                    if (isIOS) video.muted = true;
                     video.volume = 0.001; 
                     video.classList.remove('unmuted');
                     if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
@@ -624,7 +494,7 @@
             autoTuneTimeout = setTimeout(() => {
                 autoTuneInterval = setInterval(() => {
                     adjustTime(amount);
-                }, 60); 
+                }, 60);
             }, 250);
         }
 
@@ -643,7 +513,6 @@
             btnPrevTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(-1); }, { passive: false });
             btnNextTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(1); });
             btnNextTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(1); }, { passive: false });
-
             window.addEventListener('mouseup', stopAutoTune);
             window.addEventListener('touchend', stopAutoTune);
             btnPrevTime.addEventListener('mouseleave', stopAutoTune);
@@ -685,28 +554,21 @@
 
         function setFocusAudio(videoElement) {
             if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
-                if (isIOS) currentlyUnmutedVideo.muted = true; 
+                if (isIOS) currentlyUnmutedVideo.muted = true;
                 currentlyUnmutedVideo.volume = 0.001; 
                 currentlyUnmutedVideo.classList.remove('unmuted');
             }
-            if (isIOS) videoElement.muted = false; 
+            if (isIOS) videoElement.muted = false;
             videoElement.volume = 1.0; 
             videoElement.classList.add('unmuted');
             currentlyUnmutedVideo = videoElement;
         }
 
-        // Tối ưu hóa: Hàm bật nút độc lập dựa hoàn toàn vào Video URL, không bắt đợi Core
-        function updateButtonStates() {
+        function enableControls() {
             if (sharedVideoURL) {
                 nextBtn.disabled = false;
                 randomBtn.disabled = false;
                 gridViewBtn.disabled = false;
-                
-                if (isFFmpegReady) {
-                    nextBtn.innerText = "Thêm đoạn";
-                } else {
-                    nextBtn.innerText = "Thêm đoạn (Core đang nạp...)";
-                }
             }
         }
 
@@ -727,7 +589,6 @@
                         videoContainer.innerHTML = ""; 
                         gridContent.innerHTML = "";
                         document.body.classList.remove('has-clips');
-                        
                         document.getElementById('mainTitle').innerText = "Video sẵn sàng";
                         document.getElementById('mainTitle').style.color = "#2ecc71";
                         document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
@@ -757,15 +618,13 @@
                         });
                         document.body.classList.add('has-clips');
                     }
-                    
                     upload.value = ""; 
                     status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                    updateButtonStates();
+                    enableControls();
                 };
             }
         });
 
-        // Sửa lỗi sập RAM: Ép giải phóng bộ đệm chặt chẽ, thu gọn dung lượng Thumbnail xuống tối đa
         async function captureThumbnail(startTime) {
             return new Promise((resolve) => {
                 const canvas = document.createElement('canvas');
@@ -773,43 +632,41 @@
                 v.src = sharedVideoURL;
                 v.muted = true;
                 v.playsInline = true;
-                v.preload = "none"; // Chặn tải trước dữ liệu thừa gây nặng bộ nhớ
-                
-                v.onloadedmetadata = () => {
-                    v.currentTime = startTime;
-                };
+                v.preload = "auto";
+                v.setAttribute('playsinline', '');
+                v.setAttribute('webkit-playsinline', '');
 
+                v.onloadedmetadata = () => { v.currentTime = startTime; };
                 v.onseeked = () => {
-                    try {
-                        const videoWidth = v.videoWidth || 160;
-                        const videoHeight = v.videoHeight || 90; 
-                        
-                        const scale = 160 / Math.max(videoWidth, videoHeight);
-                        canvas.width = videoWidth * scale; 
-                        canvas.height = videoHeight * scale;
-                        
-                        const ctx = canvas.getContext('2d');
-                        ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                        
-                        // Hạ chất lượng nén JPEG xuống 0.4 để tệp siêu nhẹ, cứu RAM Android yếu
-                        const dataUrl = canvas.toDataURL('image/jpeg', 0.4);
-                        
-                        v.pause();
-                        v.src = "";
-                        v.load(); 
-                        v.remove();
-                        resolve(dataUrl);
-                    } catch(e) {
-                        console.error("Lỗi vẽ Canvas Thumbnail:", e);
-                        resolve("");
-                    }
+                    setTimeout(() => {
+                        try {
+                            const videoWidth = v.videoWidth || 160;
+                            const videoHeight = v.videoHeight || 160;
+                            const scale = 160 / Math.max(videoWidth, videoHeight);
+                            canvas.width = videoWidth * scale; 
+                            canvas.height = videoHeight * scale;
+                            const ctx = canvas.getContext('2d');
+                            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                            v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove();
+                            resolve(dataUrl);
+                        } catch(e) {
+                            console.error("Lỗi vẽ Canvas Thumbnail:", e);
+                            resolve("");
+                        }
+                    }, 150); 
                 };
-
                 v.onerror = () => {
-                    v.pause(); v.src = ""; v.load(); v.remove(); 
+                    v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
                     resolve("");
                 };
-                v.load(); 
+                setTimeout(() => {
+                    if (v.src) {
+                        v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+                        resolve("");
+                    }
+                }, 3000);
+                v.load();
             });
         }
 
@@ -856,7 +713,6 @@
             };
             
             gridContent.appendChild(gridItem);
-
             captureThumbnail(startTime).then(thumbUrl => {
                 if (thumbUrl) img.src = thumbUrl;
             });
@@ -901,7 +757,6 @@
             video.volume = 0.001; 
             video.playsInline = true; 
             video.preload = "metadata";
-
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
@@ -956,9 +811,7 @@
             del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
             del.onclick = () => {
                 clipObserver.unobserve(video); 
-                video.pause();
-                video.src = "";
-                video.load();
+                video.pause(); video.src = ""; video.load();
                 wrapper.remove();
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
                 if (gridItem) gridItem.remove(); 
@@ -979,36 +832,46 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        gridViewBtn.onclick = () => {
-            gridOverlay.style.display = 'flex';
-        };
-
+        gridViewBtn.onclick = () => { gridOverlay.style.display = 'flex'; };
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
+        // --- HÀM LAZY LOADING: CHỈ NẠP FFMPEG KHI PHÁT SINH LỆNH DOWNLOAD ---
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
-            // Kiểm tra tính sẵn sàng của core ngay tại thời điểm tải file
-            if (!isFFmpegReady) {
-                alert("⏳ Hệ thống xử lý video đang được nạp ngầm, vui lòng đợi một vài giây rồi bấm lại!");
-                return;
-            }
-            if (!rawVideoFile) {
-                alert("Lỗi: Không tìm thấy file video đầu vào.");
-                return;
-            }
-            
-            try {
-                await rawVideoFile.slice(0, 1).arrayBuffer();
-            } catch (fileError) {
+            const isFileAlive = await checkFileConnection();
+            if (!isFileAlive) {
                 alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
                 upload.value = ""; 
                 upload.click(); 
                 return;
             }
 
+            const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
+            const loadingStatusText = document.getElementById('loadingStatusText');
+
+            // BƯỚC KHỞI CHẠY CORE NẾU CHƯA TẢI
+            if (!isFFmpegReady) {
+                loadingOverlay.style.display = 'flex'; // Hiện màn hình loading Neon
+                if (loadingStatusText) loadingStatusText.innerText = "Đang khởi tạo cấu trúc FFmpeg.wasm...";
+                
+                try {
+                    await ffmpeg.load();
+                    isFFmpegReady = true;
+                    status.innerText = "Hệ thống Lõi đã liên kết thành công.";
+                } catch (error) {
+                    console.error(error);
+                    alert("Không thể khởi chạy lõi xử lý. Vui lòng kiểm tra kết nối mạng (Yêu cầu HTTPS/Local Server).");
+                    loadingOverlay.style.display = 'none';
+                    return;
+                }
+            }
+
+            // HIỂN THỊ TRẠNG THÁI RENDERING TRÊN BANNER CHỜ CHUYỂN ĐỘNG
+            loadingOverlay.style.display = 'flex';
+            if (loadingStatusText) loadingStatusText.innerText = `⏳ Đang trích xuất đoạn [${formatTime(startTime)}]...`;
+
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛ Đang xử lý...';
-            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
+            btn.innerText = '⌛...';
 
             const timestamp = Date.now();
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1016,7 +879,6 @@
             const outputName = `cut_${timestamp}.mp4`;
 
             try {
-                // Chỉ nạp file vào hệ thống ảo MEMFS đúng lúc người dùng xuất video
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
@@ -1034,15 +896,13 @@
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
             } catch (err) {
                 console.error(err);
-                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
-                status.innerText = "❌ Lỗi thực thi Render.";
+                alert("Có lỗi xảy ra trong quá trình nén bằng FFmpeg.");
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                // Ép giải phóng tệp ảo ngay lập tức để hoàn trả RAM giải phóng bộ nhớ thiết bị Android
+                loadingOverlay.style.display = 'none'; // Ẩn màn hình loading ngay khi hoàn tất
                 try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
             }
         }
@@ -1050,21 +910,18 @@
         randomBtn.onclick = async () => { 
             const isFileAlive = await checkFileConnection();
             if (!isFileAlive) {
-                alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+                alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu!");
                 upload.value = ""; 
                 upload.click(); 
                 return;
             }
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
-            
             const randomSeconds = Math.random() * maxRange;
             startTimeInput.value = formatTime(randomSeconds);
             
             setTimeout(() => {
-                if (!nextBtn.disabled) {
-                    nextBtn.click();
-                }
+                if (!nextBtn.disabled) nextBtn.click();
             }, 50);
         };
 
@@ -1090,10 +947,9 @@
 
         window.addEventListener('touchmove', (e) => {
             if (window.initialTouchY === undefined) return;
-            
             const touch = e.touches[0];
             const currentY = touch.clientY;
-            const diffY = currentY - window.initialTouchY; 
+            const diffY = currentY - window.initialTouchY;
 
             if ((document.documentElement.scrollTop === 0 && diffY > 0) || 
                 (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight && diffY < 0)) {
@@ -1101,24 +957,20 @@
                     if (e.cancelable) e.preventDefault();
                 }
             }
-        }, { passive: false }); 
-            
+        }, { passive: false });
+
         let lastTouchEnd = 0;
         document.addEventListener('touchend', (e) => {
             const now = (new Date()).getTime();
-            if (e.target.closest('button') || e.target.closest('.tune-btn') || e.target.closest('input')) {
-                return; 
-            }
+            if (e.target.closest('button') || e.target.closest('.tune-btn') || e.target.closest('input')) return; 
             if (now - lastTouchEnd <= 300) {
-                if (e.cancelable) e.preventDefault(); 
+                if (e.cancelable) e.preventDefault();
             }
             lastTouchEnd = now;
         }, false);
 
         document.addEventListener('contextmenu', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
-                return;
-            }
+            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
             e.preventDefault();
         }, false);
     </script>
