@@ -16,305 +16,538 @@
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
 
+    
     <style>
+    
     /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
-    #ffmpegLoadingOverlay {
-        position: fixed;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-        background-color: rgba(18, 18, 18, 0.95); /* Tiệp màu nền tối của app */
-        z-index: 9999; /* Đảm bảo nằm trên cùng tất cả các thành phần khác */
-        display: none; /* MẶC ĐỊNH ẨN: Chỉ hiện khi bấm nút tải xuống */
-        align-items: center;
-        justify-content: center;
-        transition: opacity 0.3s ease, visibility 0.3s ease;
-    }
+#ffmpegLoadingOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #121212; /* Tiệp màu nền tối của app */
+    z-index: 9999; /* Đảm bảo nằm trên cùng tất cả các thành phần khác */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: opacity 0.5s ease, visibility 0.5s ease;
+}
 
-    .loader-box {
-        text-align: center;
-        padding: 20px;
-        max-width: 90%;
-    }
+/* Khung bọc căn giữa */
+.loader-box {
+    text-align: center;
+    padding: 20px;
+    max-width: 90%;
+}
 
-    .spinner {
-        width: 60px;
-        height: 60px;
-        border: 4px solid rgba(3, 218, 198, 0.1);
-        border-top-color: #03dac6; /* Màu xanh neon đồng bộ với nút bấm của bạn */
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin: 0 auto 24px auto;
-        box-shadow: 0 0 15px rgba(3, 218, 198, 0.2);
-    }
+/* Vòng xoay chuyển động Neon công nghệ */
+.spinner {
+    width: 60px;
+    height: 60px;
+    border: 4px solid rgba(3, 218, 198, 0.1);
+    border-top-color: #03dac6; /* Màu xanh neon đồng bộ với nút bấm của bạn */
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin: 0 auto 24px auto;
+    box-shadow: 0 0 15px rgba(3, 218, 198, 0.2);
+}
 
-    .loader-box h2 {
+.loader-box h2 {
+    color: #ffffff;
+    font-size: 1.4em;
+    margin: 0 0 10px 0;
+    letter-spacing: 1px;
+}
+
+.loader-box p {
+    color: #888888;
+    font-size: 0.95em;
+    margin: 0;
+}
+
+/* Hiệu ứng ẩn màn hình chờ mượt mà */
+#ffmpegLoadingOverlay.fade-out {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+}
+
+/* Định nghĩa chuyển động xoay tròn */
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+        body { 
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+    padding: 20px; background-color: #121212; 
+    color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
+    display: flex; flex-direction: column;
+    
+    /* CHẶN PULL TO REFRESH TRÊN MOBILE */
+    overscroll-behavior-y: contain; 
+
+    /* THÊM DÒNG NÀY: Chặn double-tap zoom trên toàn bộ trang */
+    touch-action: manipulation; 
+}
+
+/* Áp dụng thêm cho tất cả các nút bấm để chắc chắn không bị dính zoom */
+button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
+    touch-action: manipulation;
+}
+
+
+    
+        #welcomeOverlay {
+    position: fixed; 
+    top: 40%; 
+    left: 50%; 
+    transform: translate(-50%, -50%);
+    text-align: center; 
+    z-index: 10; 
+    width: 90%; 
+    max-width: 500px; /* Thu gọn chiều rộng tối đa giúp bố cục cô đọng hơn */
+    pointer-events: auto; 
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    
+    /* Chống tràn viền tuyệt đối trên Mobile */
+    box-sizing: border-box;
+    padding: 40px 20px;
+    
+    /* Giao diện mặc định */
+    border: 2px dashed #444444;
+    border-radius: 16px;
+    background-color: rgba(255, 255, 255, 0.01);
+    backdrop-filter: blur(4px); /* Tạo hiệu ứng kính mờ sang trọng */
+    -webkit-backdrop-filter: blur(4px);
+}
+
+/* Hiệu ứng khi di chuột qua (Hover) trên Máy tính */
+@media (hover: hover) {
+    #welcomeOverlay:hover {
+        border-color: #888888;
+        background-color: rgba(255, 255, 255, 0.03);
+        transform: translate(-50%, -52%); /* Nhấc nhẹ khung lên tạo chiều sâu */
+    }
+    #welcomeOverlay:hover .upload-icon {
         color: #ffffff;
-        font-size: 1.4em;
-        margin: 0 0 10px 0;
-        letter-spacing: 1px;
+        transform: translateY(-4px); /* Icon nhích nhẹ lên kích thích hành động */
     }
+}
 
-    .loader-box p {
-        color: #888888;
-        font-size: 0.95em;
-        margin: 0;
-    }
+/* Hiệu ứng cao cấp khi kéo tệp tin đè lên vùng nhận diện (Dragover) */
+#welcomeOverlay.dragover {
+    border-style: solid; /* Chuyển từ nét đứt sang nét liền */
+    border-color: #03dac6;
+    background-color: rgba(3, 218, 198, 0.06);
+    box-shadow: 0 0 30px rgba(3, 218, 198, 0.25);
+    transform: translate(-50%, -50%) scale(1.02); /* Phình to nhẹ báo hiệu sẵn sàng */
+}
 
-    @keyframes spin {
-        to { transform: rotate(360deg); }
-    }
+#welcomeOverlay.dragover .upload-icon {
+    color: #03dac6;
+    transform: scale(1.1);
+}
 
-    body { 
-        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-        padding: 20px; background-color: #121212; 
-        color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
-        display: flex; flex-direction: column;
-        overscroll-behavior-y: contain; 
-        touch-action: manipulation; 
-    }
+/* Thiết kế Icon kéo thả */
+.upload-icon {
+    color: #666666;
+    margin-bottom: 16px;
+    transition: all 0.3s ease;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
 
-    button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn {
-        touch-action: manipulation;
-    }
+/* Tối ưu hóa kích thước chữ để không bị vỡ bố cục trên màn hình nhỏ (<360px) */
+#welcomeOverlay h1 { 
+    font-size: 1.8em; 
+    color: #ffffff; 
+    margin: 0 0 10px 0; 
+    text-transform: uppercase; 
+    letter-spacing: 1.5px; 
+}
+#welcomeOverlay p { 
+    color: #888888; 
+    font-size: 0.95em; 
+    line-height: 1.5; 
+    margin: 0; 
+}
 
+/* Thu nhỏ cấu trúc hơn nữa trên điện thoại cực nhỏ */
+@media (max-width: 400px) {
     #welcomeOverlay {
-        position: fixed; 
-        top: 40%; 
-        left: 50%; 
-        transform: translate(-50%, -50%);
-        text-align: center; 
-        z-index: 10; 
-        width: 90%; 
-        max-width: 500px;
-        pointer-events: auto; 
-        cursor: pointer;
-        transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        box-sizing: border-box;
-        padding: 40px 20px;
-        border: 2px dashed #444444;
-        border-radius: 16px;
-        background-color: rgba(255, 255, 255, 0.01);
-        backdrop-filter: blur(4px);
-        -webkit-backdrop-filter: blur(4px);
+        padding: 30px 16px;
     }
+    #welcomeOverlay h1 {
+        font-size: 1.5em;
+    }
+    #welcomeOverlay p {
+        font-size: 0.85em;
+    }
+    .upload-icon svg {
+        width: 40px;
+        height: 40px;
+    }
+}
 
-    @media (hover: hover) {
-        #welcomeOverlay:hover {
-            border-color: #888888;
-            background-color: rgba(255, 255, 255, 0.03);
-            transform: translate(-50%, -52%);
+
+
+
+        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
+        
+        #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
+        
+        .clip-wrapper { 
+            display: flex; flex-direction: column; align-items: center; 
+            border: 1px solid #2a2a2a; padding: 16px; 
+            border-radius: 16px; background: #1e1e1e; width: fit-content; 
+            max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
+            height: auto; transition: transform 0.2s ease;
         }
-        #welcomeOverlay:hover .upload-icon {
-            color: #ffffff;
-            transform: translateY(-4px);
+
+        video { 
+            width: auto; height: auto; max-width: 100%; max-height: 45vh; 
+            border: 2px solid #333; border-radius: 10px; background: #000; cursor: pointer; display: block;
+            aspect-ratio: var(--video-ratio); 
+            object-fit: contain; 
         }
-    }
 
-    #welcomeOverlay.dragover {
-        border-style: solid;
-        border-color: #03dac6;
-        background-color: rgba(3, 218, 198, 0.06);
-        box-shadow: 0 0 30px rgba(3, 218, 198, 0.25);
-        transform: translate(-50%, -50%) scale(1.02);
-    }
-
-    #welcomeOverlay.dragover .upload-icon {
-        color: #03dac6;
-        transform: scale(1.1);
-    }
-
-    .upload-icon {
-        color: #666666;
-        margin-bottom: 16px;
-        transition: all 0.3s ease;
-        display: inline-flex;
-        align-items: center;
-        justify-content: center;
-    }
-
-    #welcomeOverlay h1 { 
-        font-size: 1.8em; 
-        color: #ffffff; 
-        margin: 0 0 10px 0; 
-        text-transform: uppercase; 
-        letter-spacing: 1.5px; 
-    }
-    #welcomeOverlay p { 
-        color: #888888; 
-        font-size: 0.95em; 
-        line-height: 1.5; 
-        margin: 0; 
-    }
-
-    @media (max-width: 400px) {
-        #welcomeOverlay { padding: 30px 16px; }
-        #welcomeOverlay h1 { font-size: 1.5em; }
-        #welcomeOverlay p { font-size: 0.85em; }
-        .upload-icon svg { width: 40px; height: 40px; }
-    }
-
-    body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
-    #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
-    
-    .clip-wrapper { 
-        display: flex; flex-direction: column; align-items: center; 
-        border: 1px solid #2a2a2a; padding: 16px; 
-        border-radius: 16px; background: #1e1e1e; width: fit-content; 
-        max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
-        height: auto; transition: transform 0.2s ease;
-    }
-
-    video { 
-        width: auto; height: auto; max-width: 100%; max-height: 45vh; 
-        border: 2px solid #333; border-radius: 10px; background: #000; cursor: pointer; display: block;
-        aspect-ratio: var(--video-ratio); 
-        object-fit: contain; 
-    }
-
-    video.portrait { width: 50vw; max-width: 50vw; max-height: 65vh; height: auto; }
-    video.unmuted { border-color: #03dac6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.4); }
-    
-    .clip-title-tag { font-size: 0.95em; color: #fff; font-weight: bold; margin-bottom: 6px; align-self: flex-start; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; }
-    .clip-info { font-size: 0.85em; color: #999; margin: 8px 0; font-family: monospace; background: #292929; padding: 4px 8px; border-radius: 4px; }
-    .button-group { display: flex; gap: 10px; margin-top: 4px; width: 100%; }
-    
-    .delete-btn, .download-btn { border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; flex: 1; transition: background 0.2s, transform 0.1s; }
-    .delete-btn { background-color: #cf6679; color: #000; }
-    .delete-btn:active { transform: scale(0.98); }
-    .download-btn { background-color: #03dac6; color: #000; }
-    .download-btn:not(:disabled):hover { background-color: #01f5dd; }
-    .download-btn:active { transform: scale(0.98); }
-    
-    .controls { 
-        position: fixed; bottom: 0; left: 0; width: 100%; 
-        background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
-        z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
-        box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
-    }
-
-    @media (max-width: 768px) and (orientation: portrait) {
-        body { padding-bottom: 210px !important; }
-        .controls { padding: 12px 16px !important; gap: 9px !important; }
-        .controls-row { gap: 6px !important; }
-        .controls-row .action-btn, .controls-row #gridViewBtn { padding: 8px 6px !important; font-size: 0.75em !important; }
-        input, select { padding: 6px 10px !important; font-size: 0.75em !important; }
-        #startTimeInput { width: 80px !important; }
-        #durationInput { width: 32px !important; }
-        #clipLabelInput { width: 120px !important; }
-        .tune-btn { padding: 5px 8px !important; font-size: 0.7em !important; }
-        .controls > .controls-row:nth-child(2) > div { padding: 9px !important; gap: 8px !important; }
-    }
-
-    .controls-row { display: flex; gap: 8px; align-items: center; justify-content: center; flex-wrap: nowrap; width: 100%; }
-    .controls-row .action-btn, .controls-row #gridViewBtn { flex: 1; min-width: 0; white-space: nowrap; padding: 10px 8px; font-size: 0.85em; }
-    
-    input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
-    input:focus { border-color: #03dac6; }
-    #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
-    #durationInput { width: 40px; }
-    #clipLabelInput { width: 150px; text-align: left; }
-    
-    button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
-    #nextBtn { background-color: #03dac6; }
-    #randomBtn { background-color: #bb86fc; }
-    .tune-btn { background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-    .tune-btn:hover { background: #4a4a4a; }
-    
-    button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; }
-    #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
-    
-    #gridOverlay {
-        position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-        background: rgba(10,10,10,0.98); z-index: 2000;
-        display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
-        overflow: hidden;
-    }
-    
-    #gridContent { 
-        display: grid; 
-        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
-        gap: 16px;                  
-        overflow-y: auto;           
-        max-height: calc(100vh - 80px); 
-        padding-bottom: 60px;       
-        box-sizing: border-box;
-        -webkit-overflow-scrolling: touch; 
-    }
-
-    .grid-item { 
-        cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
-        overflow: hidden; position: relative; background: #000; 
-        aspect-ratio: 16 / 9; 
-        transition: border-color 0.2s;
-    }
-
-    .grid-item.portrait { aspect-ratio: 3 / 4 !important; }
-    .grid-item:hover { border-color: #03dac6; }
-    
-    .grid-item img { 
-        width: 100%; height: 100%; object-fit: cover; display: block; 
-        position: absolute; top: 0; left: 0; z-index: 1;
-    }
-    
-    .grid-item .grid-meta { 
-        position: absolute; bottom: 0; left: 0; width: 100%; 
-        background: rgba(0, 0, 0, 0.85); font-size: 11px; padding: 6px 0; 
-        text-align: center; color: #fff; display: flex; flex-direction: column; gap: 2px; z-index: 2;
-        box-sizing: border-box;
-    }
-
-    .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
-
-    @media (orientation: landscape) {
-        body { padding-bottom: 70px !important; }
-        .controls {
-            flex-direction: row !important; justify-content: space-between !important;
-            align-items: center !important; gap: 12px !important; padding: 6px 16px !important;
-            height: 56px !important; box-sizing: border-box !important;
+        video.portrait { 
+            width: 50vw; max-width: 50vw; max-height: 65vh; 
+            height: auto; 
         }
-        .controls > .controls-row:nth-child(1) { display: none !important; }
-        .controls > .controls-row:nth-child(2) { background: transparent !important; padding: 0 !important; margin: 0 !important; width: auto !important; flex: 1 !important; display: flex !important; justify-content: center !important; }
-        .controls > .controls-row:nth-child(2) > div { flex-direction: row !important; flex-wrap: nowrap !important; background: #252525 !important; padding: 4px 10px !important; gap: 15px !important; max-width: none !important; width: auto !important; align-items: center !important; border-radius: 8px !important; }
-        .controls > .controls-row:nth-child(2) > div > div { flex-direction: row !important; align-items: center !important; width: auto !important; gap: 6px !important; }
-        .controls > .controls-row:nth-child(2) label { width: auto !important; text-align: left !important; font-size: 0.8em !important; white-space: nowrap !important; }
-        #startTimeInput { width: 75px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
-        #durationInput { width: 32px !important; padding: 4px 2px !important; font-size: 0.85em !important; }
-        #clipLabelInput { width: 130px !important; max-width: 180px !important; padding: 4px 6px !important; font-size: 0.85em !important; }
-        .tune-btn { padding: 4px 6px !important; font-size: 0.75em !important; }
-        .controls > .controls-row:nth-child(3) { width: auto !important; flex-shrink: 0 !important; justify-content: flex-end !important; gap: 6px !important; flex-wrap: nowrap !important; }
-        .controls .action-btn, #gridViewBtn { padding: 0 10px !important; font-size: 0.8em !important; height: 34px !important; line-height: 34px !important; display: flex !important; align-items: center !important; justify-content: center !important; flex: unset !important; white-space: nowrap !important; }
-        #gridViewBtn span { display: none !important; }
-        #gridViewBtn svg { margin-right: 0 !important; }
-    }
 
-    button, .action-btn, .tune-btn, .delete-btn, .download-btn, #gridViewBtn, #closeGrid {
-        -webkit-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
-    }
+        video.unmuted { border-color: #03dac6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.4); }
+        
+        .clip-title-tag { font-size: 0.95em; color: #fff; font-weight: bold; margin-bottom: 6px; align-self: flex-start; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; }
+        .clip-info { font-size: 0.85em; color: #999; margin: 8px 0; font-family: monospace; background: #292929; padding: 4px 8px; border-radius: 4px; }
+        .button-group { display: flex; gap: 10px; margin-top: 4px; width: 100%; }
+        
+        .delete-btn, .download-btn { border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; flex: 1; transition: background 0.2s, transform 0.1s; }
+        .delete-btn { background-color: #cf6679; color: #000; }
+        .delete-btn:active { transform: scale(0.98); }
+        .download-btn { background-color: #03dac6; color: #000; }
+        .download-btn:not(:disabled):hover { background-color: #01f5dd; }
+        .download-btn:active { transform: scale(0.98); }
+        
+                        .controls { 
+            position: fixed; bottom: 0; left: 0; width: 100%; 
+            background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
+            z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
+        }
+        /* --- THU NHỎ 80% BẰNG CÁCH GIẢM KÍCH THƯỚC TRÊN ĐIỆN THOẠI (DỌC) --- */
+        @media (max-width: 768px) and (orientation: portrait) {
+            body {
+                padding-bottom: 210px !important; /* Thu hẹp khoảng trống đáy để vừa khít thanh controls mới */
+            }
+            .controls {
+                padding: 12px 16px !important; /* Giảm khoảng đệm xung quanh thanh điều khiển */
+                gap: 9px !important;           /* Thu hẹp khoảng cách giữa các hàng */
+            }
+            .controls-row {
+                gap: 6px !important;           /* Thu hẹp khoảng cách giữa các nút */
+            }
+            .controls-row .action-btn, 
+            .controls-row #gridViewBtn {
+                padding: 8px 6px !important;   /* Thu nhỏ nút bấm */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ xuống mức ~80% */
+            }
+            input, select {
+                padding: 6px 10px !important;  /* Thu nhỏ các ô nhập liệu */
+                font-size: 0.75em !important;  /* Hạ cỡ chữ của ô nhập liệu */
+            }
+            #startTimeInput { width: 80px !important; }
+            #durationInput { width: 32px !important; }
+            #clipLabelInput { width: 120px !important; }
+            .tune-btn {
+                padding: 5px 8px !important;   /* Thu nhỏ 2 nút tăng giảm thời gian < và > */
+                font-size: 0.7em !important;
+            }
+            /* Hạ khoảng đệm của khung xám bọc các ô input */
+            .controls > .controls-row:nth-child(2) > div {
+                padding: 9px !important;
+                gap: 8px !important;
+            }
+        }
 
+
+        /* Ép dòng controls chứa 3 nút chính luôn nằm trên 1 hàng */
+.controls-row { 
+    display: flex; 
+    gap: 8px; /* Giảm khoảng cách giữa các nút một chút trên mobile */
+    align-items: center; 
+    justify-content: center; 
+    flex-wrap: nowrap; /* KHÔNG cho phép xuống dòng */
+    width: 100%; 
+}
+
+/* Tối ưu hóa các nút bấm để tự co giãn mượt mà trên điện thoại */
+.controls-row .action-btn, 
+.controls-row #gridViewBtn {
+    flex: 1; /* Chia đều không gian hàng cho 3 nút */
+    min-width: 0; /* Ngăn nút bị vỡ cấu trúc layout */
+    white-space: nowrap; /* Không cho chữ bên trong nút tự xuống dòng */
+    padding: 10px 8px; /* Thu gọn padding ngang để vừa màn hình nhỏ */
+    font-size: 0.85em; /* Giảm nhẹ size chữ để chắc chắn không bị tràn text */
+}
+
+        
+        input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
+        input:focus { border-color: #03dac6; }
+        #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
+        #durationInput { width: 40px; }
+        #clipLabelInput { width: 150px; text-align: left; }
+        
+        button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
+        #nextBtn { background-color: #03dac6; }
+        #randomBtn { background-color: #bb86fc; }
+        .tune-btn { background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
+        .tune-btn:hover { background: #4a4a4a; }
+        
+        button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; }
+
+        #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
+        
+                                /* --- ĐÃ SỬA: Biến toàn bộ giao diện Lưới thành một vùng cuộn độc lập --- */
+        #gridOverlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(10,10,10,0.98); z-index: 2000;
+            display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
+            overflow: hidden; /* Giữ cố định khung bọc ngoài */
+        }
+        
+        /* --- ĐÃ SỬA: Giới hạn chiều cao vùng chứa ảnh để kích hoạt thanh cuộn dọc mượt mà --- */
+        #gridContent { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); 
+            gap: 16px;                  
+            overflow-y: auto;           /* KÍCH HOẠT THANH CUỘN: Cho phép vuốt lên xuống thoải mái */
+            max-height: calc(100vh - 80px); /* Khống chế chiều cao tối đa không vượt quá đáy màn hình */
+            padding-bottom: 60px;       /* Vùng đệm an toàn dưới đáy để không bị khuất ảnh cuối */
+            box-sizing: border-box;
+            -webkit-overflow-scrolling: touch; /* Giúp vuốt cực mượt trên màn hình iPhone/iPad */
+        }
+
+        /* --- ĐÃ SỬA: Đặt khung hình chữ nhật 16:9 mặc định cho video ngang --- */
+        .grid-item { 
+            cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
+            overflow: hidden; position: relative; background: #000; 
+            aspect-ratio: 16 / 9; 
+            transition: border-color 0.2s;
+        }
+
+        /* --- ĐÃ SỬA: Class linh hoạt kích hoạt tỷ lệ 3:4 nếu là video dọc (Shorts/TikTok) --- */
+        .grid-item.portrait {
+            aspect-ratio: 3 / 4 !important; 
+        }
+
+        .grid-item:hover { border-color: #03dac6; }
+        
+        /* --- ĐÃ SỬA: Ép ảnh lùi về phía sau và lấp đầy khung --- */
+        .grid-item img { 
+            width: 100%; 
+            height: 100%; 
+            object-fit: cover; 
+            display: block; 
+            position: absolute;
+            top: 0; left: 0;
+            z-index: 1;
+        }
+        
+        /* --- ĐÃ SỬA: Ép thanh mốc thời gian luôn nằm trên ảnh, bám chặt đáy ô --- */
+        .grid-item .grid-meta { 
+            position: absolute; 
+            bottom: 0; 
+            left: 0; 
+            width: 100%; 
+            background: rgba(0, 0, 0, 0.85); 
+            font-size: 11px; 
+            padding: 6px 0; 
+            text-align: center; 
+            color: #fff;
+            display: flex; 
+            flex-direction: column; 
+            gap: 2px;
+            z-index: 2; /* Đảm bảo chữ luôn nổi lên trên, không bao giờ bị đè */
+            box-sizing: border-box;
+        }
+
+
+
+        .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
+    
+   /* --- SỬA TRIỆT ĐỂ: TỐI ƯU GIAO DIỆN MÀN HÌNH NGANG (LANDSCAPE) --- */
+@media (orientation: landscape) {
+    /* Đảm bảo khoảng đệm dưới chân trang vừa vặn với chiều cao thanh điều khiển */
     body {
-        -webkit-touch-callout: none; -webkit-user-select: none; -khtml-user-select: none; -moz-user-select: none; -ms-user-select: none; user-select: none;
+        padding-bottom: 70px !important;
     }
 
-    input, textarea {
-        -webkit-user-select: text; -khtml-user-select: text; -moz-user-select: text; -ms-user-select: text; user-select: text;
+    /* Thanh điều khiển chính chia làm 3 phần rõ rệt nằm trên 1 hàng duy nhất */
+    .controls {
+        flex-direction: row !important;
+        justify-content: space-between !important;
+        align-items: center !important;
+        gap: 12px !important;
+        padding: 6px 16px !important;
+        height: 56px !important;
+        box-sizing: border-box !important;
     }
+
+    /* Khối chứa 3 nút chính (hàng số 1 ban đầu) - Giờ đóng vai trò giữ khoảng trống bên trái nếu cần */
+    .controls > .controls-row:nth-child(1) {
+        display: none !important; /* Ẩn khối trống này đi để nhường không gian */
+    }
+
+    /* Khối trung tâm: Chứa toàn bộ các ô nhập liệu (Cắt từ, Độ dài, Tên đoạn) */
+    .controls > .controls-row:nth-child(2) {
+        background: transparent !important;
+        padding: 0 !important;
+        margin: 0 !important;
+        width: auto !important;
+        flex: 1 !important; /* Tự động chiếm toàn bộ không gian ở giữa */
+        display: flex !important;
+        justify-content: center !important;
+    }
+
+    /* Khử bỏ hoàn toàn kiểu layout dọc cũ của khối bọc trong */
+    .controls > .controls-row:nth-child(2) > div {
+        flex-direction: row !important; /* Ép dòng Cắt từ và Độ dài nằm ngang */
+        flex-wrap: nowrap !important;
+        background: #252525 !important; /* Giữ nền xám bo góc bao quanh toàn bộ nhóm input */
+        padding: 4px 10px !important;
+        gap: 15px !important;
+        max-width: none !important;
+        width: auto !important;
+        align-items: center !important;
+        border-radius: 8px !important;
+    }
+
+    /* Định hình lại hàng "Cắt từ" và hàng "Độ dài clip" thành các cụm ngang liền mạch */
+    .controls > .controls-row:nth-child(2) > div > div {
+        flex-direction: row !important;
+        align-items: center !important;
+        width: auto !important;
+        gap: 6px !important;
+    }
+
+    /* Thu nhỏ các nhãn văn bản (Label) và chặn không cho xuống dòng */
+    .controls > .controls-row:nth-child(2) label {
+        width: auto !important;
+        text-align: left !important;
+        font-size: 0.8em !important;
+        white-space: nowrap !important;
+    }
+
+    /* Điều chỉnh kích thước các ô nhập dữ liệu để đứng vừa vặn trên một hàng */
+    #startTimeInput {
+        width: 75px !important;
+        padding: 4px 2px !important;
+        font-size: 0.85em !important;
+    }
+    #durationInput {
+        width: 32px !important;
+        padding: 4px 2px !important;
+        font-size: 0.85em !important;
+    }
+    #clipLabelInput {
+        width: 130px !important;
+        max-width: 180px !important;
+        padding: 4px 6px !important;
+        font-size: 0.85em !important;
+    }
+    .tune-btn {
+        padding: 4px 6px !important;
+        font-size: 0.75em !important;
+    }
+
+    /* Khối bên phải: Chứa 3 nút bấm thao tác (Thêm đoạn, Random, Lưới) */
+    .controls > .controls-row:nth-child(3) {
+        width: auto !important;
+        flex-shrink: 0 !important;
+        justify-content: flex-end !important;
+        gap: 6px !important;
+        flex-wrap: nowrap !important;
+    }
+
+    /* Định cấu trúc cố định cho các nút bấm, không cho co giãn bóp méo chữ */
+    .controls .action-btn, #gridViewBtn {
+        padding: 0 10px !important;
+        font-size: 0.8em !important;
+        height: 34px !important;
+        line-height: 34px !important;
+        display: flex !important;
+        align-items: center !important;
+        justify-content: center !important;
+        flex: unset !important;
+        white-space: nowrap !important;
+    }
+
+    /* Ẩn hoàn toàn chữ trong nút Lưới để tiết kiệm diện tích tối đa khi xoay ngang */
+    #gridViewBtn span {
+        display: none !important;
+    }
+    #gridViewBtn svg {
+        margin-right: 0 !important;
+    }
+}
+
+
+
+    /* Chặn chọn văn bản cho tất cả các loại nút bấm */
+button, 
+.action-btn, 
+.tune-btn, 
+.delete-btn, 
+.download-btn, 
+#gridViewBtn, 
+#closeGrid {
+    -webkit-user-select: none;  /* Safari */
+    -moz-user-select: none;     /* Firefox */
+    -ms-user-select: none;      /* IE10+/Edge */
+    user-select: none;          /* Tiêu chuẩn chung */
+}
+
+    /* Chặn hành vi tự động chọn văn bản và hiện menu khi bấm giữ */
+body {
+    -webkit-touch-callout: none; /* Khóa menu popup của Safari/iOS */
+    -webkit-user-select: none;   /* Khóa chọn văn bản trên Safari */
+    -khtml-user-select: none;    /* Konqueror HTML */
+    -moz-user-select: none;      /* Firefox */
+    -ms-user-select: none;       /* Internet Explorer/Edge */
+    user-select: none;           /* Trình duyệt chuẩn */
+}
+
+/* Bật lại tính năng chọn/nhập văn bản riêng cho các ô nhập liệu */
+input, textarea {
+    -webkit-user-select: text;
+    -khtml-user-select: text;
+    -moz-user-select: text;
+    -ms-user-select: text;
+    user-select: text;
+}
+
+
     </style>
 </head>
 <body>
     <div id="ffmpegLoadingOverlay">
-        <div class="loader-box">
-            <div class="spinner"></div>
-            <h2 id="loadingStatusText">Đang cấu trúc lõi FFmpeg...</h2>
-            <p>Hệ thống đang tải thư viện nén video trực tiếp trên RAM.</p>
-        </div>
+    <div class="loader-box">
+        <div class="spinner"></div>
+        <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
+        <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
     </div>
+</div>
 
-    <input type="file" id="videoUpload" accept="video/*" style="display: none;">
-    <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Hệ thống chạy Local Sẵn Sàng.</p>
+<input type="file" id="videoUpload" accept="video/*" style="display: none;">
+<p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
 
-    <div id="welcomeOverlay">
+    
+        <div id="welcomeOverlay">
+        <!-- Icon SVG thiết kế tối giản, sắc nét -->
         <div class="upload-icon">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
@@ -322,13 +555,16 @@
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
         </div>
+
         <h1 id="mainTitle">Phân Đoạn Video</h1>
         <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
     </div>
 
+
     <div id="videoContainer"></div>
 
     <div id="gridOverlay">
+        
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
             <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
             <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
@@ -337,35 +573,48 @@
     </div>
 
     <div class="controls">
-        <div class="controls-row"></div>
+        <div class="controls-row">
+            
+            
+        </div>
+
+        
         <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
-            <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
-                <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                    <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
-                    <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-                        <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
-                        <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
-                        <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">>></button>
-                    </div>
-                </div>
-                <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-                    <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
-                    <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-                        <input type="number" id="durationInput" value="5" min="1" step="0.5" >
-                        <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)" style="flex-grow: 1; width: 100%; min-width: 0;">
-                    </div>
-                </div>
-            </div>
+                   <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
+    
+    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
+               <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
+            <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
+            <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
+            <button class="tune-btn" id="btnNextTime" style="flex-shrink: 0;">>></button>
+        </div>
+
+    </div>
+        
+    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
+        <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
+            <input type="number" id="durationInput" value="5" min="1" step="0.5" >
+            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
+        </div>
+    </div>
+    
+</div>
+
+
+            
         </div>
 
         <div class="controls-row">                                            
-            <button id="nextBtn" class="action-btn" disabled>Thêm đoạn</button>
+            <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
                 <span></span>
             </button>
         </div>
+        
     </div>
     
     <script>
@@ -380,52 +629,78 @@
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
-        const welcomeOverlay = document.getElementById('welcomeOverlay');
+const welcomeOverlay = document.getElementById('welcomeOverlay');
             
+            // KHỐI MÃ MỚI: YÊU CẦU QUYỀN LƯU TRỮ BỀN VỮNG (PERSISTENT STORAGE)
+        // ==========================================
         if (navigator.storage && navigator.storage.persist) {
             navigator.storage.persist().then((granted) => {
-                if (granted) console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững!");
+                if (granted) {
+                    console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững cho App!");
+                    // Cập nhật trạng thái ngầm lên giao diện nếu cần để bạn dễ theo dõi
+                    if (status) status.innerText = "✓ Chế độ lưu trữ bền vững đã kích hoạt.";
+                } else {
+                    console.log("⚠️ Chế độ lưu trữ vẫn có thể bị hệ thống dọn dẹp.");
+                }
             });
         }
+        // ==========================================
             
-        async function checkFileConnection() {
-            if (!rawVideoFile) return false;
-            try {
-                await rawVideoFile.slice(0, 1).arrayBuffer();
-                return true;
-            } catch (fileError) {
-                return false;
-            }
-        }
+            // Hàm kiểm tra xem tệp tin có bị Android ngắt kết nối hay không
+async function checkFileConnection() {
+    if (!rawVideoFile) return false;
+    try {
+        // Đọc thử 1 byte đầu tiên để kiểm tra kết nối thực tế với bộ nhớ thiết bị
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+        return true; // Tệp vẫn kết nối tốt
+    } catch (fileError) {
+        return false; // Tệp đã bị ngắt kết nối
+    }
+}
 
-        welcomeOverlay.addEventListener('click', () => upload.click());
 
-        ['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-            welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
-        });
+// 1. Click vào vùng welcome để kích hoạt chọn file
+welcomeOverlay.addEventListener('click', () => {
+    upload.click();
+});
 
-        ['dragenter', 'dragover'].forEach(eventName => {
-            welcomeOverlay.addEventListener(eventName, () => welcomeOverlay.classList.add('dragover'), false);
-        });
+// 2. Xử lý sự kiện kéo thả file (Drag & Drop)
+// Ngăn chặn hành vi mặc định của trình duyệt khi kéo file vào
+['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
+});
 
-        ['dragleave', 'drop'].forEach(eventName => {
-            welcomeOverlay.addEventListener(eventName, () => welcomeOverlay.classList.remove('dragover'), false);
-        });
+// Thêm class hiệu ứng khi kéo file vào vùng hiển thị
+['dragenter', 'dragover'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, () => {
+        welcomeOverlay.classList.add('dragover');
+    }, false);
+});
 
-        welcomeOverlay.addEventListener('drop', (e) => {
-            const dt = e.dataTransfer;
-            const files = dt.files;
-            if (files.length > 0 && files[0].type.startsWith('video/')) {
-                upload.files = files;
-                const event = new Event('change', { bubbles: true });
-                upload.dispatchEvent(event);
-            } else {
-                alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
-            }
-        });
+// Xóa class hiệu ứng khi kéo file ra ngoài hoặc thả file xong
+['dragleave', 'drop'].forEach(eventName => {
+    welcomeOverlay.addEventListener(eventName, () => {
+        welcomeOverlay.classList.remove('dragover');
+    }, false);
+});
+
+// Xử lý khi thả file (Drop) vào vùng khoanh đỏ
+welcomeOverlay.addEventListener('drop', (e) => {
+    const dt = e.dataTransfer;
+    const files = dt.files;
+    
+    if (files.length > 0 && files[0].type.startsWith('video/')) {
+        upload.files = files; // Gán file vào input gốc
+        
+        // Kích hoạt lại sự kiện change của upload để chạy logic xử lý video hiện tại của bạn
+        const event = new Event('change', { bubbles: true });
+        upload.dispatchEvent(event);
+    } else {
+        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
+    }
+});
 
         const { createFFmpeg, fetchFile } = FFmpeg;
-        // KHỞI TẠO ĐỐI TƯỢNG NHƯNG CHƯA CO RE-LOAD LẬP TỨC
         const ffmpeg = createFFmpeg({ log: true });
         let isFFmpegReady = false;
 
@@ -435,8 +710,42 @@
         let currentlyUnmutedVideo = null; 
         let rehydrationTimeout = null;
             
-        const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
-                      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+            // Hàm kiểm tra xem thiết bị có phải là iPhone, iPad hoặc iPod không
+const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) || 
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+
+
+                async function loadFFmpegCore() {
+            const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
+            const loadingStatusText = document.getElementById('loadingStatusText');
+
+            try {
+                await ffmpeg.load();
+                isFFmpegReady = true;
+                status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
+                
+                if(upload.files[0]) {
+                    enableControls();
+                }
+
+                // Chờ một nhịp nhỏ 300ms cho mượt rồi ẩn màn hình Loading
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                }, 300);
+
+            } catch (error) {
+                console.error(error);
+                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
+                
+                // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết
+                if (loadingStatusText) {
+                    loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
+                    loadingStatusText.style.color = "#cf6679"; // Đổi chữ sang màu đỏ rủi ro
+                }
+            }
+        }
+
+        loadFFmpegCore();
 
         durationInput.addEventListener('input', () => {
             const val = durationInput.value || 0;
@@ -449,8 +758,10 @@
             startTimeInput.value = formatTime(currentSeconds);
         }
 
+        // Keyboard navigation shortcuts
         window.addEventListener('keydown', (e) => {
             if (document.activeElement.tagName === 'INPUT') return; 
+            
             if (e.code === 'Space') {
                 e.preventDefault();
                 if (currentlyUnmutedVideo) {
@@ -476,49 +787,67 @@
                     if (video.src && video.src !== "" && video.src !== window.location.href) {
                         video.play().catch(() => {});
                     }
-                } else {
-                    video.pause();
-                    if (isIOS) video.muted = true;
-                    video.volume = 0.001; 
-                    video.classList.remove('unmuted');
-                    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
-                }
+                        } else {
+            video.pause();
+            if (isIOS) video.muted = true; // Chỉ bật câm trên iPhone khi cuộn qua
+            video.volume = 0.001; 
+            video.classList.remove('unmuted');
+            if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
+        }
+
             });
         }, { threshold: 0.1 });
             
-        let autoTuneInterval = null;
-        let autoTuneTimeout = null;
+            
+            // --- LOGIC NHẤN GIỮ NÚT MŨI TÊN ĐỂ CHẠY NHANH THỜI GIAN (ĐÃ TỐI ƯU ĐỘ NHẠY) ---
+let autoTuneInterval = null;
+let autoTuneTimeout = null;
 
-        function startAutoTune(amount) {
+function startAutoTune(amount) {
+    // 1. Thực hiện ngay lập tức 1 nhịp đầu tiên khi vừa chạm vào để đảm bảo độ nhạy
+    adjustTime(amount);
+
+    // 2. Nếu sau 250ms người dùng vẫn chưa buông tay, kích hoạt vòng lặp chạy liên tục (Interval)
+    autoTuneTimeout = setTimeout(() => {
+        autoTuneInterval = setInterval(() => {
             adjustTime(amount);
-            autoTuneTimeout = setTimeout(() => {
-                autoTuneInterval = setInterval(() => {
-                    adjustTime(amount);
-                }, 60);
-            }, 250);
-        }
+        }, 60); // Cứ mỗi 60ms sẽ cộng/trừ thời gian 1 lần (tốc độ mượt mà)
+    }, 250);
+}
 
-        function stopAutoTune() {
-            if (autoTuneTimeout) clearTimeout(autoTuneTimeout);
-            if (autoTuneInterval) clearInterval(autoTuneInterval);
-            autoTuneTimeout = null;
-            autoTuneInterval = null;
-        }
+function stopAutoTune() {
+    // Dọn dẹp cả bộ đếm chờ lẫn vòng lặp chạy nhanh khi người dùng nhấc tay hoặc di chuột ra ngoài
+    if (autoTuneTimeout) clearTimeout(autoTuneTimeout);
+    if (autoTuneInterval) clearInterval(autoTuneInterval);
+    autoTuneTimeout = null;
+    autoTuneInterval = null;
+}
 
-        const btnPrevTime = document.getElementById('btnPrevTime');
-        const btnNextTime = document.getElementById('btnNextTime');
+// Gán sự kiện trực tiếp ngay lập tức khi file script chạy, đảm bảo bấm là ăn ngay
+const btnPrevTime = document.getElementById('btnPrevTime');
+const btnNextTime = document.getElementById('btnNextTime');
 
-        if (btnPrevTime && btnNextTime) {
-            btnPrevTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(-1); });
-            btnPrevTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(-1); }, { passive: false });
-            btnNextTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(1); });
-            btnNextTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(1); }, { passive: false });
-            window.addEventListener('mouseup', stopAutoTune);
-            window.addEventListener('touchend', stopAutoTune);
-            btnPrevTime.addEventListener('mouseleave', stopAutoTune);
-            btnNextTime.addEventListener('mouseleave', stopAutoTune);
-        }
+if (btnPrevTime && btnNextTime) {
+    // Sự kiện xử lý cho nút Lùi Thời Gian (<<)
+    btnPrevTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(-1); });
+    btnPrevTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(-1); }, { passive: false });
 
+    // Sự kiện xử lý cho nút Tiến Thời Gian (>>)
+    btnNextTime.addEventListener('mousedown', (e) => { e.preventDefault(); startAutoTune(1); });
+    btnNextTime.addEventListener('touchstart', (e) => { e.preventDefault(); startAutoTune(1); }, { passive: false });
+
+    // Các sự kiện kết thúc hành vi nhấn giữ để dừng chạy thời gian
+    window.addEventListener('mouseup', stopAutoTune);
+    window.addEventListener('touchend', stopAutoTune);
+    
+    // Đề phòng trường hợp người dùng rê chuột ra khỏi phạm vi nút bấm khi đang giữ
+    btnPrevTime.addEventListener('mouseleave', stopAutoTune);
+    btnNextTime.addEventListener('mouseleave', stopAutoTune);
+}
+
+
+
+        // KHÔI PHỤC HOÀN TOÀN CƠ CHẾ REHYDRATION MƯỢT MÀ CỦA PHIÊN BẢN V1
         function handleClipRehydration() {
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
@@ -553,122 +882,162 @@
         window.addEventListener('scroll', handleClipRehydration, { passive: true });
 
         function setFocusAudio(videoElement) {
-            if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
-                if (isIOS) currentlyUnmutedVideo.muted = true;
-                currentlyUnmutedVideo.volume = 0.001; 
-                currentlyUnmutedVideo.classList.remove('unmuted');
-            }
-            if (isIOS) videoElement.muted = false;
-            videoElement.volume = 1.0; 
-            videoElement.classList.add('unmuted');
-            currentlyUnmutedVideo = videoElement;
-        }
+    if (currentlyUnmutedVideo && currentlyUnmutedVideo !== videoElement) {
+        if (isIOS) currentlyUnmutedVideo.muted = true; // Chỉ ép câm hoàn toàn trên iPhone
+        currentlyUnmutedVideo.volume = 0.001; 
+        currentlyUnmutedVideo.classList.remove('unmuted');
+    }
+    if (isIOS) videoElement.muted = false; // Bật lại tiếng trên iPhone
+    videoElement.volume = 1.0; 
+    videoElement.classList.add('unmuted');
+    currentlyUnmutedVideo = videoElement;
+}
+
 
         function enableControls() {
-            if (sharedVideoURL) {
+            if (isFFmpegReady && sharedVideoURL) {
                 nextBtn.disabled = false;
                 randomBtn.disabled = false;
                 gridViewBtn.disabled = false;
+                nextBtn.innerText = "Thêm đoạn";
             }
         }
 
-        upload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                rawVideoFile = file; 
-                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-                sharedVideoURL = URL.createObjectURL(file);
+        // --- ĐÃ CẬP NHẬT: TỰ ĐỘNG GIỮ LẠI CÁC ĐOẠN ĐÃ CẮT KHI KẾT NỐI LẠI VIDEO ---
+upload.addEventListener('change', (e) => {
+    const file = e.target.files[0];
+    if (file) {
+        rawVideoFile = file; 
+        if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+        sharedVideoURL = URL.createObjectURL(file);
+        
+        const tempVideo = document.createElement('video');
+        tempVideo.src = sharedVideoURL;
+        tempVideo.onloadedmetadata = () => {
+            totalVideoDuration = tempVideo.duration;
+            
+            // Kiểm tra xem trước đó người dùng đã cắt đoạn nào chưa
+            const hasExistingClips = videoContainer.children.length > 0;
+            
+            if (!hasExistingClips) {
+                // TRƯỜNG HỢP 1: Đây là lần đầu tiên nạp video vào app
+                videoContainer.innerHTML = ""; 
+                gridContent.innerHTML = "";
+                document.body.classList.remove('has-clips');
                 
-                const tempVideo = document.createElement('video');
-                tempVideo.src = sharedVideoURL;
-                tempVideo.onloadedmetadata = () => {
-                    totalVideoDuration = tempVideo.duration;
-                    const hasExistingClips = videoContainer.children.length > 0;
+                document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+                document.getElementById('mainTitle').style.color = "#2ecc71";
+                document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+            } else {
+                // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
+                console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
+                
+                // Kích hoạt lại toàn bộ các thẻ video cũ trên giao diện với nguồn mới
+                const allVideos = videoContainer.querySelectorAll('video');
+                allVideos.forEach(video => {
+                    const startPos = parseFloat(video.dataset.startTime) || 0;
+                    video.src = sharedVideoURL;
                     
-                    if (!hasExistingClips) {
-                        videoContainer.innerHTML = ""; 
-                        gridContent.innerHTML = "";
-                        document.body.classList.remove('has-clips');
-                        document.getElementById('mainTitle').innerText = "Video sẵn sàng";
-                        document.getElementById('mainTitle').style.color = "#2ecc71";
-                        document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
-                    } else {
-                        console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
-                        const allVideos = videoContainer.querySelectorAll('video');
-                        allVideos.forEach(video => {
-                            const startPos = parseFloat(video.dataset.startTime) || 0;
-                            video.src = sharedVideoURL;
-                            video.currentTime = startPos;
-                            video.load();
-                            video.play().catch(() => {});
-                        });
+                    video.currentTime = startPos;
+                    video.load();
+                    // Cho phát lại mượt mà nếu danh sách clip đang hiển thị
+                    video.play().catch(() => {});
+                });
+                
+                // Cập nhật lại ảnh Thumbnail dạng lưới cho khớp với video mới nạp
+                const gridItems = gridContent.querySelectorAll('.grid-item');
+                gridItems.forEach(item => {
+                    const clipId = item.getAttribute('data-grid-id');
+                    const targetWrapper = document.getElementById(clipId);
+                    if (targetWrapper) {
+                        const targetVideo = targetWrapper.querySelector('video');
+                        const startTime = parseFloat(targetVideo.dataset.startTime) || 0;
+                        const img = item.querySelector('img');
                         
-                        const gridItems = gridContent.querySelectorAll('.grid-item');
-                        gridItems.forEach(item => {
-                            const clipId = item.getAttribute('data-grid-id');
-                            const targetWrapper = document.getElementById(clipId);
-                            if (targetWrapper) {
-                                const targetVideo = targetWrapper.querySelector('video');
-                                const startTime = parseFloat(targetVideo.dataset.startTime) || 0;
-                                const img = item.querySelector('img');
-                                captureThumbnail(startTime).then(thumbUrl => {
-                                    if (thumbUrl && img) img.src = thumbUrl;
-                                });
-                            }
+                        // Chụp lại thumbnail mới thay thế ảnh trống
+                        captureThumbnail(startTime).then(thumbUrl => {
+                            if (thumbUrl && img) img.src = thumbUrl;
                         });
-                        document.body.classList.add('has-clips');
                     }
-                    upload.value = ""; 
-                    status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                    enableControls();
-                };
+                });
+                
+                // Đảm bảo body giữ nguyên trạng thái hiển thị danh sách
+                document.body.classList.add('has-clips');
             }
-        });
+            
+            upload.value = ""; 
+            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
+            enableControls();
+        };
+    }
+});
 
-        async function captureThumbnail(startTime) {
-            return new Promise((resolve) => {
-                const canvas = document.createElement('canvas');
-                const v = document.createElement('video');
-                v.src = sharedVideoURL;
-                v.muted = true;
-                v.playsInline = true;
-                v.preload = "auto";
-                v.setAttribute('playsinline', '');
-                v.setAttribute('webkit-playsinline', '');
 
-                v.onloadedmetadata = () => { v.currentTime = startTime; };
-                v.onseeked = () => {
-                    setTimeout(() => {
-                        try {
-                            const videoWidth = v.videoWidth || 160;
-                            const videoHeight = v.videoHeight || 160;
-                            const scale = 160 / Math.max(videoWidth, videoHeight);
-                            canvas.width = videoWidth * scale; 
-                            canvas.height = videoHeight * scale;
-                            const ctx = canvas.getContext('2d');
-                            ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
-                            const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                            v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove();
-                            resolve(dataUrl);
-                        } catch(e) {
-                            console.error("Lỗi vẽ Canvas Thumbnail:", e);
-                            resolve("");
-                        }
-                    }, 150); 
-                };
-                v.onerror = () => {
-                    v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+                async function captureThumbnail(startTime) {
+    return new Promise((resolve) => {
+        const canvas = document.createElement('canvas');
+        const v = document.createElement('video');
+        v.src = sharedVideoURL;
+        v.muted = true;
+        v.playsInline = true;
+        v.preload = "auto";
+        
+        v.setAttribute('playsinline', '');
+        v.setAttribute('webkit-playsinline', '');
+
+        v.onloadedmetadata = () => {
+            v.currentTime = startTime;
+        };
+
+        v.onseeked = () => {
+            setTimeout(() => {
+                try {
+                    const videoWidth = v.videoWidth || 160;
+                    const videoHeight = v.videoHeight || 160;
+                    
+                    const scale = 160 / Math.max(videoWidth, videoHeight);
+                    canvas.width = videoWidth * scale; 
+                    canvas.height = videoHeight * scale;
+                    
+                    const ctx = canvas.getContext('2d');
+                    ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
+                    const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
+                    
+                    // --- ĐÃ TỐI ƯU CHO ANDROID: Ép dọn dẹp luồng chạy ngầm ---
+                    v.pause();
+                    v.src = "";
+                    v.load(); 
+                    v.removeAttribute('src'); 
+                    v.remove();
+                    
+                    resolve(dataUrl);
+                } catch(e) {
+                    console.error("Lỗi vẽ Canvas Thumbnail:", e);
                     resolve("");
-                };
-                setTimeout(() => {
-                    if (v.src) {
-                        v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
-                        resolve("");
-                    }
-                }, 3000);
-                v.load();
-            });
-        }
+                }
+            }, 150); 
+        };
+
+        v.onerror = () => {
+            // --- ĐÃ TỐI ƯU CHO ANDROID ---
+            v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+            resolve("");
+        };
+
+        setTimeout(() => {
+            if (v.src) {
+                // --- ĐÃ TỐI ƯU CHO ANDROID ---
+                v.pause(); v.src = ""; v.load(); v.removeAttribute('src'); v.remove(); 
+                resolve("");
+            }
+        }, 3000);
+
+        v.load();
+    });
+}
+
+
+
 
         function addGridItemAhead(clipId, startTime, labelText) {
             const gridItem = document.createElement('div');
@@ -713,21 +1082,26 @@
             };
             
             gridContent.appendChild(gridItem);
+
             captureThumbnail(startTime).then(thumbUrl => {
                 if (thumbUrl) img.src = thumbUrl;
             });
         }
 
-        nextBtn.addEventListener('click', async () => { 
+            
+            
+        nextBtn.addEventListener('click', async () => { // Thêm chữ 'async' ở đây
             if (!sharedVideoURL) return;
             
-            const isFileAlive = await checkFileConnection();
-            if (!isFileAlive) {
-                alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
-                upload.value = ""; 
-                upload.click(); 
-                return;
-            }
+            // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
+    const isFileAlive = await checkFileConnection();
+    if (!isFileAlive) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
+        upload.click(); 
+        return;
+    }
+            
             
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
@@ -752,32 +1126,46 @@
                 wrapper.appendChild(titleTag);
             }
             
-            const video = document.createElement('video');
-            video.muted = isIOS ? true : false; 
-            video.volume = 0.001; 
-            video.playsInline = true; 
-            video.preload = "metadata";
+                        const video = document.createElement('video');
+// Luôn để false cho Android/PC theo code cũ của bạn, nhưng RIÊNG iPhone thì phải để true
+video.muted = isIOS ? true : false; 
+video.volume = 0.001; 
+video.playsInline = true; 
+video.preload = "metadata";
+
+
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
             video.dataset.isInitialLoad = "true";
             
-            video.onclick = () => {
+                        video.onclick = () => {
+                // Trên iPhone kiểm tra qua thuộc tính 'muted', các máy khác kiểm tra qua 'volume'
                 const isMutedNow = isIOS ? video.muted : (video.volume < 1);
+                
                 if (isMutedNow) setFocusAudio(video);
                 else { 
-                    if (isIOS) video.muted = true; 
+                    if (isIOS) video.muted = true; // Tắt tiếng riêng cho iPhone
                     video.volume = 0.001; 
                     video.classList.remove('unmuted'); 
                     currentlyUnmutedVideo = null; 
                 }
             };
 
-            video.ontimeupdate = () => {
-                if (video.currentTime >= end) {
-                    video.currentTime = start;
-                    video.play().catch(() => {});
-                }
-            };
+            
+            // Sử dụng timeupdate thay vì requestAnimationFrame để hoạt động cả khi chạy ngầm
+video.ontimeupdate = () => {
+    if (video.currentTime >= end) {
+        video.currentTime = start;
+        // Đảm bảo video tiếp tục phát khi bị tua lại
+        video.play().catch(() => {});
+    }
+};
+
+// Loại bỏ những rác thừa nếu video bị xóa
+video.onpause = () => {
+    // Không cần cancelAnimationFrame nữa
+};
+
             
             video.onloadedmetadata = () => {
                 const width = video.videoWidth;
@@ -811,7 +1199,10 @@
             del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
             del.onclick = () => {
                 clipObserver.unobserve(video); 
-                video.pause(); video.src = ""; video.load();
+                // --- THÊM ĐOẠN NÀY: Ngắt luồng chạy và nạp dữ liệu của video trước khi gỡ bỏ ---
+    video.pause();
+    video.src = "";
+    video.load();
                 wrapper.remove();
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
                 if (gridItem) gridItem.remove(); 
@@ -832,46 +1223,41 @@
             window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
-        gridViewBtn.onclick = () => { gridOverlay.style.display = 'flex'; };
+        gridViewBtn.onclick = () => {
+            gridOverlay.style.display = 'flex';
+        };
+
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
-        // --- HÀM LAZY LOADING: CHỈ NẠP FFMPEG KHI PHÁT SINH LỆNH DOWNLOAD ---
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
-            const isFileAlive = await checkFileConnection();
-            if (!isFileAlive) {
-                alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
-                upload.value = ""; 
-                upload.click(); 
+            if (!isFFmpegReady) {
+                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
                 return;
             }
-
-            const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
-            const loadingStatusText = document.getElementById('loadingStatusText');
-
-            // BƯỚC KHỞI CHẠY CORE NẾU CHƯA TẢI
-            if (!isFFmpegReady) {
-                loadingOverlay.style.display = 'flex'; // Hiện màn hình loading Neon
-                if (loadingStatusText) loadingStatusText.innerText = "Đang khởi tạo cấu trúc FFmpeg.wasm...";
-                
-                try {
-                    await ffmpeg.load();
-                    isFFmpegReady = true;
-                    status.innerText = "Hệ thống Lõi đã liên kết thành công.";
-                } catch (error) {
-                    console.error(error);
-                    alert("Không thể khởi chạy lõi xử lý. Vui lòng kiểm tra kết nối mạng (Yêu cầu HTTPS/Local Server).");
-                    loadingOverlay.style.display = 'none';
-                    return;
-                }
+            if (!rawVideoFile) {
+                alert("Lỗi: Không tìm thấy file video đầu vào.");
+                return;
             }
+            
+            // --- KIỂM TRA SINH TỬ KẾT NỐI TỆP THỰC TẾ (ANTI-RAM CLEANUP) ---
+if (rawVideoFile) {
+    try {
+        // Đọc thử 1 byte đầu tiên bằng ArrayBuffer để test kết nối thực tế
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+    } catch (fileError) {
+        // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Khử lỗi không nhận diện trùng file
+        upload.click(); 
+        return;
+    }
+}
 
-            // HIỂN THỊ TRẠNG THÁI RENDERING TRÊN BANNER CHỜ CHUYỂN ĐỘNG
-            loadingOverlay.style.display = 'flex';
-            if (loadingStatusText) loadingStatusText.innerText = `⏳ Đang trích xuất đoạn [${formatTime(startTime)}]...`;
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛...';
+            btn.innerText = '⌛ Đang xử lý...';
+            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             const timestamp = Date.now();
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -896,34 +1282,42 @@
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
+                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
             } catch (err) {
                 console.error(err);
-                alert("Có lỗi xảy ra trong quá trình nén bằng FFmpeg.");
+                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+                status.innerText = "❌ Lỗi thực thi Render.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                loadingOverlay.style.display = 'none'; // Ẩn màn hình loading ngay khi hoàn tất
                 try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
             }
         }
 
-        randomBtn.onclick = async () => { 
-            const isFileAlive = await checkFileConnection();
-            if (!isFileAlive) {
-                alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu!");
-                upload.value = ""; 
-                upload.click(); 
-                return;
-            }
+                randomBtn.onclick = async () => { // Thêm chữ 'async' ở đây
+    // --- KIỂM TRA ĐỘC LẬP KHI BẤM RANDOM ---
+    const isFileAlive = await checkFileConnection();
+    if (!isFileAlive) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
+        upload.click(); 
+        return;
+    }
             const d = parseFloat(durationInput.value) || 5;
             const maxRange = Math.max(0, totalVideoDuration - d);
+            
+            // Tính toán thời gian ngẫu nhiên chuẩn xác trước
             const randomSeconds = Math.random() * maxRange;
             startTimeInput.value = formatTime(randomSeconds);
             
+            // Trì hoãn một nhịp nhỏ (macro-task) để đảm bảo dữ liệu input và DOM được đồng bộ
             setTimeout(() => {
-                if (!nextBtn.disabled) nextBtn.click();
+                if (!nextBtn.disabled) {
+                    nextBtn.click();
+                }
             }, 50);
         };
+
 
         function formatTime(s) {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
@@ -939,40 +1333,72 @@
             return seconds;
         }
             
-        window.addEventListener('touchstart', (e) => {
-            if (e.touches.length !== 1) return;
-            const touch = e.touches[0];
-            window.initialTouchY = touch.clientY;
-        }, { passive: true });
+            // --- CHẶN HOÀN TOÀN HÀNH VI PULL-TO-REFRESH TRÊN DI ĐỘNG ---
+window.addEventListener('touchstart', (e) => {
+    // Chỉ can thiệp nếu thao tác vuốt bằng 1 ngón tay
+    if (e.touches.length !== 1) return;
+    
+    const touch = e.touches[0];
+    // Lưu lại điểm bắt đầu vuốt theo trục Y
+    window.initialTouchY = touch.clientY;
+}, { passive: true });
 
-        window.addEventListener('touchmove', (e) => {
-            if (window.initialTouchY === undefined) return;
-            const touch = e.touches[0];
-            const currentY = touch.clientY;
-            const diffY = currentY - window.initialTouchY;
+window.addEventListener('touchmove', (e) => {
+    if (window.initialTouchY === undefined) return;
+    
+    const touch = e.touches[0];
+    const currentY = touch.clientY;
+    const diffY = currentY - window.initialTouchY; // Dương là vuốt xuống, Âm là vuốt lên
 
-            if ((document.documentElement.scrollTop === 0 && diffY > 0) || 
-                (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight && diffY < 0)) {
-                if (gridOverlay.style.display !== 'flex') {
-                    if (e.cancelable) e.preventDefault();
-                }
-            }
-        }, { passive: false });
+    // 1. Nếu đang ở đỉnh trang (scrollTop === 0) và cố tình vuốt xuống để kéo Refresh
+    // 2. Hoặc nếu đang ở đáy trang và bị hiện tượng nảy (Overscroll) khi vuốt lên
+    if ((document.documentElement.scrollTop === 0 && diffY > 0) || 
+        (window.innerHeight + window.pageYOffset >= document.documentElement.scrollHeight && diffY < 0)) {
+        
+        // Kiểm tra xem vùng cuộn có phải là vùng danh sách lưới (Grid Overlay) hay không
+        // Nếu không phải Grid Overlay đang mở, chặn hành vi kéo nảy mặc định của trình duyệt
+        if (gridOverlay.style.display !== 'flex') {
+            if (e.cancelable) e.preventDefault();
+        }
+    }
+}, { passive: false }); // Bắt buộc phải là false để preventDefault() có tác dụng
+            
+            // --- CHẶN HOÀN TOÀN HÀNH VI DOUBLE-TAP TO ZOOM VÀ PINCH ZOOM (ZOMM ĐA ĐIỂM) ---
 
-        let lastTouchEnd = 0;
-        document.addEventListener('touchend', (e) => {
-            const now = (new Date()).getTime();
-            if (e.target.closest('button') || e.target.closest('.tune-btn') || e.target.closest('input')) return; 
-            if (now - lastTouchEnd <= 300) {
-                if (e.cancelable) e.preventDefault();
-            }
-            lastTouchEnd = now;
-        }, false);
+// 1. Chặn Double-tap (Gõ liên tiếp 2 lần) nhưng loại trừ các nút bấm điều khiển
+let lastTouchEnd = 0;
+document.addEventListener('touchend', (e) => {
+    const now = (new Date()).getTime();
+    
+    // Nếu người dùng đang bấm vào nút mũi tên (.tune-btn) hoặc bất kỳ button nào, 
+    // cho phép xử lý tự nhiên, không được preventDefault làm mất độ nhạy.
+    if (e.target.closest('button') || e.target.closest('.tune-btn') || e.target.closest('input')) {
+        return; 
+    }
 
-        document.addEventListener('contextmenu', (e) => {
-            if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-            e.preventDefault();
-        }, false);
+    if (now - lastTouchEnd <= 300) {
+        if (e.cancelable) e.preventDefault(); // Chỉ chặn zoom ở các vùng trống bên ngoài
+    }
+    lastTouchEnd = now;
+}, false);
+
+            // 3. Chặn hoàn toàn Menu ngữ cảnh (Tải xuống/Chia sẻ/In) khi bấm giữ trên Mobile
+document.addEventListener('contextmenu', (e) => {
+    // Nếu bấm giữ vào ô input, cho phép hiện menu mặc định để người dùng dán/sửa văn bản
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') {
+        return;
+    }
+    // Chặn menu đối với tất cả các vùng khác (nút bấm, video, nền app)
+    e.preventDefault();
+}, false);
+
+            
+            
+
+
     </script>
+            
+
+
 </body>
 </html>
