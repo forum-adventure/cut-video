@@ -15,6 +15,7 @@
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js"></script>
 
     
     <style>
@@ -1192,6 +1193,14 @@ video.onpause = () => {
             btnGroup.className = 'button-group';
             
             const dl = document.createElement('button');
+            // --- NÚT TẢI GIF MỚI THÊM ---
+const gifBtn = document.createElement('button');
+gifBtn.className = 'download-btn'; 
+gifBtn.style.backgroundColor = '#bb86fc'; // Đổi màu tím phân biệt với nút MP4
+gifBtn.style.color = '#000';
+gifBtn.innerText = "Tải GIF";
+gifBtn.onclick = () => downloadClipAsGif(video, start, end, clipLabel, gifBtn);
+// ----------------------------
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
@@ -1210,7 +1219,9 @@ video.onpause = () => {
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
+            btnGroup.appendChild(gifBtn); // Thêm dòng này
+            btnGroup.appendChild(dl); 
+            btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1394,6 +1405,47 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
+function downloadClipAsGif(videoElement, startTime, endTime, labelText, btnElement) {
+    const originalText = btnElement.innerText;
+    btnElement.disabled = true;
+    btnElement.innerText = "⌛ Tạo GIF...";
+    
+    if (status) status.innerText = "⏳ Đang dựng ảnh GIF từ phân đoạn...";
+
+    // Cấu hình các thông số ảnh GIF
+    gifshot.createGIF({
+        video: [videoElement.src],
+        startTime: startTime,
+        duration: endTime - startTime,
+        gifWidth: 400,   // Độ rộng ảnh GIF (Tối ưu cho mobile không bị nặng)
+        gifHeight: 400 * (videoElement.videoHeight / videoElement.videoWidth), // Tự động tính theo tỷ lệ video
+        frameDuration: 1, // Tốc độ khung hình
+        sampleInterval: 10,
+        numWorkers: 2
+    }, function (obj) {
+        if (!obj.error) {
+            const image = obj.image;
+            const animatedImage = document.createElement('a');
+            animatedImage.href = image;
+            
+            const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+            animatedImage.download = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
+            
+            document.body.appendChild(animatedImage);
+            animatedImage.click();
+            document.body.removeChild(animatedImage);
+            
+            if (status) status.innerText = "✨ Xuất ảnh GIF thành công!";
+        } else {
+            console.error("Lỗi tạo GIF:", obj.error);
+            alert("Không thể tạo ảnh GIF trên thiết bị này.");
+        }
+        
+        // Trả lại trạng thái nút bấm
+        btnElement.disabled = false;
+        btnElement.innerText = originalText;
+    });
+}
 
 
     </script>
