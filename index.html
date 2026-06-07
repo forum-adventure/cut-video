@@ -1403,56 +1403,7 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
             
-            
-async function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
-    if (typeof gifshot === 'undefined') {
-        alert("Thư viện tạo GIF chưa được tải xong, vui lòng đợi một chút!");
-        return;
-    }
-
-    const duration = endTime - startTime;
-    if (duration > 15) {
-        const confirmLongGif = confirm("Đoạn video dài hơn 15 giây. Tạo ảnh GIF dài có thể gây tràn bộ nhớ (Crash) trên điện thoại. Bạn có muốn tiếp tục?");
-        if (!confirmLongGif) return;
-    }
-
-    // Lưu lại trạng thái nút bấm ban đầu
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⌛ Đang trích khung...';
-    status.style.display = 'block';
-    status.innerText = `⏳ Đang khởi tạo luồng giải mã GIF cho đoạn [${formatTime(startTime)}]...`;
-
-    // 1. Cấu hình các thông số tối ưu cho Mobile để tránh tràn RAM
-    // Giảm độ phân giải xuống một chút (GIF không cần quá nét) giúp xử lý cực nhanh
-    const gifWidth = 320; 
-    const gifHeight = Math.round(gifWidth / (videoElement.videoWidth / videoElement.videoHeight)) || 240;
-    
-    // FPS tối ưu cho GIF (10-12 khung hình/giây là đủ mượt và nhẹ)
-    const fps = 10; 
-    const interval = 1 / fps; 
-    const totalFrames = Math.floor(duration * fps);
-    
-    const capturedFrames = [];
-    
-    // 2. Khởi tạo một thẻ video ngầm độc lập để bốc tách khung hình một cách an toàn
-    const hiddenVideo = document.createElement('video');
-    hiddenVideo.src = sharedVideoURL;
-    hiddenVideo.muted = true;
-    hiddenVideo.playsInline = true;
-    hiddenVideo.preload = "auto";
-    hiddenVideo.setAttribute('playsinline', '');
-    hiddenVideo.setAttribute('webkit-playsinline', '');
-
-    const canvas = document.createElement('canvas');
-    canvas.width = gifWidth;
-    canvas.height = gifHeight;
-    const ctx = canvas.getContext('2d');
-
-    let currentFrameIndex = 0;
-
-   
-    async function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
+            async function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
     const originalBtnText = btn.innerText;
     btn.disabled = true;
     btn.innerText = '⏳ Đang khởi tạo...';
