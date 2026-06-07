@@ -15,7 +15,7 @@ if (typeof window === 'undefined') {
                     const newHeaders = new Headers(response.headers);
                     newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
                     newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
-                    // BỔ SUNG DÒNG NÀY ĐỂ FIX LỖI CHẶN SCRIPT CDN
+                    // Sửa đổi & bổ sung bảo mật mở rộng để cho phép các CDN hoạt động tự do
                     newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin"); 
                     
                     return new Response(response.body, {
