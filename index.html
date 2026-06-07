@@ -20,6 +20,22 @@
     
     <style>
     
+    .gif-btn {
+    background-color: #bb86fc; /* Màu tím Neon để phân biệt với màu xanh của MP4 */
+    color: #000;
+    border: none;
+    padding: 10px 16px;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    font-size: 0.85em;
+    flex: 1;
+    transition: background 0.2s, transform 0.1s;
+}
+.gif-btn:not(:disabled):hover { background-color: #d7b4ff; }
+.gif-btn:active { transform: scale(0.98); }
+
+    
     /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
 #ffmpegLoadingOverlay {
     position: fixed;
@@ -1192,15 +1208,13 @@ video.onpause = () => {
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
-            const dl = document.createElement('button');
-            // --- NÚT TẢI GIF MỚI THÊM ---
+            // --- THÊM NÚT TẢI GIF VÀO ĐÂY ---
 const gifBtn = document.createElement('button');
-gifBtn.className = 'download-btn'; 
-gifBtn.style.backgroundColor = '#bb86fc'; // Đổi màu tím phân biệt với nút MP4
-gifBtn.style.color = '#000';
+gifBtn.className = 'gif-btn'; 
 gifBtn.innerText = "Tải GIF";
-gifBtn.onclick = () => downloadClipAsGif(video, start, end, clipLabel, gifBtn);
-// ----------------------------
+gifBtn.onclick = () => downloadClipGIF(start, (end - start), clipLabel, gifBtn);
+            
+            const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
@@ -1219,9 +1233,7 @@ gifBtn.onclick = () => downloadClipAsGif(video, start, end, clipLabel, gifBtn);
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(gifBtn); // Thêm dòng này
-            btnGroup.appendChild(dl); 
-            btnGroup.appendChild(del);
+            btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1404,124 +1416,75 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
             
-function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
+            async function downloadClipGIF(startTime, duration, labelText, btn) {
     if (typeof gifshot === 'undefined') {
-        alert("Thư viện Gifshot chưa được tải xong, vui lòng thử lại sau!");
+        alert("Thư viện GIFshot đang tải hoặc bị chặn, vui lòng thử lại!");
+        return;
+    }
+    if (!rawVideoFile) {
+        alert("Lỗi: Không tìm thấy file video đầu vào.");
+        return;
+    }
+
+    // Kiểm tra kết nối sinh tử của tệp tin chống dọn dẹp RAM trên Android
+    const isFileAlive = await checkFileConnection();
+    if (!isFileAlive) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        upload.value = "";
+        upload.click();
         return;
     }
 
     const originalBtnText = btn.innerText;
     btn.disabled = true;
-    btn.innerText = '⌛ Tạo GIF...';
-    
-    const duration = endTime - startTime;
-    
-    // 1. Tạo video chạy ngầm
-    const v = document.createElement('video');
-    v.src = videoElement.src;
-    v.muted = true;
-    v.playsInline = true;
-    v.crossOrigin = "anonymous";
-    
-    // Cấu hình kích thước ảnh GIF vừa phải để tránh tràn bộ nhớ
-    const gifWidth = videoElement.videoWidth > videoElement.videoHeight ? 480 : 360;
-    const gifHeight = Math.round((videoElement.videoHeight / videoElement.videoWidth) * gifWidth);
-    
-    // FPS và tính toán tổng số khung hình cần chụp
-    const fps = 8; // Giảm xuống 8fps giúp tạo GIF nhanh hơn, mượt và nhẹ hơn
-    const numFrames = Math.max(5, Math.min(80, Math.round(duration * fps))); 
-    const interval = duration / numFrames;
-    
-    const imgs = [];
-    let currentFrame = 0;
-    let isProcessing = false;
+    btn.innerText = '⌛ Đang tạo GIF...';
+    status.innerText = `⏳ Đang trích xuất ảnh GIF từ mốc [${formatTime(startTime)}]...`;
+    status.style.display = 'block';
 
-    // 2. Chờ video tải xong thông tin ban đầu rồi nhảy tới điểm bắt đầu
-    v.onloadedmetadata = () => {
-        v.currentTime = startTime;
-    };
+    // Tạo URL blob tạm thời từ file gốc để gifshot đọc trực tiếp bằng luồng Worker
+    const tempVideoUrl = URL.createObjectURL(rawVideoFile);
 
-    // 3. Hàm xử lý chụp khung hình an toàn
-    async function captureFrame() {
-        if (isProcessing) return;
-        isProcessing = true;
+    // Cấu hình tối ưu hóa đặc biệt dành cho thiết bị di động
+    gifshot.createGIF({
+        video: [tempVideoUrl],
+        offset: startTime,                // Giây bắt đầu cắt
+        numFrames: Math.min(duration * 10, 100), // Ép trần tối đa 100 khung hình để tránh crash RAM
+        frameDuration: 1,                 // Tốc độ khung hình (1 = ~10 fps, chuẩn mượt cho GIF di động)
+        gifWidth: 320,                    // Độ rộng tối ưu cho ảnh ngắn
+        gifHeight: 320,                   // Chiều cao tối ưu (tự động co giãn theo tỷ lệ qua object-fit)
+        sampleInterval: 10,               // Khoảng cách lấy mẫu màu (giúp render nhanh hơn 3 lần)
+        numWorkers: 2                     // Giới hạn 2 luồng chạy ngầm để không bóp nghẹt vi xử lý điện thoại
+    }, function (obj) {
+        // Giải phóng URL ngay khi gifshot nạp xong dữ liệu đầu vào
+        URL.revokeObjectURL(tempVideoUrl);
 
-        // Chờ cho đến khi video thực sự sẵn sàng render (readyState >= 2)
-        // và thêm một khoảng delay nhỏ để tránh trạng thái 'broken' của trình duyệt
-        while (v.readyState < 2) {
-            await new Promise(r => setTimeout(r, 50));
-        }
-        await new Promise(r => setTimeout(r, 100)); // Delay an toàn cho phần cứng giải mã ảnh
-
-        const canvas = document.createElement('canvas');
-        canvas.width = gifWidth;
-        canvas.height = gifHeight;
-        const ctx = canvas.getContext('2d');
-        
-        try {
-            ctx.drawImage(v, 0, 0, gifWidth, gifHeight);
-            imgs.push(canvas.toDataURL('image/jpeg', 0.7));
+        if (!obj.error) {
+            const imageSrc = obj.image; // Chuỗi Base64 chứa ảnh GIF hoàn chỉnh
             
-            currentFrame++;
-            if (currentFrame < numFrames) {
-                isProcessing = false;
-                v.currentTime = startTime + (currentFrame * interval);
-            } else {
-                buildGif();
-            }
-        } catch (e) {
-            console.error("Lỗi chụp ảnh, đang thử lại khung hình này...", e);
-            isProcessing = false;
-            // Nếu lỗi (vẫn dính 'broken' state), chờ thêm chút rồi thử lại chính khung hình đó
-            setTimeout(captureFrame, 150);
+            // Xử lý tạo cổng tải xuống tự động
+            const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+            const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
+            
+            const a = document.createElement('a');
+            a.href = imageSrc;
+            a.download = downloadName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+
+            status.innerText = `✨ Trích xuất thành công ảnh GIF: ${downloadName}`;
+        } else {
+            console.error("Lỗi Gifshot:", obj.errorMsg);
+            alert("Có lỗi xảy ra khi tạo ảnh GIF trên thiết bị này.");
+            status.innerText = "❌ Lỗi thực thi Render GIF.";
         }
-    }
 
-    // Lắng nghe cả hai sự kiện để đảm bảo kích hoạt chính xác
-    v.onseeked = captureFrame;
-    v.oncanplay = captureFrame;
-
-    v.onerror = () => {
-        alert("Lỗi nạp luồng video để tạo ảnh GIF.");
-        resetBtn();
-    };
-
-    function resetBtn() {
+        // Trả lại trạng thái nút bấm ban đầu
         btn.disabled = false;
         btn.innerText = originalBtnText;
-        v.pause(); v.src = ""; v.load(); v.remove();
-    }
-
-    function buildGif() {
-        btn.innerText = '📦 Đóng gói GIF...';
-        gifshot.createGIF({
-            images: imgs,
-            gifWidth: gifWidth,
-            gifHeight: gifHeight,
-            interval: 1 / fps,
-            numWorkers: 2
-        }, function (obj) {
-            if (!obj.error) {
-                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-                const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
-                
-                const a = document.createElement('a');
-                a.href = obj.image;
-                a.download = downloadName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-            } else {
-                console.error("Gifshot Error:", obj.errorMsg);
-                alert("Lỗi đóng gói ảnh GIF.");
-            }
-            resetBtn();
-        });
-    }
-
-    // Kích hoạt tiến trình nạp
-    v.load();
+    });
 }
+
 
 
     </script>
