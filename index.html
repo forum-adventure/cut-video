@@ -1407,47 +1407,37 @@ document.addEventListener('contextmenu', (e) => {
     const originalBtnText = btn.innerText;
     btn.disabled = true;
     btn.innerText = '⏳ Đang khởi tạo...';
-    status.innerText = '🎬 Đang chuẩn bị trích xuất GIF trực tiếp...';
+    status.innerText = '🎬 Đang chuẩn bị trích xuất GIF ngầm...';
 
     const duration = endTime - startTime;
-    
-    // Thiết lập các thông số tối ưu mặc định từ file index_gif_toot
     const fps = 10; 
     const computedNumFrames = Math.floor(duration * fps);
     const computedInterval = 1 / fps;
     
-    // Cấu hình kích thước và chất lượng (mặc định lấy mức cân bằng)
     const targetWidth = 480; 
     const sampleInterval = 10; 
 
-    // Tính tỷ lệ chiều cao giữ nguyên aspect ratio của video ban đầu
     const videoW = videoElement.videoWidth || 480;
     const videoH = videoElement.videoHeight || 270;
     const targetHeight = Math.round((targetWidth / videoW) * videoH);
 
-    // Lưu lại trạng thái thời gian và trạng thái phát hiện tại của phân đoạn
-    const originalTime = videoElement.currentTime;
-    const wasPaused = videoElement.paused;
-    
-    // Đưa video về mốc bắt đầu cắt để gifshot tiến hành quét hình ảnh
-    videoElement.currentTime = startTime;
-
-    // KÍCH HOẠT XỬ LÝ: Truyền thẳng đối tượng Element vào thay vì đường link URL
+    // Thay vì truyền thẻ videoElement đang bị vướng hàm lặp ontimeupdate,
+    // ta dùng luôn nguồn URL tổng của video đã lưu ở biến toàn cục sharedVideoURL
     gifshot.createGIF({
-        video: videoElement, // <--- THAY ĐỔI QUAN TRỌNG: Truyền đối tượng HTMLVideoElement trực tiếp
+        video: [sharedVideoURL], // <--- SỬA QUAN TRỌNG: Truyền mảng URL giống file công cụ 1
+        offset: startTime,       // <--- BỔ SUNG: Cho gifshot biết điểm bắt đầu cắt ngầm
         numFrames: computedNumFrames, 
         interval: computedInterval,   
         gifWidth: targetWidth, 
         gifHeight: targetHeight,
         sampleInterval: sampleInterval, 
-        numWorkers: 2 // Giảm xuống 2 workers trên giao diện để tránh xung đột với coi-serviceworker
+        numWorkers: 2 
     }, function (obj) {
         if (!obj.error) {
             const gifUrl = obj.image;
             const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
             const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
             
-            // Tự động tải file xuống
             const a = document.createElement('a');
             a.href = gifUrl;
             a.download = downloadName;
@@ -1461,14 +1451,7 @@ document.addEventListener('contextmenu', (e) => {
             alert("Không thể đóng gói tệp tin GIF. Lỗi: " + obj.errorMsg);
             status.innerText = "❌ Lỗi đóng gói GIF.";
         }
-        
-        // Trả lại trạng thái ban đầu cho video phân đoạn
-        videoElement.currentTime = originalTime;
-        if (!wasPaused) {
-            videoElement.play().catch(() => {});
-        }
 
-        // Trả trạng thái nút bấm về ban đầu
         btn.disabled = false;
         btn.innerText = originalBtnText;
     });
