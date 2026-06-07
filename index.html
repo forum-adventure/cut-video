@@ -15,7 +15,6 @@
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js"></script>
 
     
     <style>
@@ -1193,14 +1192,6 @@ video.onpause = () => {
             btnGroup.className = 'button-group';
             
             const dl = document.createElement('button');
-            // --- NÚT TẢI GIF MỚI THÊM ---
-const gifBtn = document.createElement('button');
-gifBtn.className = 'download-btn'; 
-gifBtn.style.backgroundColor = '#bb86fc'; // Đổi màu tím phân biệt với nút MP4
-gifBtn.style.color = '#000';
-gifBtn.innerText = "Tải GIF";
-gifBtn.onclick = () => downloadClipAsGif(video, start, end, clipLabel, gifBtn);
-// ----------------------------
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
@@ -1219,7 +1210,6 @@ gifBtn.onclick = () => downloadClipAsGif(video, start, end, clipLabel, gifBtn);
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(gifBtn); // Thêm dòng này
             btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
@@ -1403,60 +1393,7 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
             
-            async function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⏳ Đang khởi tạo...';
-    status.innerText = '🎬 Đang chuẩn bị trích xuất GIF ngầm...';
-
-    const duration = endTime - startTime;
-    const fps = 10; 
-    const computedNumFrames = Math.floor(duration * fps);
-    const computedInterval = 1 / fps;
-    
-    const targetWidth = 480; 
-    const sampleInterval = 10; 
-
-    const videoW = videoElement.videoWidth || 480;
-    const videoH = videoElement.videoHeight || 270;
-    const targetHeight = Math.round((targetWidth / videoW) * videoH);
-
-    // Thay vì truyền thẻ videoElement đang bị vướng hàm lặp ontimeupdate,
-    // ta dùng luôn nguồn URL tổng của video đã lưu ở biến toàn cục sharedVideoURL
-    gifshot.createGIF({
-        video: [sharedVideoURL], // <--- SỬA QUAN TRỌNG: Truyền mảng URL giống file công cụ 1
-        offset: startTime,       // <--- BỔ SUNG: Cho gifshot biết điểm bắt đầu cắt ngầm
-        numFrames: computedNumFrames, 
-        interval: computedInterval,   
-        gifWidth: targetWidth, 
-        gifHeight: targetHeight,
-        sampleInterval: sampleInterval, 
-        numWorkers: 2 
-    }, function (obj) {
-        if (!obj.error) {
-            const gifUrl = obj.image;
-            const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-            const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
             
-            const a = document.createElement('a');
-            a.href = gifUrl;
-            a.download = downloadName;
-            document.body.appendChild(a);
-            a.click();
-            document.body.removeChild(a);
-
-            status.innerText = `✨ Tải thành công ảnh GIF: ${downloadName}`;
-        } else {
-            console.error("Gifshot Error:", obj.errorMsg);
-            alert("Không thể đóng gói tệp tin GIF. Lỗi: " + obj.errorMsg);
-            status.innerText = "❌ Lỗi đóng gói GIF.";
-        }
-
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-    });
-}
-
 
 
     </script>
