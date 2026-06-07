@@ -1404,63 +1404,60 @@ document.addEventListener('contextmenu', (e) => {
 }, false);
 
             
-            
 function downloadClipAsGif(videoElement, startTime, endTime, labelText, btnElement) {
     const originalText = btnElement.innerText;
     btnElement.disabled = true;
     btnElement.innerText = "⌛ Tạo GIF...";
     
     if (status) {
-        status.style.display = "block"; // Đảm bảo dòng trạng thái được hiện lên để theo dõi
+        status.style.display = "block";
         status.innerText = "⏳ Đang trích xuất khung hình & dựng GIF...";
     }
 
-    // Cấu hình các thông số ảnh GIF tối ưu cho điện thoại Android
     gifshot.createGIF({
         video: [videoElement.src],
         startTime: startTime,
         duration: endTime - startTime,
         gifWidth: 400,   
         gifHeight: 400 * (videoElement.videoHeight / videoElement.videoWidth), 
-        frameDuration: 1.5, // Giờ tăng nhẹ nhịp giúp ảnh mượt và xử lý nhanh hơn
+        frameDuration: 1.5,
         sampleInterval: 10,
         numWorkers: 2
     }, function (obj) {
         if (!obj.error) {
-            const base64Image = obj.image; // Dữ liệu dạng data:image/gif;base64,...
+            const base64Image = obj.image;
             
             try {
-                // --- GIẢI PHÁP SỬA LỖI CHO ANDROID: CHUYỂN BASE64 THÀNH BLOB ---
-                // Tách phần đầu định dạng và lấy chuỗi mã hóa phía sau
+                // CHUYỂN BASE64 THÀNH BLOB CHUẨN VẬT LÝ
                 const byteString = atob(base64Image.split(',')[1]);
                 const mimeString = base64Image.split(',')[0].split(':')[1].split(';')[0];
                 
-                // Khởi tạo mảng bộ nhớ đệm byte dữ liệu
                 const ab = new ArrayBuffer(byteString.length);
                 const ia = new Uint8Array(ab);
                 for (let i = 0; i < byteString.length; i++) {
                     ia[i] = byteString.charCodeAt(i);
                 }
                 
-                // Đóng gói thành tệp Blob chuẩn vật lý
                 const blob = new Blob([ab], { type: mimeString });
-                const blobUrl = URL.createObjectURL(blob); // Tạo liên kết tệp an toàn
+                const blobUrl = URL.createObjectURL(blob);
                 
-                // Tiến hành kích hoạt tải về
+                // TỐI ƯU HÓA ĐƯỜNG TẢI CHO DI ĐỘNG CHỐNG BỊ CHẶN BỞI COEP
                 const animatedImage = document.createElement('a');
                 animatedImage.href = blobUrl;
                 
                 const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
                 animatedImage.download = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
                 
+                // Đảm bảo hoạt động mượt trên mọi trình duyệt di động
+                animatedImage.rel = "noopener";
                 document.body.appendChild(animatedImage);
                 animatedImage.click();
                 
-                // Dọn dẹp bộ nhớ đệm ngay sau khi tải để chống tràn RAM trên Android
+                // Giữ lại bộ đệm lâu hơn một chút (500ms) trên Mobile để tránh việc giải phóng RAM làm đứt tiến trình tải
                 setTimeout(() => {
                     document.body.removeChild(animatedImage);
                     URL.revokeObjectURL(blobUrl);
-                }, 200);
+                }, 500);
                 
                 if (status) status.innerText = "✨ Xuất ảnh GIF và tải xuống thành công!";
             } catch (convertError) {
@@ -1472,11 +1469,13 @@ function downloadClipAsGif(videoElement, startTime, endTime, labelText, btnEleme
             alert("Không thể dựng ảnh GIF. Vui lòng thử đoạn ngắn hơn (dưới 5 giây).");
         }
         
-        // Trả lại trạng thái ban đầu cho nút bấm
         btnElement.disabled = false;
         btnElement.innerText = originalText;
     });
 }
+
+
+                
 
 
 
