@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition)</title>
+    <title>Video Segment Player & Cutter - Ncox Hybrid (Sửa lỗi Đóng Băng)</title>
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -10,153 +10,102 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWdtZW50IFBsYXllciIsCiAgImljb25zIjogWwogICAgewogICAgICAic3JjIjogImh0dHBzOi8vY2RuLWljb25zLXBuZy5mbGF0aWNvbi5jb20vNTEyLzcxMS83MTEyNDUucG5nIiwKICAgICAgInR5cGUiOiAiaW1hZ2UvcG5nIiwKICAgICAgInNpemVzIjogIjUxMng1MTIiCiAgICB9CiAgXSwKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
+    <link rel="manifest" href="data:application/manifest+json;base64,ewogICJzaG9ydF9uYW1lIjogIlZpZGVvUGxheWVyIiwKICAibmFtZSI6ICJWaWRlbyBTZWgnbWVudCBQbGF5ZXIiLAogICJpY29ucyI6IFsKICAgIHsKICAgICAgInNyYyI6ICJodHRwczovL2Nkbi1pY29ucy1wbmcuZmxhdGljb20uY29tLzUxMi83MTEvNzExMjQ1LnBuZyIsCiAgICAgICJ0eXBlIjogImltYWdlL3BuZyIsCiAgICAgICJzaXplcyI6ICI1MTJ4NTEyIgogICAgfQogIF0sKICAic3RhcnRfdXJsIjogIi4iLAogICJkaXNwbGF5IjogInN0YW5kYWxvbmUiLAogICJiYWNrZ3JvdW5kX2NvbG9yIjogIiMxMjEyMTIiLAogICJ0aGVtZV9jb2xvciI6ICIjMTIxMjEyIgp9">
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js"></script>
     
     <style>
         body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
-            padding: 20px; background-color: #121212; 
-            color: #e0e0e0; margin: 0; padding-bottom: 260px; min-height: 100vh;
+            font-family: sans-serif; padding: 20px; background-color: #121212; 
+            color: #e0e0e0; margin: 0; padding-bottom: 220px; min-height: 100vh;
             display: flex; flex-direction: column;
         }
         #welcomeOverlay {
-    position: fixed; 
-    top: 40%; 
-    left: 50%; 
-    transform: translate(-50%, -50%);
-    text-align: center; 
-    z-index: 10; 
-    width: 90%; 
-    max-width: 650px; /* Giới hạn chiều rộng để khung viền ôm vừa vặn, đẹp mắt */
-    pointer-events: auto; 
-    cursor: pointer;
-    transition: all 0.3s ease; /* Tạo hiệu ứng mượt mà cho tất cả thay đổi */
-    
-    padding: 50px 30px;
-    
-    /* KHUNG VIỀN NÉT ĐỨT SẴN CÓ */
-    border: 2px dashed #444444; /* Màu xám tối mặc định, tiệp với giao diện tối */
-    border-radius: 16px;       /* Bo góc mượt mà */
-    background-color: rgba(255, 255, 255, 0.02); /* Thêm một lớp nền mờ cực nhẹ */
-}
-
-/* Hiệu ứng khi người dùng di chuột qua (Hover) */
-#welcomeOverlay:hover {
-    border-color: #666666; /* Viền sáng lên một chút để báo hiệu có thể click */
-    background-color: rgba(255, 255, 255, 0.04);
-}
-
-/* Hiệu ứng khi kéo tệp tin đè lên vùng này (Dragover) */
-#welcomeOverlay.dragover {
-    border-color: #03dac6; /* Đổi sang màu xanh neon sáng */
-    background-color: rgba(3, 218, 198, 0.08); /* Nền sáng lên theo tông xanh */
-    box-shadow: 0 0 20px rgba(3, 218, 198, 0.2); /* Thêm hiệu ứng hào quang nhẹ */
-}
-
-
-        #welcomeOverlay h1 { font-size: 2.5em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 2px; }
-        #welcomeOverlay p { color: #888; font-size: 1.1em; line-height: 1.6; max-width: 600px; margin: 0 auto; }
-        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; }
-        
-        #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; gap: 25px; }
-        
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 10; width: 90%; max-width: 600px;
+            pointer-events: auto; cursor: pointer;
+            transition: opacity 0.5s ease, visibility 0.5s, transform 0.2s, border-color 0.2s;
+            border: 2px dashed #444; padding: 40px 20px; border-radius: 16px;
+            background: rgba(30, 30, 30, 0.3);
+        }
+        #welcomeOverlay.dragover {
+            border-color: #03dac6;
+            background: rgba(3, 218, 198, 0.05);
+            transform: translate(-50%, -50%) scale(1.02);
+        }
+        #welcomeOverlay h1 { font-size: 3em; color: #ffffff; margin-bottom: 15px; text-transform: uppercase; letter-spacing: 3px; pointer-events: none; }
+        #welcomeOverlay p { color: #888; font-size: 1.2em; line-height: 1.6; max-width: 600px; margin: 0 auto; pointer-events: none; }
+        body.has-clips #welcomeOverlay { opacity: 0; visibility: hidden; pointer-events: none; }
+        #videoContainer { display: flex; flex-direction: column; align-items: center; width: 100%; position: relative; z-index: 2; }
         .clip-wrapper { 
             display: flex; flex-direction: column; align-items: center; 
-            border: 1px solid #2a2a2a; padding: 16px; 
-            border-radius: 16px; background: #1e1e1e; width: fit-content; 
-            max-width: 95%; box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
-            height: auto; transition: transform 0.2s ease;
+            margin-bottom: 30px; border: 1px solid #333; padding: 12px; 
+            border-radius: 12px; background: #1e1e1e; width: fit-content; 
+            max-width: 95%; box-shadow: 0 10px 30px rgba(0,0,0,0.5); min-height: 200px; 
         }
-
         video { 
-            width: auto; height: auto; max-width: 100%; max-height: 45vh; 
-            border: 2px solid #333; border-radius: 10px; background: #000; cursor: pointer; display: block;
-            aspect-ratio: var(--video-ratio); 
-            object-fit: contain; 
+            width: auto; height: auto; max-width: 100%; max-height: 50vh; 
+            border: 2px solid #444; border-radius: 8px; background: #000; cursor: pointer; display: block;
         }
-
-        video.portrait { 
-            width: 50vw; max-width: 50vw; max-height: 65vh; 
-            height: auto; 
-        }
-
-        video.unmuted { border-color: #03dac6; box-shadow: 0 0 20px rgba(3, 218, 198, 0.4); }
-        
-        .clip-title-tag { font-size: 0.95em; color: #fff; font-weight: bold; margin-bottom: 6px; align-self: flex-start; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; max-width: 100%; }
-        .clip-info { font-size: 0.85em; color: #999; margin: 8px 0; font-family: monospace; background: #292929; padding: 4px 8px; border-radius: 4px; }
-        .button-group { display: flex; gap: 10px; margin-top: 4px; width: 100%; }
-        
-        .delete-btn, .download-btn { border: none; padding: 10px 16px; border-radius: 6px; cursor: pointer; font-weight: bold; font-size: 0.85em; flex: 1; transition: background 0.2s, transform 0.1s; }
+        video.portrait { width: 55vw; max-width: 55vw; max-height: 70vh; }
+        video.unmuted { border-color: #03dac6; box-shadow: 0 0 15px rgba(3, 218, 198, 0.5); }
+        .clip-info { font-size: 0.8em; color: #777; margin: 8px 0 5px 0; font-family: monospace; }
+        .button-group { display: flex; gap: 8px; margin-top: 8px; }
+        .delete-btn, .download-btn { border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: bold; font-size: 0.85em; }
         .delete-btn { background-color: #cf6679; color: #000; }
-        .delete-btn:active { transform: scale(0.98); }
-        .download-btn { background-color: #03dac6; color: #000; }
-        .download-btn:not(:disabled):hover { background-color: #01f5dd; }
-        .download-btn:active { transform: scale(0.98); }
+        .download-btn { background-color: #03dac6; color: #000; transition: background-color 0.2s; }
+        .download-btn:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
         
         .controls { 
             position: fixed; bottom: 0; left: 0; width: 100%; 
-            background: #1a1a1a; padding: 15px 20px; border-top: 1px solid #2d2d2d; 
-            z-index: 1000; display: flex; flex-direction: column; gap: 12px; align-items: center; 
-            box-shadow: 0 -8px 24px rgba(0,0,0,0.6); box-sizing: border-box;
+            background: #252525; padding: 15px; border-top: 1px solid #444; 
+            z-index: 1000; display: flex; flex-direction: column; gap: 10px; align-items: center; 
+            box-shadow: 0 -4px 10px rgba(0,0,0,0.5); box-sizing: border-box;
         }
         .controls-row { display: flex; gap: 10px; align-items: center; justify-content: center; flex-wrap: wrap; width: 100%; }
-        
-        input, select { padding: 8px 12px; background: #2d2d2d; color: white; border: 1px solid #444; border-radius: 6px; text-align: center; font-size: 0.9em; outline: none; }
-        input:focus { border-color: #03dac6; }
-        #startTimeInput { width: 95px; font-family: monospace; font-size: 1em; }
-        #durationInput { width: 60px; }
-        #clipLabelInput { width: 150px; text-align: left; }
-        
-        button.action-btn { color: #000; border: none; padding: 10px 20px; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.9em; transition: background 0.2s; }
+        input { padding: 8px; background: #333; color: white; border: 1px solid #555; border-radius: 4px; text-align: center; }
+        #startTimeInput { width: 85px; }
+        #durationInput { width: 55px; }
+        #nextBtn, #randomBtn { color: #000; border: none; padding: 8px 16px; border-radius: 4px; font-weight: bold; cursor: pointer; }
         #nextBtn { background-color: #03dac6; }
         #randomBtn { background-color: #bb86fc; }
-        .tune-btn { background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 6px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8em; font-weight: bold; }
-        .tune-btn:hover { background: #4a4a4a; }
-        
-        button:disabled { background-color: #444 !important; color: #888 !important; cursor: not-allowed; }
+        button:disabled { background-color: #555 !important; color: #aaa; cursor: not-allowed; }
 
-        #gridViewBtn { background-color: #ff9800; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; justify-content: center; color: #000; }
-        
+        #gridViewBtn { background-color: #ff9800; border: none; padding: 8px; border-radius: 4px; cursor: pointer; display: flex; align-items: center; }
         #gridOverlay {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(10,10,10,0.98); z-index: 2000;
-            display: none; flex-direction: column; padding: 25px; box-sizing: border-box;
+            background: rgba(0,0,0,0.95); z-index: 2000;
+            display: none; flex-direction: column; padding: 20px; box-sizing: border-box;
         }
         #gridContent { 
-            display: grid; grid-template-columns: repeat(auto-fill, minmax(130px, 1fr)); 
-            gap: 20px; overflow-y: auto; padding-bottom: 40px;
+            display: grid; grid-template-columns: repeat(auto-fill, minmax(110px, 1fr)); 
+            gap: 15px; overflow-y: auto; padding-bottom: 40px;
         }
         .grid-item { 
-            cursor: pointer; border: 2px solid #2d2d2d; border-radius: 10px; 
+            cursor: pointer; border: 2px solid #333; border-radius: 8px; 
             overflow: hidden; position: relative; background: #000; aspect-ratio: 1 / 1;
-            transition: border-color 0.2s;
         }
-        .grid-item:hover { border-color: #03dac6; }
         .grid-item img { width: 100%; height: 100%; object-fit: cover; display: block; }
-        .grid-item .grid-meta { 
+        .grid-item span { 
             position: absolute; bottom: 0; left: 0; width: 100%; 
-            background: rgba(0,0,0,0.85); font-size: 10px; padding: 4px 0; text-align: center; color: #fff;
-            display: flex; flex-direction: column; gap: 2px;
+            background: rgba(0,0,0,0.7); font-size: 10px; padding: 2px 0; text-align: center; color: #fff;
         }
-        .grid-meta .grid-label { font-weight: bold; color: #03dac6; text-overflow: ellipsis; white-space: nowrap; overflow: hidden; padding: 0 4px; }
     </style>
 </head>
 <body>
 
     <div id="welcomeOverlay">
-        <h1 id="mainTitle">Phân Đoạn Video</h1>
-        <p id="subTitle">Chọn một tệp video từ máy của bạn để bắt đầu xử lý chuẩn dữ liệu nhanh chóng.</p>
+        <h1 id="mainTitle">Tải video lên</h1>
+        <p id="subTitle">Chọn một tệp video hoặc kéo thả vào đây để bắt đầu phân đoạn.</p>
     </div>
 
     <div id="videoContainer"></div>
 
     <div id="gridOverlay">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
-            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
+            <h3 style="margin:0" id="gridTitle">Danh sách đoạn</h3>
+            <button id="closeGrid" style="background:#cf6679; border:none; padding:8px 15px; border-radius:4px; font-weight:bold; cursor:pointer">Đóng</button>
         </div>
         <div id="gridContent"></div>
     </div>
@@ -165,45 +114,19 @@
         <div class="controls-row">
             <input type="file" id="videoUpload" accept="video/*">
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
-                <span>Lưới</span>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
             </button>
         </div>
 
-        <div class="controls-row" style="background: #252525; padding: 8px; border-radius: 8px; gap: 6px;">
-                   <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
-    
-    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
-        <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-            <button class="tune-btn" onclick="adjustTime(-1)" style="flex-shrink: 0;"><<</button>
-            <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
-            <button class="tune-btn" onclick="adjustTime(1)" style="flex-shrink: 0;">>></button>
-        </div>
-    </div>
-        
-    <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
-        <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
-            <input type="number" id="durationInput" value="5" min="1" step="0.5" style="flex-grow: 1; width: 100%; min-width: 0;">
-        </div>
-    </div>
-    
-</div>
-
-
-            
-        </div>
-
         <div class="controls-row">
-            
-            
-            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)">
-            
-            <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
-            <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
+            <label>Bắt đầu:</label>
+            <input type="text" id="startTimeInput" value="00:00:00">
+            <label>Dài (s):</label>
+            <input type="number" id="durationInput" value="5" min="1">
+            <button id="nextBtn" disabled>Đang tải Core...</button>
+            <button id="randomBtn" disabled>Random 5s</button>
         </div>
-        <p id="status" style="margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
+        <p id="status" style="margin:0; font-size: 0.85em; color: #888;">Đang khởi tạo FFmpeg.wasm...</p>
     </div>
     
     <script>
@@ -217,49 +140,7 @@
         const status = document.getElementById('status');
         const startTimeInput = document.getElementById('startTimeInput');
         const durationInput = document.getElementById('durationInput');
-        const clipLabelInput = document.getElementById('clipLabelInput');
-const welcomeOverlay = document.getElementById('welcomeOverlay');
-
-// 1. Click vào vùng welcome để kích hoạt chọn file
-welcomeOverlay.addEventListener('click', () => {
-    upload.click();
-});
-
-// 2. Xử lý sự kiện kéo thả file (Drag & Drop)
-// Ngăn chặn hành vi mặc định của trình duyệt khi kéo file vào
-['dragenter', 'dragover', 'dragleave', 'drop'].forEach(eventName => {
-    welcomeOverlay.addEventListener(eventName, (e) => e.preventDefault(), false);
-});
-
-// Thêm class hiệu ứng khi kéo file vào vùng hiển thị
-['dragenter', 'dragover'].forEach(eventName => {
-    welcomeOverlay.addEventListener(eventName, () => {
-        welcomeOverlay.classList.add('dragover');
-    }, false);
-});
-
-// Xóa class hiệu ứng khi kéo file ra ngoài hoặc thả file xong
-['dragleave', 'drop'].forEach(eventName => {
-    welcomeOverlay.addEventListener(eventName, () => {
-        welcomeOverlay.classList.remove('dragover');
-    }, false);
-});
-
-// Xử lý khi thả file (Drop) vào vùng khoanh đỏ
-welcomeOverlay.addEventListener('drop', (e) => {
-    const dt = e.dataTransfer;
-    const files = dt.files;
-    
-    if (files.length > 0 && files[0].type.startsWith('video/')) {
-        upload.files = files; // Gán file vào input gốc
-        
-        // Kích hoạt lại sự kiện change của upload để chạy logic xử lý video hiện tại của bạn
-        const event = new Event('change', { bubbles: true });
-        upload.dispatchEvent(event);
-    } else {
-        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
-    }
-});
+        const welcomeOverlay = document.getElementById('welcomeOverlay');
 
         const { createFFmpeg, fetchFile } = FFmpeg;
         const ffmpeg = createFFmpeg({ log: true });
@@ -275,13 +156,13 @@ welcomeOverlay.addEventListener('drop', (e) => {
             try {
                 await ffmpeg.load();
                 isFFmpegReady = true;
-                status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
+                status.innerText = "Chưa có video được chọn. Hệ thống core sẵn sàng!";
                 if(upload.files[0]) {
                     enableControls();
                 }
             } catch (error) {
                 console.error(error);
-                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
+                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages hoặc Local Server.";
             }
         }
         loadFFmpegCore();
@@ -291,34 +172,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
             randomBtn.innerText = `Random ${val}s`;
         });
 
-        function adjustTime(amount) {
-            let currentSeconds = parseTime(startTimeInput.value);
-            currentSeconds = Math.max(0, Math.min(totalVideoDuration, currentSeconds + amount));
-            startTimeInput.value = formatTime(currentSeconds);
-        }
-
-        // Keyboard navigation shortcuts
-        window.addEventListener('keydown', (e) => {
-            if (document.activeElement.tagName === 'INPUT') return; 
-            
-            if (e.code === 'Space') {
-                e.preventDefault();
-                if (currentlyUnmutedVideo) {
-                    if (currentlyUnmutedVideo.paused) currentlyUnmutedVideo.play().catch(()=>{});
-                    else currentlyUnmutedVideo.pause();
-                }
-            } else if (e.code === 'ArrowLeft') {
-                e.preventDefault();
-                adjustTime(-0.1);
-            } else if (e.code === 'ArrowRight') {
-                e.preventDefault();
-                adjustTime(0.1);
-            } else if (e.code === 'Enter') {
-                e.preventDefault();
-                if (!nextBtn.disabled) nextBtn.click();
-            }
-        });
-
+        // Tối ưu clipObserver quay về trạng thái mượt của v1
         const clipObserver = new IntersectionObserver((entries) => {
             entries.forEach(entry => {
                 const video = entry.target;
@@ -328,39 +182,48 @@ welcomeOverlay.addEventListener('drop', (e) => {
                     }
                 } else {
                     video.pause();
-                    video.muted = true;
-                    video.classList.remove('unmuted');
-                    if (currentlyUnmutedVideo === video) currentlyUnmutedVideo = null;
+                    // Nếu video cuộn ra ngoài không phải video đang unmuted thì tiến hành tắt tiếng để tránh xung đột âm thanh ẩn
+                    if (currentlyUnmutedVideo !== video) {
+                        video.muted = true;
+                        video.classList.remove('unmuted');
+                    }
                 }
             });
         }, { threshold: 0.1 });
 
-        // KHÔI PHỤC HOÀN TOÀN CƠ CHẾ REHYDRATION MƯỢT MÀ CỦA PHIÊN BẢN V1
+        // SỬA LỖI CHÍNH: Hàm hồi sinh dữ liệu (Virtual Scroll Rehydration)
         function handleClipRehydration() {
             if (rehydrationTimeout) clearTimeout(rehydrationTimeout);
             rehydrationTimeout = setTimeout(() => {
                 const allWrappers = Array.from(document.querySelectorAll('.clip-wrapper'));
                 if (allWrappers.length === 0) return;
+                
                 const viewportHeight = window.innerHeight;
                 const visibleIndices = allWrappers.map((wrapper, index) => {
                     const rect = wrapper.getBoundingClientRect();
                     return (rect.top < viewportHeight && rect.bottom > 0) ? index : -1;
                 }).filter(idx => idx !== -1);
-                if (visibleIndices.length === 0) return;
-                const safeStart = Math.max(0, visibleIndices[0] - 3);
-                const safeEnd = Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3);
+                
+                // Vùng đệm an toàn để tải trước video (Buffer)
+                const safeStart = visibleIndices.length > 0 ? Math.max(0, visibleIndices[0] - 3) : 0;
+                const safeEnd = visibleIndices.length > 0 ? Math.min(allWrappers.length - 1, visibleIndices[visibleIndices.length - 1] + 3) : allWrappers.length - 1;
 
                 allWrappers.forEach((wrapper, index) => {
                     const video = wrapper.querySelector('video');
-                    if (index >= safeStart && index <= safeEnd) {
+                    
+                    // Nếu nằm trong vùng hiển thị hoặc vùng đệm an toàn, HOẶC là video đang bật tiếng -> Bắt buộc phải giữ/nạp lại src
+                    if ((visibleIndices.length > 0 && index >= safeStart && index <= safeEnd) || video === currentlyUnmutedVideo) {
                         if (!video.src || video.src === "" || video.src === window.location.href) {
                             video.src = sharedVideoURL;
                             video.currentTime = parseFloat(video.dataset.startTime);
                             video.load();
                         }
                     } else {
+                        // Nằm ngoài vùng an toàn -> Giải phóng bộ nhớ ngay lập tức
                         if (video.src && video.src !== "" && video.src !== window.location.href) {
-                            video.pause(); video.src = ""; video.load(); 
+                            video.pause(); 
+                            video.src = ""; 
+                            video.load(); 
                         }
                     }
                 });
@@ -388,27 +251,52 @@ welcomeOverlay.addEventListener('drop', (e) => {
             }
         }
 
+        function processVideoFile(file) {
+            if (!file) return;
+            rawVideoFile = file; 
+            if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
+            sharedVideoURL = URL.createObjectURL(file);
+            const tempVideo = document.createElement('video');
+            tempVideo.src = sharedVideoURL;
+            tempVideo.onloadedmetadata = () => {
+                totalVideoDuration = tempVideo.duration;
+                
+                videoContainer.innerHTML = ""; 
+                gridContent.innerHTML = "";
+                document.body.classList.remove('has-clips');
+                
+                document.getElementById('mainTitle').innerText = "Video đã sẵn sàng";
+                document.getElementById('subTitle').innerHTML = "💡 Nhấn <b>Thêm đoạn</b> hoặc <b>Random</b> để bắt đầu.";
+                
+                status.innerText = `Sẵn sàng: ${formatTime(totalVideoDuration)}`;
+                enableControls();
+            };
+        }
+
         upload.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                rawVideoFile = file; 
-                if (sharedVideoURL) URL.revokeObjectURL(sharedVideoURL); 
-                sharedVideoURL = URL.createObjectURL(file);
-                const tempVideo = document.createElement('video');
-                tempVideo.src = sharedVideoURL;
-                tempVideo.onloadedmetadata = () => {
-                    totalVideoDuration = tempVideo.duration;
-                    
-                    videoContainer.innerHTML = ""; 
-                    gridContent.innerHTML = "";
-                    document.body.classList.remove('has-clips');
-                    
-                    document.getElementById('mainTitle').innerText = "Video định dạng sẵn sàng";
-                    document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
-                    
-                    status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
-                    enableControls();
-                };
+            processVideoFile(e.target.files[0]);
+        });
+
+        welcomeOverlay.addEventListener('click', () => {
+            upload.click();
+        });
+
+        welcomeOverlay.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            welcomeOverlay.classList.add('dragover');
+        });
+
+        welcomeOverlay.addEventListener('dragleave', () => {
+            welcomeOverlay.classList.remove('dragover');
+        });
+
+        welcomeOverlay.addEventListener('drop', (e) => {
+            e.preventDefault();
+            welcomeOverlay.classList.remove('dragover');
+            const files = e.dataTransfer.files;
+            if (files.length > 0 && files[0].type.startsWith('video/')) {
+                upload.files = files; 
+                processVideoFile(files[0]);
             }
         });
 
@@ -426,7 +314,10 @@ welcomeOverlay.addEventListener('drop', (e) => {
                     const ctx = canvas.getContext('2d');
                     ctx.drawImage(v, 0, 0, canvas.width, canvas.height);
                     const dataUrl = canvas.toDataURL('image/jpeg', 0.6);
-                    v.src = ""; v.load(); v.remove();
+                    
+                    v.src = "";
+                    v.load();
+                    v.remove();
                     resolve(dataUrl);
                 };
                 v.onerror = () => {
@@ -435,30 +326,18 @@ welcomeOverlay.addEventListener('drop', (e) => {
             });
         }
 
-        function addGridItemAhead(clipId, startTime, labelText) {
+        function addGridItemAhead(clipId, startTime) {
             const gridItem = document.createElement('div');
             gridItem.className = 'grid-item';
             gridItem.setAttribute('data-grid-id', clipId);
             
             const img = document.createElement('img');
-            img.alt = "Thumbnail";
+            img.alt = "...";
             gridItem.appendChild(img);
             
-            const metaContainer = document.createElement('div');
-            metaContainer.className = 'grid-meta';
-            
-            if(labelText) {
-                const gridLabel = document.createElement('span');
-                gridLabel.className = 'grid-label';
-                gridLabel.innerText = labelText;
-                metaContainer.appendChild(gridLabel);
-            }
-            
-            const timeSpan = document.createElement('span');
-            timeSpan.innerText = formatTime(startTime);
-            metaContainer.appendChild(timeSpan);
-            
-            gridItem.appendChild(metaContainer);
+            const span = document.createElement('span');
+            span.innerText = formatTime(startTime);
+            gridItem.appendChild(span);
             
             gridItem.onclick = () => {
                 gridOverlay.style.display = 'none';
@@ -488,10 +367,8 @@ welcomeOverlay.addEventListener('drop', (e) => {
             if (!sharedVideoURL) return;
             const start = parseTime(startTimeInput.value);
             const duration = parseFloat(durationInput.value) || 5;
-            const clipLabel = clipLabelInput.value.trim();
-
             if (start >= totalVideoDuration) {
-                alert("Thời gian bắt đầu vượt quá tổng độ dài video!");
+                alert("Thời gian bắt đầu vượt quá độ dài video!");
                 return;
             }
             document.body.classList.add('has-clips');
@@ -502,18 +379,13 @@ welcomeOverlay.addEventListener('drop', (e) => {
             wrapper.className = 'clip-wrapper';
             wrapper.id = clipId;
             
-            if(clipLabel) {
-                const titleTag = document.createElement('div');
-                titleTag.className = 'clip-title-tag';
-                titleTag.innerText = `🏷️ ${clipLabel}`;
-                wrapper.appendChild(titleTag);
-            }
-            
             const video = document.createElement('video');
-            video.muted = true; video.playsInline = true; video.preload = "metadata";
+            video.playsInline = true; 
+            video.preload = "auto"; 
             video.src = sharedVideoURL;
             video.dataset.startTime = start;
-            video.dataset.isInitialLoad = "true";
+            
+            setFocusAudio(video);
             
             video.onclick = () => {
                 if (video.muted) setFocusAudio(video);
@@ -525,40 +397,44 @@ welcomeOverlay.addEventListener('drop', (e) => {
                 if (video.currentTime >= end) { video.currentTime = start; video.play().catch(()=>{}); }
                 if (!video.paused) animationFrameId = requestAnimationFrame(checkTime);
             };
-
             video.onplay = () => animationFrameId = requestAnimationFrame(checkTime);
             video.onpause = () => cancelAnimationFrame(animationFrameId);
             
             video.onloadedmetadata = () => {
-                const width = video.videoWidth;
-                const height = video.videoHeight;
-                video.style.setProperty('--video-ratio', `${width} / ${height}`);
-                if (height > width) video.classList.add('portrait');
-                video.currentTime = start;
-            };
-            
-            video.onloadeddata = () => { 
-                if (video.dataset.isInitialLoad === "true") {
-                    wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                    setFocusAudio(video);
-                    video.dataset.isInitialLoad = "false";
+                if (video.videoHeight > video.videoWidth) {
+                    video.classList.add('portrait');
                 }
+                // SỬA LỖI: Bỏ việc gán cứng style width/height pixel bằng JS để tránh bóp méo khung hình khi rehydrate
+                video.currentTime = start;
+
+                const allWrappers = videoContainer.querySelectorAll('.clip-wrapper');
+                if (allWrappers.length > 0 && allWrappers[allWrappers.length - 1] === wrapper) {
+                    setTimeout(() => {
+                        wrapper.scrollIntoView({
+                            behavior: 'smooth',
+                            block: 'center'
+                        });
+                    }, 100);
+                }
+            };
+
+            // SỬA LỖI: Tối ưu sự kiện seeked chạy trực tiếp, bỏ qua các bẫy logic chặn luồng của v2
+            video.onseeked = () => {
                 video.play().catch(() => {});
             };
             
             const info = document.createElement('div');
             info.className = 'clip-info';
-            info.innerText = `${formatTime(start)} - ${formatTime(end)} (${(end - start).toFixed(1)}s)`;
-            
+            info.innerText = `${formatTime(start)} - ${formatTime(end)}`;
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
             const dl = document.createElement('button');
-            dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
-            dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
+            dl.className = 'download-btn'; dl.innerText = "Tải xuống (.MP4)";
+            dl.onclick = () => downloadClipFFmpeg(start, duration, dl);
             
             const del = document.createElement('button');
-            del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
+            del.className = 'delete-btn'; del.innerText = "Xóa clip";
             del.onclick = () => {
                 clipObserver.unobserve(video); wrapper.remove();
                 const gridItem = document.querySelector(`[data-grid-id="${clipId}"]`);
@@ -572,12 +448,12 @@ welcomeOverlay.addEventListener('drop', (e) => {
             videoContainer.appendChild(wrapper);
             
             clipObserver.observe(video);
-            addGridItemAhead(clipId, start, clipLabel);
+            addGridItemAhead(clipId, start);
             
             startTimeInput.value = formatTime(end);
-            clipLabelInput.value = ""; 
+            wrapper.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            
             handleClipRehydration();
-            window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
         });
 
         gridViewBtn.onclick = () => {
@@ -586,53 +462,47 @@ welcomeOverlay.addEventListener('drop', (e) => {
 
         document.getElementById('closeGrid').onclick = () => gridOverlay.style.display = 'none';
 
-        async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
+        async function downloadClipFFmpeg(startTime, duration, btn) {
             if (!isFFmpegReady) {
-                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+                alert("Hệ thống xử lý video chưa sẵn sàng, vui lòng đợi một chút!");
                 return;
             }
             if (!rawVideoFile) {
-                alert("Lỗi: Không tìm thấy file video đầu vào.");
+                alert("Không tìm thấy file video gốc!");
                 return;
             }
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛ Đang xử lý...';
-            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
-
-            const timestamp = Date.now();
-            const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-            const virtualInputName = `input_${timestamp}_${cleanFileName}`;
-            const outputName = `cut_${timestamp}.mp4`;
+            btn.innerText = '⌛ Đang trích xuất...';
+            status.innerText = `⏳ Hệ thống FFmpeg đang cắt đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             try {
-                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-                await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
+                const { name } = rawVideoFile;
+                ffmpeg.FS('writeFile', name, await fetchFile(rawVideoFile));
+                const outputName = `cut_${Date.now()}.mp4`;
                 
+                await ffmpeg.run('-ss', startTime.toString(), '-i', name, '-t', duration.toString(), '-c', 'copy', outputName);
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
-                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-                const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.mp4`;
-                
                 const a = document.createElement('a');
                 a.href = videoUrl;
-                a.download = downloadName;
+                a.download = `clip_${formatTime(startTime).replace(/:/g, '-')}.mp4`;
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
+                status.innerText = `✨ Xuất thành công đoạn từ ${formatTime(startTime)}!`;
             } catch (err) {
                 console.error(err);
-                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
-                status.innerText = "❌ Lỗi thực thi Render.";
+                alert("Có lỗi xảy ra trong quá trình trích xuất bằng FFmpeg.");
+                status.innerText = "❌ Lỗi trích xuất clip.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
+                try { ffmpeg.FS('unlink', name); } catch(e){}
             }
         }
 
@@ -647,14 +517,9 @@ welcomeOverlay.addEventListener('drop', (e) => {
             const h = Math.floor(s / 3600), m = Math.floor((s % 3600) / 60), sec = Math.floor(s % 60);
             return [h, m, sec].map(v => String(v).padStart(2, '0')).join(':');
         }
-        
         function parseTime(t) {
             const p = t.replace(/[^0-9:]/g, '').split(':').reverse();
-            let seconds = 0;
-            if (p[0]) seconds += parseInt(p[0]) || 0;     
-            if (p[1]) seconds += (parseInt(p[1]) || 0) * 60; 
-            if (p[2]) seconds += (parseInt(p[2]) || 0) * 3600; 
-            return seconds;
+            return (parseInt(p[0]) || 0) + (parseInt(p[1]) || 0) * 60 + (parseInt(p[2]) || 0) * 3600;
         }
     </script>
 </body>
