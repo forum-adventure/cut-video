@@ -1416,33 +1416,43 @@ function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
     
     const duration = endTime - startTime;
     
-    // Khởi tạo một video ẩn để trích xuất khung hình mà không ảnh hưởng video đang phát
+    // 1. Tạo video chạy ngầm
     const v = document.createElement('video');
     v.src = videoElement.src;
     v.muted = true;
     v.playsInline = true;
     v.crossOrigin = "anonymous";
     
-    // Cấu hình kích thước ảnh GIF (Nên vừa phải để tránh tràn RAM di động)
+    // Cấu hình kích thước ảnh GIF vừa phải để tránh tràn bộ nhớ
     const gifWidth = videoElement.videoWidth > videoElement.videoHeight ? 480 : 360;
     const gifHeight = Math.round((videoElement.videoHeight / videoElement.videoWidth) * gifWidth);
     
-    // Số lượng khung hình trên giây (FPS) và tổng số khung hình
-    const fps = 10; 
-    const numFrames = Math.max(5, Math.min(100, Math.round(duration * fps))); 
+    // FPS và tính toán tổng số khung hình cần chụp
+    const fps = 8; // Giảm xuống 8fps giúp tạo GIF nhanh hơn, mượt và nhẹ hơn
+    const numFrames = Math.max(5, Math.min(80, Math.round(duration * fps))); 
     const interval = duration / numFrames;
     
     const imgs = [];
     let currentFrame = 0;
+    let isProcessing = false;
 
+    // 2. Chờ video tải xong thông tin ban đầu rồi nhảy tới điểm bắt đầu
     v.onloadedmetadata = () => {
         v.currentTime = startTime;
     };
 
-    v.onseeked = async () => {
-        // Chờ một chút nhỏ cho video render xong khung hình ổn định
-        await new Promise(r => setTimeout(r, 80));
-        
+    // 3. Hàm xử lý chụp khung hình an toàn
+    async function captureFrame() {
+        if (isProcessing) return;
+        isProcessing = true;
+
+        // Chờ cho đến khi video thực sự sẵn sàng render (readyState >= 2)
+        // và thêm một khoảng delay nhỏ để tránh trạng thái 'broken' của trình duyệt
+        while (v.readyState < 2) {
+            await new Promise(r => setTimeout(r, 50));
+        }
+        await new Promise(r => setTimeout(r, 100)); // Delay an toàn cho phần cứng giải mã ảnh
+
         const canvas = document.createElement('canvas');
         canvas.width = gifWidth;
         canvas.height = gifHeight;
@@ -1451,19 +1461,25 @@ function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
         try {
             ctx.drawImage(v, 0, 0, gifWidth, gifHeight);
             imgs.push(canvas.toDataURL('image/jpeg', 0.7));
+            
+            currentFrame++;
+            if (currentFrame < numFrames) {
+                isProcessing = false;
+                v.currentTime = startTime + (currentFrame * interval);
+            } else {
+                buildGif();
+            }
         } catch (e) {
-            console.error("Lỗi trích xuất khung hình GIF:", e);
+            console.error("Lỗi chụp ảnh, đang thử lại khung hình này...", e);
+            isProcessing = false;
+            // Nếu lỗi (vẫn dính 'broken' state), chờ thêm chút rồi thử lại chính khung hình đó
+            setTimeout(captureFrame, 150);
         }
+    }
 
-        currentFrame++;
-        if (currentFrame < numFrames) {
-            // Tính toán mốc thời gian tiếp theo để nhảy tới
-            v.currentTime = startTime + (currentFrame * interval);
-        } else {
-            // Đã thu thập đủ khung hình -> Tiến hành đóng gói thành GIF
-            buildGif();
-        }
-    };
+    // Lắng nghe cả hai sự kiện để đảm bảo kích hoạt chính xác
+    v.onseeked = captureFrame;
+    v.oncanplay = captureFrame;
 
     v.onerror = () => {
         alert("Lỗi nạp luồng video để tạo ảnh GIF.");
@@ -1477,11 +1493,12 @@ function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
     }
 
     function buildGif() {
+        btn.innerText = '📦 Đóng gói GIF...';
         gifshot.createGIF({
             images: imgs,
             gifWidth: gifWidth,
             gifHeight: gifHeight,
-            interval: 1 / fps, // Khoảng cách giữa các khung hình (giây)
+            interval: 1 / fps,
             numWorkers: 2
         }, function (obj) {
             if (!obj.error) {
@@ -1502,9 +1519,10 @@ function downloadClipAsGif(videoElement, startTime, endTime, labelText, btn) {
         });
     }
 
-    // Kích hoạt nạp video ngầm
+    // Kích hoạt tiến trình nạp
     v.load();
 }
+
 
     </script>
             
