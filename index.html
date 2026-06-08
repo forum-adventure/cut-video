@@ -1210,6 +1210,13 @@ video.onpause = () => {
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
+            
+            // Nút Tải Ảnh GIF
+const gifBtn = document.createElement('button');
+gifBtn.className = 'gif-btn'; 
+gifBtn.innerText = "Tải GIF";
+gifBtn.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, gifBtn);
+
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
@@ -1229,7 +1236,9 @@ video.onpause = () => {
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
+            btnGroup.appendChild(gifBtn);
+            btnGroup.appendChild(dl); 
+            btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1413,6 +1422,76 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
+async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
+    if (!isFFmpegReady) {
+        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+        return;
+    }
+    if (!rawVideoFile) {
+        alert("Lỗi: Không tìm thấy file video đầu vào.");
+        return;
+    }
+    
+    // Kiểm tra kết nối tệp tin (Anti-RAM Cleanup trên Android)
+    try {
+        await rawVideoFile.slice(0, 1).arrayBuffer();
+    } catch (fileError) {
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        upload.value = "";
+        upload.click(); 
+        return;
+    }
+
+    const originalBtnText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '⌛ Tạo GIF...';
+    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] độ dài ${duration}s...`;
+
+    const timestamp = Date.now();
+    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
+    const virtualInputName = `input_${timestamp}_${cleanFileName}`;
+    const outputName = `animated_${timestamp}.gif`;
+
+    try {
+        // Nạp file video vào hệ thống file ảo của FFmpeg
+        ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+        
+        // Thực thi dòng lệnh FFmpeg: Trích xuất mốc thời gian, giảm độ phân giải xuống tối đa rộng 480 (giữ nguyên tỷ lệ), ép fps về 12
+        await ffmpeg.run(
+            '-ss', startTime.toString(), 
+            '-t', duration.toString(), 
+            '-i', virtualInputName, 
+            '-vf', 'fps=12,scale=480:-1:flags=lanczos', 
+            outputName
+        );
+        
+        // Đọc dữ liệu GIF từ bộ nhớ ảo
+        const data = ffmpeg.FS('readFile', outputName);
+        const gifUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
+        
+        const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+        const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
+        
+        // Kích hoạt tiến trình tải xuống tự động
+        const a = document.createElement('a');
+        a.href = gifUrl;
+        a.download = downloadName;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+
+        try { ffmpeg.FS('unlink', outputName); } catch(e){}
+        status.innerText = `✨ Trích xuất GIF thành công: ${downloadName}`;
+    } catch (err) {
+        console.error(err);
+        alert("Có lỗi xảy ra trong quá trình xử lý Render GIF.");
+        status.innerText = "❌ Lỗi thực thi Render GIF.";
+    } finally {
+        btn.disabled = false;
+        btn.innerText = originalBtnText;
+        try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
+    }
+}
 
 
     </script>
