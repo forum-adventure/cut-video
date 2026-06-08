@@ -1300,7 +1300,7 @@ if (rawVideoFile) {
             const outputName = `cut_${timestamp}.mp4`;
 
             try {
-                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+                ffmpeg.FS('writeFile', virtualInputName, await FFmpegWasm.fetchFile(rawVideoFile));
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
                 const data = ffmpeg.FS('readFile', outputName);
@@ -1463,7 +1463,7 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
 
     try {
         // 1. Ghi file gốc vào bộ nhớ ảo FFmpeg
-        ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+        ffmpeg.FS('writeFile', virtualInputName, await FFmpegWasm.fetchFile(rawVideoFile));
         
         // 2. Cắt một đoạn video ngắn với FPS được giảm xuống còn 10 (để làm GIF mượt và nhẹ)
         // Đồng thời ép kích thước về tối đa chiều rộng 480px để xử lý nhanh hơn
@@ -1513,10 +1513,13 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
         status.innerText = `⏳ Gifshot đang nén ảnh động chất lượng cao...`;
 
         gifshot.createGIF({
-            images: imgUrls,          // 💡 SỬ DỤNG MẢNG ẢNH PHẲNG THAY VÌ VIDEO URL
-            interval: 0.1,            // Khoảng cách 0.1 giây mỗi hình (khớp với fps=10 ở trên)
-            numWorkers: 0             // Không dùng worker để tránh xung đột mã nguồn Service Worker
-        }, function (obj) {
+    images: imgUrls,          
+    interval: 0.1,            
+    gifWidth: 480,            // Định dạng chiều rộng cố định cho ảnh GIF phẳng
+    gifHeight: 270,           // Định dạng chiều cao cố định cho ảnh GIF phẳng
+    numWorkers: 0             
+}, function (obj) {
+
             // Giải phóng ngay các URL ảnh tạm để tránh ngốn bộ nhớ thiết bị
             imgUrls.forEach(url => URL.revokeObjectURL(url));
 
