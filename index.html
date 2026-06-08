@@ -574,25 +574,28 @@ input, textarea {
         
         <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">Cấu Hình Xuất Ảnh GIF</h3>
         
-        <div style="display: flex; flex-direction: column; gap: 6px;">
+                <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Tốc độ khung hình (FPS):</label>
             <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
+                <option value="original">Gốc - Giữ nguyên tốc độ khung hình của video</option>
                 <option value="8">Thấp (8 FPS) - Hoạt họa cơ bản, nhẹ máy</option>
                 <option value="12" selected>Trung bình (12 FPS) - Chuẩn tối ưu cấu hình</option>
                 <option value="18">Cao (18 FPS) - Chuyển động mượt, tốn dung lượng</option>
             </select>
-            <span style="font-size: 0.75em; color: #888;">* FPS càng cao, chuyển động của ảnh GIF càng mượt mà nhưng dung lượng tệp sẽ tăng mạnh.</span>
+            <span style="font-size: 0.75em; color: #888;">* FPS càng cao, chuyển động của ảnh GIF càng mượt mà nhưng dung lượng tệp sẽ tăng mạnh. Tùy chọn "Gốc" giữ đúng độ mượt ban đầu của video.</span>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Độ phân giải ảnh:</label>
             <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
+                <option value="original">Gốc - Giữ nguyên kích thước độ phân giải gốc</option>
                 <option value="320">Thấp (Chiều rộng 320px) - Kết quả xuất siêu nhanh</option>
                 <option value="480" selected>Trung bình (Chiều rộng 480px) - Đủ nét xem di động</option>
                 <option value="720">Cao (Chiều rộng 720px) - Độ nét cao, xử lý lâu hơn</option>
             </select>
-            <span style="font-size: 0.75em; color: #888;">* Độ phân giải cao giúp hình ảnh sắc nét, giảm thiểu tối đa hiện tượng vỡ hạt nhiễu màu.</span>
+            <span style="font-size: 0.75em; color: #888;">* Độ phân giải cao giúp hình ảnh sắc nét, giảm thiểu tối đa hiện tượng vỡ hạt nhiễu màu. Xuất chất lượng "Gốc" có thể khiến dung lượng ảnh GIF cực kỳ lớn nếu video là Full HD/4K.</span>
         </div>
+
 
         <div style="background: rgba(207, 102, 121, 0.1); border-left: 3px solid #cf6679; padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
             <p style="margin: 0; font-size: 0.8em; color: #e0e0e0; line-height: 1.45;">
@@ -1513,7 +1516,8 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
-async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = 12, scaleWidth = 480) {
+
+async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12", scaleWidth = "480") {
     if (!isFFmpegReady) {
         alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
         return;
@@ -1536,7 +1540,10 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = 12, 
     const originalBtnText = btn.innerText;
     btn.disabled = true;
     btn.innerText = '⌛ Tạo GIF...';
-    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] (FPS: ${fps}, Rộng: ${scaleWidth}px)...`;
+    
+    const displayFps = fps === "original" ? "Gốc" : `${fps}`;
+    const displayWidth = scaleWidth === "original" ? "Gốc" : `${scaleWidth}px`;
+    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] (FPS: ${displayFps}, Rộng: ${displayWidth})...`;
 
     const timestamp = Date.now();
     const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1547,9 +1554,28 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = 12, 
         // Nạp file video vào hệ thống file ảo của FFmpeg
         ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
         
-        // BIẾN ĐỔI CHUỖI LỆNH ĐỘNG DỰA TRÊN CẤU HÌNH NGƯỜI DÙNG CHỌN
-        // Ứng dụng cấu trúc lọc màu tối cao palettegen & paletteuse của lanczos để triệt nhiễu hạt
-        const filterGraph = `fps=${fps},scale=${scaleWidth}:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`;
+        // PHÂN TÍCH VÀ XÂY DỰNG CHUỖI LỆNH ĐỘNG DỰA TRÊN LỰA CHỌN "GỐC"
+        let filterParts = [];
+        
+        // 1. Kiểm tra FPS
+        if (fps !== "original") {
+            filterParts.push(`fps=${fps}`);
+        }
+        
+        // 2. Kiểm tra Độ phân giải (Scale)
+        if (scaleWidth !== "original") {
+            filterParts.push(`scale=${scaleWidth}:-1:flags=lanczos`);
+        }
+        
+        // 3. Kết hợp với bộ cấu trúc lọc tối cao palettegen & paletteuse để triệt nhiễu hạt
+        let filterGraph = "";
+        if (filterParts.length > 0) {
+            const baseFilters = filterParts.join(',');
+            filterGraph = `${baseFilters},split[a][b];[a]palettegen[p];[b][p]paletteuse`;
+        } else {
+            // Nếu cả 2 đều chọn gốc, chỉ chạy bộ tạo và áp bảng màu 256 chuẩn lanczos mà không thay đổi size/fps
+            filterGraph = `split[a][b];[a]palettegen[p];[b][p]paletteuse`;
+        }
 
         await ffmpeg.run(
             '-ss', startTime.toString(), 
@@ -1586,7 +1612,6 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = 12, 
         try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
     }
 }
-
 
     
             
