@@ -1457,13 +1457,15 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
         ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
         
         // Thực thi dòng lệnh FFmpeg: Trích xuất mốc thời gian, giảm độ phân giải xuống tối đa rộng 480 (giữ nguyên tỷ lệ), ép fps về 12
-        await ffmpeg.run(
-            '-ss', startTime.toString(), 
-            '-t', duration.toString(), 
-            '-i', virtualInputName, 
-            '-vf', 'fps=12,scale=480:-1:flags=lanczos', 
-            outputName
-        );
+        // Áp dụng bộ lọc palettegen và paletteuse để quét và tạo bảng màu 256 màu tối ưu, khử hoàn toàn chấm vệt nhiễu
+await ffmpeg.run(
+    '-ss', startTime.toString(), 
+    '-t', duration.toString(), 
+    '-i', virtualInputName, 
+    '-vf', 'fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse', 
+    outputName
+);
+
         
         // Đọc dữ liệu GIF từ bộ nhớ ảo
         const data = ffmpeg.FS('readFile', outputName);
