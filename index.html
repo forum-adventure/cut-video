@@ -715,7 +715,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 
-                async function loadFFmpegCore() {
+                                        async function loadFFmpegCore() {
             const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
             const loadingStatusText = document.getElementById('loadingStatusText');
 
@@ -737,13 +737,34 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 console.error(error);
                 status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
                 
-                // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết
+                // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết trước
                 if (loadingStatusText) {
                     loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
-                    loadingStatusText.style.color = "#cf6679"; // Đổi chữ sang màu đỏ rủi ro
+                    loadingStatusText.style.color = "#cf6679"; 
                 }
+
+                // CHỨC NĂNG MỚI: Kích hoạt các nút bấm cơ bản để phân đoạn video ngầm (không cần FFmpeg)
+                isFFmpegReady = false; // Đảm bảo trạng thái core tắt
+                if(upload.files[0] || sharedVideoURL) {
+                    enableControls();
+                } else {
+                    // Nếu chưa chọn file, vẫn mở khóa các nút bấm phụ để khi nạp file vào là chạy được ngay
+                    nextBtn.disabled = false;
+                    randomBtn.disabled = false;
+                    gridViewBtn.disabled = false;
+                    nextBtn.innerText = "Thêm đoạn";
+                }
+
+                // Bỏ chặn màn hình chờ sau 1.5 giây để người dùng kịp đọc thông báo lỗi rồi vào sử dụng app
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                    alert("⚠️ Cảnh báo: Không thể nạp thư viện FFmpeg.\nBạn vẫn có thể phân đoạn và xem video bình thường, nhưng tính năng 'Tải Xuống .MP4' sẽ tạm thời không khả dụng.");
+                }, 1500);
             }
         }
+
+
+
 
         loadFFmpegCore();
 
