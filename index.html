@@ -15,6 +15,7 @@
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js" crossorigin="anonymous"></script>
 
     
     <style>
@@ -1212,7 +1213,18 @@ video.onpause = () => {
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
+            // Tạo nút Tải GIF
+const gifBtn = document.createElement('button');
+gifBtn.className = 'download-btn'; 
+gifBtn.innerText = "Tải GIF";
+gifBtn.style.backgroundColor = "#ffeb3b"; // Màu vàng nổi bật, phân biệt với nút MP4
+gifBtn.style.color = "#000";
+gifBtn.onclick = () => downloadClipAsGif(start, (end - start), clipLabel, gifBtn);
+
+            
             const dl = document.createElement('button');
+            
+            
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
@@ -1231,7 +1243,9 @@ video.onpause = () => {
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(dl); btnGroup.appendChild(del);
+            btnGroup.appendChild(gifBtn);
+            btnGroup.appendChild(dl); 
+            btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1415,6 +1429,104 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
+async function downloadClipAsGif(startTime, duration, labelText, btn) {
+    if (!isFFmpegReady) {
+        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+        return;
+    }
+    if (!rawVideoFile) {
+        alert("Lỗi: Không tìm thấy file video đầu vào.");
+        return;
+    }
+    
+    // Kiểm tra kết nối tệp thực tế
+    if (rawVideoFile) {
+        try {
+            await rawVideoFile.slice(0, 1).arrayBuffer();
+        } catch (fileError) {
+            alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục!");
+            upload.value = "";
+            upload.click(); 
+            return;
+        }
+    }
+
+    const originalBtnText = btn.innerText;
+    btn.disabled = true;
+    btn.innerText = '⌛ Cắt MP4...';
+    status.innerText = `⏳ Đang cắt đoạn video ngắn để chuẩn bị làm GIF...`;
+
+    const timestamp = Date.now();
+    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
+    const virtualInputName = `input_gif_${timestamp}_${cleanFileName}`;
+    const outputName = `cut_gif_${timestamp}.mp4`;
+
+    let tempVideoUrl = null;
+
+    try {
+        // 1. Dùng FFmpeg cắt video ngắn
+        ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
+        await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
+        
+        const data = ffmpeg.FS('readFile', outputName);
+        tempVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        
+        // Dọn dẹp bộ nhớ FFmpeg ngay sau khi lấy được Blob URL tạm thời
+        try { 
+            ffmpeg.FS('unlink', outputName); 
+            ffmpeg.FS('unlink', virtualInputName);
+        } catch(e){}
+
+        // 2. Tiến hành chuyển đổi MP4 tạm thời sang GIF bằng Gifshot
+        btn.innerText = '⚙️ Tạo GIF...';
+        status.innerText = `⏳ Gifshot đang xử lý ảnh động (Quá trình này có thể mất vài giây)...`;
+
+        gifshot.createGIF({
+            video: [tempVideoUrl],
+            gifWidth: 480,       // Độ rộng file GIF (Tối ưu cho mobile/web, tránh quá nặng)
+            gifHeight: 270,      // Chiều cao file GIF (Tỷ lệ 16:9 mặc định, tự động fit nếu là video dọc)
+            interval: 0.1,       // Khoảng cách giữa các frame (0.1s = 10 FPS)
+            numFrames: duration * 10, // Tổng số khung hình = số giây * FPS
+            sampleInterval: 10,
+            numWorkers: 2        // Sử dụng web workers xử lý đa luồng ngầm
+        }, function (obj) {
+            if (!obj.error) {
+                const animatedImage = obj.image; // Chuỗi base64 của file GIF
+                
+                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
+                const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
+                
+                const a = document.createElement('a');
+                a.href = animatedImage;
+                a.download = downloadName;
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
+
+                status.innerText = `✨ Tải GIF thành công: ${downloadName}`;
+                btn.disabled = false;
+                btn.innerText = originalBtnText;
+                
+                // Giải phóng URL tạm
+                if(tempVideoUrl) URL.revokeObjectURL(tempVideoUrl);
+            } else {
+                console.error("Lỗi Gifshot:", obj.errorMsg);
+                alert("Có lỗi xảy ra khi tạo ảnh GIF bằng Gifshot.");
+                btn.disabled = false;
+                btn.innerText = originalBtnText;
+                status.innerText = "❌ Lỗi Render GIF.";
+            }
+        });
+
+    } catch (err) {
+        console.error(err);
+        alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+        status.innerText = "❌ Lỗi trích xuất video nền.";
+        btn.disabled = false;
+        btn.innerText = originalBtnText;
+        if(tempVideoUrl) URL.revokeObjectURL(tempVideoUrl);
+    }
+}
 
 
     </script>
