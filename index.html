@@ -1439,7 +1439,7 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
         return;
     }
     
-    // Kiểm tra kết nối tệp thực tế
+    // Kiểm tra kết nối tệp thực tế (Tránh tràn RAM trên Android)
     if (rawVideoFile) {
         try {
             await rawVideoFile.slice(0, 1).arrayBuffer();
@@ -1453,48 +1453,75 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
 
     const originalBtnText = btn.innerText;
     btn.disabled = true;
-    btn.innerText = '⌛ Cắt MP4...';
-    status.innerText = `⏳ Đang cắt đoạn video ngắn để chuẩn bị làm GIF...`;
+    btn.innerText = '⌛ Trích xuất...';
+    status.innerText = `⏳ FFmpeg đang phân tách khung hình từ video...`;
 
     const timestamp = Date.now();
     const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
     const virtualInputName = `input_gif_${timestamp}_${cleanFileName}`;
-    const outputName = `cut_gif_${timestamp}.mp4`;
-
-    let tempVideoUrl = null;
+    const outputVideoName = `cut_temp_${timestamp}.mp4`;
 
     try {
-        // 1. Dùng FFmpeg cắt video ngắn
+        // 1. Ghi file gốc vào bộ nhớ ảo FFmpeg
         ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-        await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
         
-        const data = ffmpeg.FS('readFile', outputName);
-        tempVideoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
+        // 2. Cắt một đoạn video ngắn với FPS được giảm xuống còn 10 (để làm GIF mượt và nhẹ)
+        // Đồng thời ép kích thước về tối đa chiều rộng 480px để xử lý nhanh hơn
+        await ffmpeg.run(
+            '-ss', startTime.toString(), 
+            '-i', virtualInputName, 
+            '-t', duration.toString(), 
+            '-vf', 'fps=10,scale=480:-1', 
+            outputVideoName
+        );
         
-        // Dọn dẹp bộ nhớ FFmpeg ngay sau khi lấy được Blob URL tạm thời
-        try { 
-            ffmpeg.FS('unlink', outputName); 
-            ffmpeg.FS('unlink', virtualInputName);
-        } catch(e){}
+        btn.innerText = '📸 Tạo frame...';
+        status.innerText = `⏳ Đang chuyển đổi các khung hình thành dữ liệu ảnh...`;
 
-        // 2. Tiến hành chuyển đổi MP4 tạm thời sang GIF bằng Gifshot
-        btn.innerText = '⚙️ Tạo GIF...';
-        status.innerText = `⏳ Gifshot đang xử lý ảnh động (Quá trình này có thể mất vài giây)...`;
+        // 3. Bung video ngắn đó thành chuỗi ảnh jpeg (frame_%03d.jpg)
+        await ffmpeg.run('-i', outputVideoName, 'frame_%03d.jpg');
+
+        // 4. Đọc tất cả các file ảnh vừa bung ra trong bộ nhớ ảo đưa vào mảng
+        const imgUrls = [];
+        const files = ffmpeg.FS('readdir', '/');
+        
+        // Lọc và sắp xếp các file ảnh theo đúng thứ tự đặt tên frame_001, frame_002...
+        const imageFiles = files.filter(f => f.startsWith('frame_') && f.endsWith('.jpg')).sort();
+
+        for (const imgFile of imageFiles) {
+            const data = ffmpeg.FS('readFile', imgFile);
+            const blob = new Blob([data.buffer], { type: 'image/jpeg' });
+            const url = URL.createObjectURL(blob);
+            imgUrls.push(url);
+        }
+
+        // 5. Dọn dẹp bộ nhớ ảo FFmpeg ngay lập tức để giải phóng RAM giải thuật
+        try {
+            ffmpeg.FS('unlink', virtualInputName);
+            ffmpeg.FS('unlink', outputVideoName);
+            for (const imgFile of imageFiles) {
+                ffmpeg.FS('unlink', imgFile);
+            }
+        } catch(e) { console.log("Dọn dẹp file tạm:", e); }
+
+        if (imgUrls.length === 0) {
+            throw new Error("Không trích xuất được khung hình nào từ đoạn video này.");
+        }
+
+        // 6. Truyền mảng ảnh phẳng vào Gifshot (Tuyệt đối an toàn trước CORS/COEP)
+        btn.innerText = '⚙️ Đóng gói GIF...';
+        status.innerText = `⏳ Gifshot đang nén ảnh động chất lượng cao...`;
 
         gifshot.createGIF({
-    crossOrigin: 'anonymous', // 💡 THÊM DÒNG NÀY ĐỂ VƯỢT LỖI BẢO MẬT CORS/COEP
-    video: [tempVideoUrl],
-    gifWidth: 480,       
-    gifHeight: 270,      
-    interval: 0.1,       
-    numFrames: duration * 10, 
-    sampleInterval: 10,
-    numWorkers: 0        
-}, function (obj) {
+            images: imgUrls,          // 💡 SỬ DỤNG MẢNG ẢNH PHẲNG THAY VÌ VIDEO URL
+            interval: 0.1,            // Khoảng cách 0.1 giây mỗi hình (khớp với fps=10 ở trên)
+            numWorkers: 0             // Không dùng worker để tránh xung đột mã nguồn Service Worker
+        }, function (obj) {
+            // Giải phóng ngay các URL ảnh tạm để tránh ngốn bộ nhớ thiết bị
+            imgUrls.forEach(url => URL.revokeObjectURL(url));
 
-            
             if (!obj.error) {
-                const animatedImage = obj.image; // Chuỗi base64 của file GIF
+                const animatedImage = obj.image; // Chuỗi base64 xuất ra từ Gifshot
                 
                 const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
                 const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
@@ -1509,12 +1536,9 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
                 status.innerText = `✨ Tải GIF thành công: ${downloadName}`;
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                
-                // Giải phóng URL tạm
-                if(tempVideoUrl) URL.revokeObjectURL(tempVideoUrl);
             } else {
-                console.error("Lỗi Gifshot:", obj.errorMsg);
-                alert("Có lỗi xảy ra khi tạo ảnh GIF bằng Gifshot.");
+                console.error("Lỗi đóng gói Gifshot:", obj.errorMsg);
+                alert("Có lỗi xảy ra khi đóng gói ảnh GIF.");
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
                 status.innerText = "❌ Lỗi Render GIF.";
@@ -1522,14 +1546,15 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
         });
 
     } catch (err) {
-        console.error(err);
-        alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+        console.error("Lỗi toàn cục tiến trình GIF:", err);
+        alert("Có lỗi xảy ra trong quá trình bóc tách video bằng FFmpeg: " + err.message);
         status.innerText = "❌ Lỗi trích xuất video nền.";
         btn.disabled = false;
         btn.innerText = originalBtnText;
-        if(tempVideoUrl) URL.revokeObjectURL(tempVideoUrl);
     }
 }
+
+
 
 
     </script>
