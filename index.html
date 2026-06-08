@@ -569,6 +569,46 @@ input, textarea {
 <p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
 
     
+    <div id="gifConfigOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
+    <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.8); box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; touch-action: manipulation;">
+        
+        <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">Cấu Hình Xuất Ảnh GIF</h3>
+        
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Tốc độ khung hình (FPS):</label>
+            <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
+                <option value="8">Thấp (8 FPS) - Hoạt họa cơ bản, nhẹ máy</option>
+                <option value="12" selected>Trung bình (12 FPS) - Chuẩn tối ưu cấu hình</option>
+                <option value="18">Cao (18 FPS) - Chuyển động mượt, tốn dung lượng</option>
+            </select>
+            <span style="font-size: 0.75em; color: #888;">* FPS càng cao, chuyển động của ảnh GIF càng mượt mà nhưng dung lượng tệp sẽ tăng mạnh.</span>
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 6px;">
+            <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Độ phân giải ảnh:</label>
+            <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
+                <option value="320">Thấp (Chiều rộng 320px) - Kết quả xuất siêu nhanh</option>
+                <option value="480" selected>Trung bình (Chiều rộng 480px) - Đủ nét xem di động</option>
+                <option value="720">Cao (Chiều rộng 720px) - Độ nét cao, xử lý lâu hơn</option>
+            </select>
+            <span style="font-size: 0.75em; color: #888;">* Độ phân giải cao giúp hình ảnh sắc nét, giảm thiểu tối đa hiện tượng vỡ hạt nhiễu màu.</span>
+        </div>
+
+        <div style="background: rgba(207, 102, 121, 0.1); border-left: 3px solid #cf6679; padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
+            <p style="margin: 0; font-size: 0.8em; color: #e0e0e0; line-height: 1.45;">
+                ⚠️ <b>Lưu ý tốc độ xử lý:</b> Công nghệ chạy code WebAssembly trích xuất GIF hoàn toàn trên RAM trình duyệt của bạn. Nếu bạn cấu hình cấu trúc <b>Cao</b> hoặc chọn đoạn video dài (>10 giây), tiến trình có thể mất từ vài chục giây đến một phút để hoàn tất. Vui lòng không tắt app!
+            </p>
+        </div>
+
+        <div style="display: flex; gap: 10px; margin-top: 4px;">
+            <button id="btnCancelGif" style="flex: 1; background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Hủy</button>
+            <button id="btnConfirmGif" style="flex: 1; background: #bb86fc; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Bắt đầu xuất</button>
+        </div>
+
+    </div>
+</div>
+
+    
         <div id="welcomeOverlay">
         <!-- Icon SVG thiết kế tối giản, sắc nét -->
         <div class="upload-icon">
@@ -653,6 +693,23 @@ input, textarea {
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
 const welcomeOverlay = document.getElementById('welcomeOverlay');
+            
+            // Khai báo phần tử cho Popup cấu hình GIF
+const gifConfigOverlay = document.getElementById('gifConfigOverlay');
+const btnCancelGif = document.getElementById('btnCancelGif');
+const btnConfirmGif = document.getElementById('btnConfirmGif');
+const gifFpsSelect = document.getElementById('gifFpsSelect');
+const gifQualitySelect = document.getElementById('gifQualitySelect');
+
+// Đối tượng trung gian ghi nhớ mốc thời gian đoạn đang chuẩn bị bấm xuất GIF
+let activeGifJob = null;
+
+// Sự kiện đóng bảng điều khiển cấu hình GIF
+btnCancelGif.addEventListener('click', () => {
+    gifConfigOverlay.style.display = 'none';
+    activeGifJob = null; // Xóa trạng thái hàng chờ
+});
+
             
             // KHỐI MÃ MỚI: YÊU CẦU QUYỀN LƯU TRỮ BỀN VỮNG (PERSISTENT STORAGE)
         // ==========================================
@@ -1234,11 +1291,22 @@ video.onpause = () => {
             btnGroup.className = 'button-group';
             
             
-            // Nút Tải Ảnh GIF
+             // Nút Tải Ảnh GIF - Sửa lại để mở bảng cấu hình Popup trước
 const gifBtn = document.createElement('button');
 gifBtn.className = 'gif-btn'; 
 gifBtn.innerText = "Tải GIF";
-gifBtn.onclick = () => downloadGifFFmpeg(start, (end - start), clipLabel, gifBtn);
+gifBtn.onclick = () => {
+    // Ghi nhớ thông số của phân đoạn cụ thể này vào biến chờ toàn cục
+    activeGifJob = {
+        startTime: start,
+        duration: (end - start),
+        labelText: clipLabel,
+        buttonRef: gifBtn
+    };
+    // Hiển thị Popup cấu hình lên màn hình
+    gifConfigOverlay.style.display = 'flex';
+};
+            
 
             const dl = document.createElement('button');
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
@@ -1445,7 +1513,7 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
-async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
+async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = 12, scaleWidth = 480) {
     if (!isFFmpegReady) {
         alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
         return;
@@ -1460,15 +1528,15 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
         await rawVideoFile.slice(0, 1).arrayBuffer();
     } catch (fileError) {
         alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
-        upload.value = "";
-        upload.click(); 
+        if (upload) upload.value = "";
+        if (upload) upload.click(); 
         return;
     }
 
     const originalBtnText = btn.innerText;
     btn.disabled = true;
     btn.innerText = '⌛ Tạo GIF...';
-    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] độ dài ${duration}s...`;
+    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] (FPS: ${fps}, Rộng: ${scaleWidth}px)...`;
 
     const timestamp = Date.now();
     const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1479,16 +1547,17 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn) {
         // Nạp file video vào hệ thống file ảo của FFmpeg
         ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
         
-        // Thực thi dòng lệnh FFmpeg: Trích xuất mốc thời gian, giảm độ phân giải xuống tối đa rộng 480 (giữ nguyên tỷ lệ), ép fps về 12
-        // Áp dụng bộ lọc palettegen và paletteuse để quét và tạo bảng màu 256 màu tối ưu, khử hoàn toàn chấm vệt nhiễu
-await ffmpeg.run(
-    '-ss', startTime.toString(), 
-    '-t', duration.toString(), 
-    '-i', virtualInputName, 
-    '-vf', 'fps=12,scale=480:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse', 
-    outputName
-);
+        // BIẾN ĐỔI CHUỖI LỆNH ĐỘNG DỰA TRÊN CẤU HÌNH NGƯỜI DÙNG CHỌN
+        // Ứng dụng cấu trúc lọc màu tối cao palettegen & paletteuse của lanczos để triệt nhiễu hạt
+        const filterGraph = `fps=${fps},scale=${scaleWidth}:-1:flags=lanczos,split[a][b];[a]palettegen[p];[b][p]paletteuse`;
 
+        await ffmpeg.run(
+            '-ss', startTime.toString(), 
+            '-t', duration.toString(), 
+            '-i', virtualInputName, 
+            '-vf', filterGraph, 
+            outputName
+        );
         
         // Đọc dữ liệu GIF từ bộ nhớ ảo
         const data = ffmpeg.FS('readFile', outputName);
@@ -1518,6 +1587,36 @@ await ffmpeg.run(
     }
 }
 
+
+    
+            
+            
+            
+
+// Xử lý khi người dùng ấn nút bắt đầu kết xuất ảnh GIF từ bảng cấu hình
+btnConfirmGif.addEventListener('click', () => {
+    if (!activeGifJob) return;
+
+    // 1. Lấy thông số cấu hình do người dùng chọn từ menu thả xuống
+    const selectedFps = gifFpsSelect.value;
+    const selectedWidth = gifQualitySelect.value;
+
+    // 2. Ẩn bảng Popup cấu hình để người dùng nhìn thấy thanh trạng thái hiển thị tiến trình
+    gifConfigOverlay.style.display = 'none';
+
+    // 3. Thực thi gọi hàm kết xuất với 2 thông số động được cấu hình thêm ở cuối
+    downloadGifFFmpeg(
+        activeGifJob.startTime, 
+        activeGifJob.duration, 
+        activeGifJob.labelText, 
+        activeGifJob.buttonRef, 
+        selectedFps, 
+        selectedWidth
+    );
+
+    // 4. Giải phóng vùng nhớ công việc
+    activeGifJob = null;
+});
 
     </script>
             
