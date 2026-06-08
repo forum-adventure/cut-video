@@ -15,7 +15,6 @@
     
     <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/gifshot/0.4.5/gifshot.min.js" crossorigin="anonymous"></script>
 
     
     <style>
@@ -716,7 +715,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 
-                                        async function loadFFmpegCore() {
+                        async function loadFFmpegCore() {
             const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
             const loadingStatusText = document.getElementById('loadingStatusText');
 
@@ -763,8 +762,6 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                 }, 1500);
             }
         }
-
-
 
 
         loadFFmpegCore();
@@ -1213,18 +1210,7 @@ video.onpause = () => {
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
-            // Tạo nút Tải GIF
-const gifBtn = document.createElement('button');
-gifBtn.className = 'download-btn'; 
-gifBtn.innerText = "Tải GIF";
-gifBtn.style.backgroundColor = "#ffeb3b"; // Màu vàng nổi bật, phân biệt với nút MP4
-gifBtn.style.color = "#000";
-gifBtn.onclick = () => downloadClipAsGif(start, (end - start), clipLabel, gifBtn);
-
-            
             const dl = document.createElement('button');
-            
-            
             dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
@@ -1243,9 +1229,7 @@ gifBtn.onclick = () => downloadClipAsGif(start, (end - start), clipLabel, gifBtn
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(gifBtn);
-            btnGroup.appendChild(dl); 
-            btnGroup.appendChild(del);
+            btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1300,7 +1284,7 @@ if (rawVideoFile) {
             const outputName = `cut_${timestamp}.mp4`;
 
             try {
-                ffmpeg.FS('writeFile', virtualInputName, await FFmpegWasm.fetchFile(rawVideoFile));
+                ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
                 await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
                 
                 const data = ffmpeg.FS('readFile', outputName);
@@ -1429,135 +1413,6 @@ document.addEventListener('contextmenu', (e) => {
 
             
             
-async function downloadClipAsGif(startTime, duration, labelText, btn) {
-    if (!isFFmpegReady) {
-        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
-        return;
-    }
-    if (!rawVideoFile) {
-        alert("Lỗi: Không tìm thấy file video đầu vào.");
-        return;
-    }
-    
-    // Kiểm tra kết nối tệp thực tế (Tránh tràn RAM trên Android)
-    if (rawVideoFile) {
-        try {
-            await rawVideoFile.slice(0, 1).arrayBuffer();
-        } catch (fileError) {
-            alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục!");
-            upload.value = "";
-            upload.click(); 
-            return;
-        }
-    }
-
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⌛ Trích xuất...';
-    status.innerText = `⏳ FFmpeg đang phân tách khung hình từ video...`;
-
-    const timestamp = Date.now();
-    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-    const virtualInputName = `input_gif_${timestamp}_${cleanFileName}`;
-    const outputVideoName = `cut_temp_${timestamp}.mp4`;
-
-    try {
-        // 1. Ghi file gốc vào bộ nhớ ảo FFmpeg
-        ffmpeg.FS('writeFile', virtualInputName, await FFmpegWasm.fetchFile(rawVideoFile));
-        
-        // 2. Cắt một đoạn video ngắn với FPS được giảm xuống còn 10 (để làm GIF mượt và nhẹ)
-        // Đồng thời ép kích thước về tối đa chiều rộng 480px để xử lý nhanh hơn
-        await ffmpeg.run(
-            '-ss', startTime.toString(), 
-            '-i', virtualInputName, 
-            '-t', duration.toString(), 
-            '-vf', 'fps=10,scale=480:-1', 
-            outputVideoName
-        );
-        
-        btn.innerText = '📸 Tạo frame...';
-        status.innerText = `⏳ Đang chuyển đổi các khung hình thành dữ liệu ảnh...`;
-
-        // 3. Bung video ngắn đó thành chuỗi ảnh jpeg (frame_%03d.jpg)
-        await ffmpeg.run('-i', outputVideoName, 'frame_%03d.jpg');
-
-        // 4. Đọc tất cả các file ảnh vừa bung ra trong bộ nhớ ảo đưa vào mảng
-        const imgUrls = [];
-        const files = ffmpeg.FS('readdir', '/');
-        
-        // Lọc và sắp xếp các file ảnh theo đúng thứ tự đặt tên frame_001, frame_002...
-        const imageFiles = files.filter(f => f.startsWith('frame_') && f.endsWith('.jpg')).sort();
-
-        for (const imgFile of imageFiles) {
-            const data = ffmpeg.FS('readFile', imgFile);
-            const blob = new Blob([data.buffer], { type: 'image/jpeg' });
-            const url = URL.createObjectURL(blob);
-            imgUrls.push(url);
-        }
-
-        // 5. Dọn dẹp bộ nhớ ảo FFmpeg ngay lập tức để giải phóng RAM giải thuật
-        try {
-            ffmpeg.FS('unlink', virtualInputName);
-            ffmpeg.FS('unlink', outputVideoName);
-            for (const imgFile of imageFiles) {
-                ffmpeg.FS('unlink', imgFile);
-            }
-        } catch(e) { console.log("Dọn dẹp file tạm:", e); }
-
-        if (imgUrls.length === 0) {
-            throw new Error("Không trích xuất được khung hình nào từ đoạn video này.");
-        }
-
-        // 6. Truyền mảng ảnh phẳng vào Gifshot (Tuyệt đối an toàn trước CORS/COEP)
-        btn.innerText = '⚙️ Đóng gói GIF...';
-        status.innerText = `⏳ Gifshot đang nén ảnh động chất lượng cao...`;
-
-        gifshot.createGIF({
-    images: imgUrls,          
-    interval: 0.1,            
-    gifWidth: 480,            // Định dạng chiều rộng cố định cho ảnh GIF phẳng
-    gifHeight: 270,           // Định dạng chiều cao cố định cho ảnh GIF phẳng
-    numWorkers: 0             
-}, function (obj) {
-
-            // Giải phóng ngay các URL ảnh tạm để tránh ngốn bộ nhớ thiết bị
-            imgUrls.forEach(url => URL.revokeObjectURL(url));
-
-            if (!obj.error) {
-                const animatedImage = obj.image; // Chuỗi base64 xuất ra từ Gifshot
-                
-                const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-                const downloadName = `gif_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
-                
-                const a = document.createElement('a');
-                a.href = animatedImage;
-                a.download = downloadName;
-                document.body.appendChild(a);
-                a.click();
-                document.body.removeChild(a);
-
-                status.innerText = `✨ Tải GIF thành công: ${downloadName}`;
-                btn.disabled = false;
-                btn.innerText = originalBtnText;
-            } else {
-                console.error("Lỗi đóng gói Gifshot:", obj.errorMsg);
-                alert("Có lỗi xảy ra khi đóng gói ảnh GIF.");
-                btn.disabled = false;
-                btn.innerText = originalBtnText;
-                status.innerText = "❌ Lỗi Render GIF.";
-            }
-        });
-
-    } catch (err) {
-        console.error("Lỗi toàn cục tiến trình GIF:", err);
-        alert("Có lỗi xảy ra trong quá trình bóc tách video bằng FFmpeg: " + err.message);
-        status.innerText = "❌ Lỗi trích xuất video nền.";
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-    }
-}
-
-
 
 
     </script>
