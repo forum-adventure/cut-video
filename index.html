@@ -1482,14 +1482,17 @@ async function downloadClipAsGif(startTime, duration, labelText, btn) {
         status.innerText = `⏳ Gifshot đang xử lý ảnh động (Quá trình này có thể mất vài giây)...`;
 
         gifshot.createGIF({
-            video: [tempVideoUrl],
-            gifWidth: 480,       // Độ rộng file GIF (Tối ưu cho mobile/web, tránh quá nặng)
-            gifHeight: 270,      // Chiều cao file GIF (Tỷ lệ 16:9 mặc định, tự động fit nếu là video dọc)
-            interval: 0.1,       // Khoảng cách giữa các frame (0.1s = 10 FPS)
-            numFrames: duration * 10, // Tổng số khung hình = số giây * FPS
-            sampleInterval: 10,
-            numWorkers: 2        // Sử dụng web workers xử lý đa luồng ngầm
-        }, function (obj) {
+    crossOrigin: 'anonymous', // 💡 THÊM DÒNG NÀY ĐỂ VƯỢT LỖI BẢO MẬT CORS/COEP
+    video: [tempVideoUrl],
+    gifWidth: 480,       
+    gifHeight: 270,      
+    interval: 0.1,       
+    numFrames: duration * 10, 
+    sampleInterval: 10,
+    numWorkers: 2        
+}, function (obj) {
+
+            
             if (!obj.error) {
                 const animatedImage = obj.image; // Chuỗi base64 của file GIF
                 
