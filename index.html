@@ -993,7 +993,16 @@ if (btnPrevTime && btnNextTime) {
     videoElement.volume = 1.0; 
     videoElement.classList.add('unmuted');
     currentlyUnmutedVideo = videoElement;
+
+    // --- ĐOẠN MÃ THÊM MỚI: Cập nhật mốc thời gian của đoạn vào ô nhập liệu ---
+    if (videoElement.dataset.startTime) {
+        const startSecs = parseFloat(videoElement.dataset.startTime);
+        if (!isNaN(startSecs) && typeof formatTime === 'function') {
+            startTimeInput.value = formatTime(startSecs);
+        }
+    }
 }
+
 
 
         function enableControls() {
