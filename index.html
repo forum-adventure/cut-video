@@ -994,14 +994,34 @@ if (btnPrevTime && btnNextTime) {
     videoElement.classList.add('unmuted');
     currentlyUnmutedVideo = videoElement;
 
-    // --- ĐOẠN MÃ THÊM MỚI: Cập nhật mốc thời gian của đoạn vào ô nhập liệu ---
+    // --- ĐOẠN MÃ ĐÃ SỬA: Lấy mốc thời gian KẾT THÚC thay vì BẮT ĐẦU ---
     if (videoElement.dataset.startTime) {
         const startSecs = parseFloat(videoElement.dataset.startTime);
-        if (!isNaN(startSecs) && typeof formatTime === 'function') {
-            startTimeInput.value = formatTime(startSecs);
+        
+        // Tìm thẻ chứa thông tin thời gian (.clip-info) nằm chung trong khung bọc .clip-wrapper
+        const wrapper = videoElement.closest('.clip-wrapper');
+        let duration = 5; // Giá trị mặc định phòng hờ
+        
+        if (wrapper) {
+            const infoElement = wrapper.querySelector('.clip-info');
+            if (infoElement) {
+                // Trích xuất số giây nằm trong dấu ngoặc đơn, ví dụ: "00:01:20 - 00:01:25 (5.0s)" -> 5.0
+                const match = infoElement.innerText.match(/\(([^s]+)s\)/);
+                if (match && match[1]) {
+                    duration = parseFloat(match[1]);
+                }
+            }
+        }
+        
+        // Tính toán mốc kết thúc = Bắt đầu + Độ dài
+        const endSecs = startSecs + duration;
+        
+        if (!isNaN(endSecs) && typeof formatTime === 'function') {
+            startTimeInput.value = formatTime(endSecs);
         }
     }
 }
+
 
 
 
