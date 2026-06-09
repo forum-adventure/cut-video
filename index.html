@@ -641,7 +641,7 @@ input, textarea {
     <div id="gifConfigOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
     <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.8); box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; touch-action: manipulation;">
         
-        <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">Cấu Hình Xuất Ảnh GIF</h3>
+        <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">GIF Export Settings</h3>
         
                 <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Frame Rate (FPS):</label>
@@ -1395,7 +1395,7 @@ video.onpause = () => {
              // Nút Tải Ảnh GIF - Sửa lại để mở bảng cấu hình Popup trước
 const gifBtn = document.createElement('button');
 gifBtn.className = 'gif-btn'; 
-gifBtn.innerText = "Get GIF";
+gifBtn.innerText = "Download GIF";
 gifBtn.onclick = () => {
     // Ghi nhớ thông số của phân đoạn cụ thể này vào biến chờ toàn cục
     activeGifJob = {
