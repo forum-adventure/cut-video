@@ -19,6 +19,65 @@
     
     <style>
     
+    /* --- THANH TIỆN ÍCH TRÊN CÙNG (TOP BAR) --- */
+.top-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 10px;
+    border-bottom: 1px solid #2a2a2a; /* Đường viền xám tối tối giản */
+    margin-bottom: 20px;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+.sub-links-container {
+    display: flex;
+    gap: 16px;
+}
+
+.sub-link {
+    font-size: 13px;
+    color: #888888;
+    text-decoration: none;
+    opacity: 0.8;
+    transition: all 0.2s ease;
+    font-weight: 500;
+}
+
+.sub-link:hover {
+    opacity: 1;
+    color: #03dac6; /* Màu Neon sáng đồng bộ với nút Next/Download của ứng dụng */
+}
+
+.right-utils {
+    display: flex;
+    align-items: center;
+}
+
+.btn-lang-toggle {
+    background: #1e1e1e;
+    border: 1px solid #333333;
+    color: #e0e0e0;
+    height: 32px;
+    border-radius: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 0 14px;
+}
+
+.btn-lang-toggle:hover {
+    background-color: #2d2d2d;
+    border-color: #03dac6;
+    transform: scale(1.03);
+}
+
+    
     .gif-btn {
     border: none; 
     padding: 10px 16px; 
@@ -557,16 +616,26 @@ input, textarea {
     </style>
 </head>
 <body>
+    
+    <div class="top-bar">
+    <div class="sub-links-container">
+        <a href="https://sociabuzz.com/ncoxcoi" target="_blank" class="sub-link" data-i18n="nav_more_works">More works</a>
+    </div>
+    
+</div>
+
+    
+    
     <div id="ffmpegLoadingOverlay">
     <div class="loader-box">
         <div class="spinner"></div>
-        <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
-        <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
+        <h2 id="loadingStatusText">Initializing FFmpeg.wasm core...</h2>
+        <p>Please wait a moment, loading video processing library.</p>
     </div>
 </div>
 
 <input type="file" id="videoUpload" accept="video/*" style="display: none;">
-<p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
+<p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Initializing FFmpeg.wasm core...</p>
 
     
     <div id="gifConfigOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
@@ -575,37 +644,37 @@ input, textarea {
         <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">Cấu Hình Xuất Ảnh GIF</h3>
         
                 <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Tốc độ khung hình (FPS):</label>
+            <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Frame Rate (FPS):</label>
             <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Gốc - Giữ nguyên tốc độ khung hình của video</option>
+                <option value="original">Low (8 FPS) - Basic animation, lightweight</option>
                 <option value="8">Thấp (8 FPS) - Hoạt họa cơ bản, nhẹ máy</option>
                 <option value="12" selected>Trung bình (12 FPS) - Chuẩn tối ưu cấu hình</option>
-                <option value="18">Cao (18 FPS) - Chuyển động mượt, tốn dung lượng</option>
+                <option value="18">High (18 FPS) - Smooth motion, larger file size</option>
             </select>
-            <span style="font-size: 0.75em; color: #888;">* FPS càng cao, chuyển động của ảnh GIF càng mượt mà nhưng dung lượng tệp sẽ tăng mạnh. Tùy chọn "Gốc" giữ đúng độ mượt ban đầu của video.</span>
+            <span style="font-size: 0.75em; color: #888;">* Higher FPS means smoother animation but significantly increases file size. "Original" option maintains the source video smoothness.</span>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Độ phân giải ảnh:</label>
+            <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Image Resolution:</label>
             <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Gốc - Giữ nguyên kích thước độ phân giải gốc</option>
-                <option value="320">Thấp (Chiều rộng 320px) - Kết quả xuất siêu nhanh</option>
-                <option value="480" selected>Trung bình (Chiều rộng 480px) - Đủ nét xem di động</option>
-                <option value="720">Cao (Chiều rộng 720px) - Độ nét cao, xử lý lâu hơn</option>
+                <option value="original">Original - Keep original resolution size</option>
+                <option value="320">Low (320px Width) - Ultra-fast export</option>
+                <option value="480" selected>Medium (480px Width) - Standard for mobile view</option>
+                <option value="720">High (720px Width) - High definition, slower processing</option>
             </select>
-            <span style="font-size: 0.75em; color: #888;">* Độ phân giải cao giúp hình ảnh sắc nét, giảm thiểu tối đa hiện tượng vỡ hạt nhiễu màu. Xuất chất lượng "Gốc" có thể khiến dung lượng ảnh GIF cực kỳ lớn nếu video là Full HD/4K.</span>
+            <span style="font-size: 0.75em; color: #888;">* High resolution delivers crisp images and minimizes color pixelation. Exporting in "Original" quality can result in extremely large files if the video is Full HD/4K.</span>
         </div>
 
 
         <div style="background: rgba(207, 102, 121, 0.1); border-left: 3px solid #cf6679; padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
             <p style="margin: 0; font-size: 0.8em; color: #e0e0e0; line-height: 1.45;">
-                ⚠️ <b>Lưu ý tốc độ xử lý:</b> Công nghệ chạy code WebAssembly trích xuất GIF hoàn toàn trên RAM trình duyệt của bạn. Nếu bạn cấu hình cấu trúc <b>Cao</b> hoặc chọn đoạn video dài (>10 giây), tiến trình có thể mất từ vài chục giây đến một phút để hoàn tất. Vui lòng không tắt app!
+                 <b>Processing Note:</b> WebAssembly technology extracts GIFs entirely within your browser RAM. If you select <b>High</b> configurations or long video segments (>10s), the process may take from several seconds up to a minute. Please do not close the app!
             </p>
         </div>
 
         <div style="display: flex; gap: 10px; margin-top: 4px;">
-            <button id="btnCancelGif" style="flex: 1; background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Hủy</button>
-            <button id="btnConfirmGif" style="flex: 1; background: #bb86fc; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Bắt đầu xuất</button>
+            <button id="btnCancelGif" style="flex: 1; background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Cancel</button>
+            <button id="btnConfirmGif" style="flex: 1; background: #bb86fc; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Start Export</button>
         </div>
 
     </div>
@@ -622,8 +691,8 @@ input, textarea {
             </svg>
         </div>
 
-        <h1 id="mainTitle">Phân Đoạn Video</h1>
-        <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
+        <h1 id="mainTitle">Video Segmenter</h1>
+        <p id="subTitle">Drop video file here or tap to choose from your device</p>
     </div>
 
 
@@ -632,8 +701,8 @@ input, textarea {
     <div id="gridOverlay">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
-            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
+            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Segment List</h3>
+            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Close Grid</button>
         </div>
         <div id="gridContent"></div>
     </div>
@@ -649,7 +718,7 @@ input, textarea {
                    <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
     
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cut from:</label>
                <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
             <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
@@ -659,10 +728,10 @@ input, textarea {
     </div>
         
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Duration (s):</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <input type="number" id="durationInput" value="5" min="1" step="0.5" >
-            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
+            <input type="text" id="clipLabelInput" placeholder="Enter segment label (optional)"style="flex-grow: 1; width: 100%; min-width: 0;">
         </div>
     </div>
     
@@ -673,7 +742,7 @@ input, textarea {
         </div>
 
         <div class="controls-row">                                            
-            <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
+            <button id="nextBtn" class="action-btn" disabled>Loading Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
@@ -779,7 +848,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
         const event = new Event('change', { bubbles: true });
         upload.dispatchEvent(event);
     } else {
-        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
+        alert("Please drop a valid Video file format!");
     }
 });
 
@@ -805,7 +874,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             try {
                 await ffmpeg.load();
                 isFFmpegReady = true;
-                status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
+                status.innerText = "Core system is ready! Please select a Video.";
                 
                 if(upload.files[0]) {
                     enableControls();
@@ -818,11 +887,11 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
 
             } catch (error) {
                 console.error(error);
-                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
+                status.innerText = "Core initialization failed. Ensure you are running on GitHub Pages (HTTPS) or a Cross-Origin Local Server.";
                 
                 // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết trước
                 if (loadingStatusText) {
-                    loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
+                    loadingStatusText.innerText = "❌ System Initialization Failed!";
                     loadingStatusText.style.color = "#cf6679"; 
                 }
 
@@ -835,13 +904,13 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
                     nextBtn.disabled = false;
                     randomBtn.disabled = false;
                     gridViewBtn.disabled = false;
-                    nextBtn.innerText = "Thêm đoạn";
+                    nextBtn.innerText = "Add Segment";
                 }
 
                 // Bỏ chặn màn hình chờ sau 1.5 giây để người dùng kịp đọc thông báo lỗi rồi vào sử dụng app
                 setTimeout(() => {
                     loadingOverlay.classList.add('fade-out');
-                    alert("⚠️ Cảnh báo: Không thể nạp thư viện FFmpeg.\nBạn vẫn có thể phân đoạn và xem video bình thường, nhưng tính năng 'Tải Xuống .MP4' sẽ tạm thời không khả dụng.");
+                    alert("⚠️ Warning: Cannot load FFmpeg library.\nYou can still segment and preview videos normally, but the '.MP4 Download' feature will be temporarily unavailable.");
                 }, 1500);
             }
         }
@@ -1030,7 +1099,7 @@ if (btnPrevTime && btnNextTime) {
                 nextBtn.disabled = false;
                 randomBtn.disabled = false;
                 gridViewBtn.disabled = false;
-                nextBtn.innerText = "Thêm đoạn";
+                nextBtn.innerText = "Add Segment";
             }
         }
 
@@ -1056,9 +1125,9 @@ upload.addEventListener('change', (e) => {
                 gridContent.innerHTML = "";
                 document.body.classList.remove('has-clips');
                 
-                document.getElementById('mainTitle').innerText = "Video sẵn sàng";
+                document.getElementById('mainTitle').innerText = "Video Ready";
                 document.getElementById('mainTitle').style.color = "#2ecc71";
-                document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
+                document.getElementById('subTitle').innerHTML = "💡 Set the start time, assign an optional label, then click <b>Add Segment</b>.";
             } else {
                 // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
                 console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
@@ -1097,7 +1166,7 @@ upload.addEventListener('change', (e) => {
             }
             
             upload.value = ""; 
-            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
+            status.innerText = `Video duration: ${formatTime(totalVideoDuration)}`;
             enableControls();
         };
     }
@@ -1227,7 +1296,7 @@ upload.addEventListener('change', (e) => {
             // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the exact video file to continue segmenting!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
@@ -1239,7 +1308,7 @@ upload.addEventListener('change', (e) => {
             const clipLabel = clipLabelInput.value.trim();
 
             if (start >= totalVideoDuration) {
-                alert("Thời gian bắt đầu vượt quá tổng độ dài video!");
+                alert("Start time exceeds total video duration!");
                 return;
             }
             document.body.classList.add('has-clips');
@@ -1326,7 +1395,7 @@ video.onpause = () => {
              // Nút Tải Ảnh GIF - Sửa lại để mở bảng cấu hình Popup trước
 const gifBtn = document.createElement('button');
 gifBtn.className = 'gif-btn'; 
-gifBtn.innerText = "Tải GIF";
+gifBtn.innerText = "Get GIF";
 gifBtn.onclick = () => {
     // Ghi nhớ thông số của phân đoạn cụ thể này vào biến chờ toàn cục
     activeGifJob = {
@@ -1341,11 +1410,11 @@ gifBtn.onclick = () => {
             
 
             const dl = document.createElement('button');
-            dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
+            dl.className = 'download-btn'; dl.innerText = "Download .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
             const del = document.createElement('button');
-            del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
+            del.className = 'delete-btn'; del.innerText = "Delete";
             del.onclick = () => {
                 clipObserver.unobserve(video); 
                 // --- THÊM ĐOẠN NÀY: Ngắt luồng chạy và nạp dữ liệu của video trước khi gỡ bỏ ---
@@ -1382,11 +1451,11 @@ gifBtn.onclick = () => {
 
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
             if (!isFFmpegReady) {
-                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+                alert("FFmpeg core system is loading, please try again in a few seconds!");
                 return;
             }
             if (!rawVideoFile) {
-                alert("Lỗi: Không tìm thấy file video đầu vào.");
+                alert("Error: Input video file not found.");
                 return;
             }
             
@@ -1397,7 +1466,7 @@ if (rawVideoFile) {
         await rawVideoFile.slice(0, 1).arrayBuffer();
     } catch (fileError) {
         // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the video to proceed with GIF extraction!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Khử lỗi không nhận diện trùng file
         upload.click(); 
         return;
@@ -1407,8 +1476,8 @@ if (rawVideoFile) {
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛ Đang xử lý...';
-            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
+            btn.innerText = '⌛ Processing...';
+            status.innerText = `⏳ Extracting segment [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             const timestamp = Date.now();
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1433,11 +1502,11 @@ if (rawVideoFile) {
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
+                status.innerText = `✨ Successfully extracted: ${downloadName}`;
             } catch (err) {
                 console.error(err);
-                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
-                status.innerText = "❌ Lỗi thực thi Render.";
+                alert("An error occurred during FFmpeg command execution.");
+                status.innerText = "❌ Render execution error.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
@@ -1449,7 +1518,7 @@ if (rawVideoFile) {
     // --- KIỂM TRA ĐỘC LẬP KHI BẤM RANDOM ---
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
+        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the exact video file to continue creating random segments!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
@@ -1548,11 +1617,11 @@ document.addEventListener('contextmenu', (e) => {
 
 async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12", scaleWidth = "480") {
     if (!isFFmpegReady) {
-        alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
+        alert("FFmpeg core system is loading, please try again in a few seconds!");
         return;
     }
     if (!rawVideoFile) {
-        alert("Lỗi: Không tìm thấy file video đầu vào.");
+        alert("Error: Input video file not found.");
         return;
     }
     
@@ -1560,7 +1629,7 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
     try {
         await rawVideoFile.slice(0, 1).arrayBuffer();
     } catch (fileError) {
-        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
+        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the video to proceed with extraction!");
         if (upload) upload.value = "";
         if (upload) upload.click(); 
         return;
@@ -1568,11 +1637,11 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
 
     const originalBtnText = btn.innerText;
     btn.disabled = true;
-    btn.innerText = '⌛ Tạo GIF...';
+    btn.innerText = '⌛ Generating GIF...';
     
-    const displayFps = fps === "original" ? "Gốc" : `${fps}`;
-    const displayWidth = scaleWidth === "original" ? "Gốc" : `${scaleWidth}px`;
-    status.innerText = `⏳ Thực thi chuyển đổi GIF [${formatTime(startTime)}] (FPS: ${displayFps}, Rộng: ${displayWidth})...`;
+    const displayFps = fps === "original" ? "original" : `${fps}`;
+    const displayWidth = scaleWidth === "original" ? "original" : `${scaleWidth}px`;
+    status.innerText = `⏳ Converting GIF [${formatTime(startTime)}] (FPS: ${displayFps}, Rộng: ${displayWidth})...`;
 
     const timestamp = Date.now();
     const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1630,11 +1699,11 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
         document.body.removeChild(a);
 
         try { ffmpeg.FS('unlink', outputName); } catch(e){}
-        status.innerText = `✨ Trích xuất GIF thành công: ${downloadName}`;
+        status.innerText = `✨ GIF successfully extracted: ${downloadName}`;
     } catch (err) {
         console.error(err);
-        alert("Có lỗi xảy ra trong quá trình xử lý Render GIF.");
-        status.innerText = "❌ Lỗi thực thi Render GIF.";
+        alert("An error occurred during GIF render processing.");
+        status.innerText = "❌ GIF render execution error.";
     } finally {
         btn.disabled = false;
         btn.innerText = originalBtnText;
