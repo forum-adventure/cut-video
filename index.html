@@ -612,6 +612,16 @@ input, textarea {
     user-select: text;
 }
 
+/* Hiệu ứng nhấp nháy mượt mà cho chữ trạng thái xử lý */
+.blinking-text {
+    animation: pulse-blink 1.4s infinite ease-in-out;
+}
+
+@keyframes pulse-blink {
+    0% { opacity: 0.3; }
+    50% { opacity: 1; }
+    100% { opacity: 0.3; }
+}
 
     </style>
 </head>
@@ -1632,9 +1642,12 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
         return;
     }
 
-    const originalBtnText = btn.innerText;
+        // Ghi nhớ cả cấu trúc HTML bên trong nút thay vì chỉ lưu text thuần
+    const originalBtnHtml = btn.innerHTML; 
     btn.disabled = true;
-    btn.innerText = '⌛ Generating GIF...';
+    // Sử dụng innerHTML để nhúng thẻ span chứa class nhấp nháy
+    btn.innerHTML = '⌛ <span class="blinking-text">Generating GIF...</span>';
+
     
     const displayFps = fps === "original" ? "original" : `${fps}`;
     const displayWidth = scaleWidth === "original" ? "original" : `${scaleWidth}px`;
@@ -1702,8 +1715,9 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
         alert("An error occurred during GIF render processing.");
         status.innerText = "❌ GIF render execution error.";
     } finally {
+        // --- ĐÃ THAY ĐỔI: Trả lại innerHTML ban đầu ---
         btn.disabled = false;
-        btn.innerText = originalBtnText;
+        btn.innerHTML = originalBtnHtml;
         try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
     }
 }
