@@ -612,16 +612,6 @@ input, textarea {
     user-select: text;
 }
 
-/* Hiệu ứng nhấp nháy mượt mà cho chữ trạng thái xử lý */
-.blinking-text {
-    animation: pulse-blink 1.4s infinite ease-in-out;
-}
-
-@keyframes pulse-blink {
-    0% { opacity: 0.3; }
-    50% { opacity: 1; }
-    100% { opacity: 0.3; }
-}
 
     </style>
 </head>
@@ -656,14 +646,12 @@ input, textarea {
                 <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Frame Rate (FPS):</label>
             <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                
-                <option value="12">Low (12 FPS) - Basic animation, lightweight</option>
+                <option value="original">Original - Keep video framework frame rate</option>
+                <option value="8">Low (8 FPS) - Basic animation, lightweight</option>
 </option>
-                <option value="16" selected>Medium (16 FPS) - Optimized configuration standard</option>
+                <option value="12" selected>Medium (12 FPS) - Optimized configuration standard</option>
 </option>
-                <option value="24">High (24 FPS) - Smooth motion, larger file size</option>
-        
-        <option value="original">Original - Keep video framework frame rate</option>
+                <option value="18">High (18 FPS) - Smooth motion, larger file size</option>
             </select>
             <span style="font-size: 0.75em; color: #888;">* Higher FPS means smoother animation but significantly increases file size. "Original" option maintains the source video smoothness.</span>
         </div>
@@ -671,11 +659,10 @@ input, textarea {
         <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Image Resolution:</label>
             <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                
+                <option value="original">Original - Keep original resolution size</option>
                 <option value="320">Low (320px Width) - fast export</option>
                 <option value="480" selected>Medium (480px Width) - Standard for mobile view</option>
                 <option value="720">High (720px Width) - High definition, slower processing</option>
-                <option value="original">Original - Keep original resolution size</option>
             </select>
             <span style="font-size: 0.75em; color: #888;">* High resolution delivers crisp images and minimizes color pixelation. Exporting in "Original" quality can result in extremely large files if the video is Full HD/4K.</span>
         </div>
@@ -1642,12 +1629,9 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
         return;
     }
 
-        // Ghi nhớ cả cấu trúc HTML bên trong nút thay vì chỉ lưu text thuần
-    const originalBtnHtml = btn.innerHTML; 
+    const originalBtnText = btn.innerText;
     btn.disabled = true;
-    // Sử dụng innerHTML để nhúng thẻ span chứa class nhấp nháy
-    btn.innerHTML = '⌛ <span class="blinking-text">Generating GIF...</span>';
-
+    btn.innerText = '⌛ Generating GIF...';
     
     const displayFps = fps === "original" ? "original" : `${fps}`;
     const displayWidth = scaleWidth === "original" ? "original" : `${scaleWidth}px`;
@@ -1715,9 +1699,8 @@ async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12"
         alert("An error occurred during GIF render processing.");
         status.innerText = "❌ GIF render execution error.";
     } finally {
-        // --- ĐÃ THAY ĐỔI: Trả lại innerHTML ban đầu ---
         btn.disabled = false;
-        btn.innerHTML = originalBtnHtml;
+        btn.innerText = originalBtnText;
         try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
     }
 }
