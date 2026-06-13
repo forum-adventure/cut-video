@@ -894,7 +894,7 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
             } catch (error) {
                 console.error(error);
                 isFFmpegReady = false;
-                status.innerText = "Core initialization failed. Ensure you are running on GitHub Pages (HTTPS) or a Cross-Origin Local Server.";
+                status.innerText = "Core initialization failed.";
                 
                 if (nextBtn.innerText === "Đang tải Core...") {
                     nextBtn.innerText = "Add Segment";
