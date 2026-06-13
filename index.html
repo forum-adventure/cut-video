@@ -1496,8 +1496,15 @@ if (rawVideoFile) {
 
             try {
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-                await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
-                
+                await ffmpeg.run(
+        '-ss', `${startTime}`,
+        '-i', virtualInputName,
+        '-t', `${duration}`,
+        '-c:v', 'libx264',  // 🟢 ĐÃ SỬA: Đổi từ 'libx244' thành 'libx264'
+        '-preset', 'ultrafast',
+        '-movflags', 'faststart',
+        outputName
+    );    
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
