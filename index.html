@@ -1481,12 +1481,9 @@ if (rawVideoFile) {
 }
 
 
-                // Ghi nhớ cấu trúc HTML gốc của nút MP4
-    const originalBtnHtml = btn.innerHTML; 
-    btn.disabled = true;
-  
-    btn.innerHTML = '⌛ <span class="blinking-text">Processing Video...</span>';
-
+            const originalBtnText = btn.innerText;
+            btn.disabled = true;
+            btn.innerText = '⌛ Processing...';
             status.innerText = `⏳ Extracting segment [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             const timestamp = Date.now();
@@ -1496,15 +1493,8 @@ if (rawVideoFile) {
 
             try {
                 ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-                await ffmpeg.run(
-        '-ss', `${startTime}`,
-        '-i', virtualInputName,
-        '-t', `${duration}`,
-        '-c:v', 'libx264',  // 🟢 ĐÃ SỬA: Đổi từ 'libx244' thành 'libx264'
-        '-preset', 'ultrafast',
-        '-movflags', 'faststart',
-        outputName
-    );    
+                await ffmpeg.run('-ss', startTime.toString(), '-i', virtualInputName, '-t', duration.toString(), '-c', 'copy', outputName);
+                
                 const data = ffmpeg.FS('readFile', outputName);
                 const videoUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'video/mp4' }));
                 
@@ -1527,7 +1517,6 @@ if (rawVideoFile) {
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
-                btn.innerHTML = originalBtnHtml; // Khôi phục lại giao diện nút ban đầu
                 try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
             }
         }
