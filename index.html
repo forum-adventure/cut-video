@@ -1520,6 +1520,7 @@ if (rawVideoFile) {
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
+                btn.innerHTML = originalBtnHtml; // Khôi phục lại giao diện nút ban đầu
                 try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
             }
         }
