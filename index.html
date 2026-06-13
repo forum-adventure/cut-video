@@ -1481,9 +1481,12 @@ if (rawVideoFile) {
 }
 
 
-            const originalBtnText = btn.innerText;
-            btn.disabled = true;
-            btn.innerText = '⌛ Processing...';
+                // Ghi nhớ cấu trúc HTML gốc của nút MP4
+    const originalBtnHtml = btn.innerHTML; 
+    btn.disabled = true;
+  
+    btn.innerHTML = '⌛ <span class="blinking-text">Processing Video...</span>';
+
             status.innerText = `⏳ Extracting segment [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             const timestamp = Date.now();
