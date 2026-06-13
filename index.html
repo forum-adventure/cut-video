@@ -3,7 +3,6 @@
 <head>
     <meta charset="UTF-8">
     <title>Video Segment Player & Cutter - Ncox Hybrid (Pro Edition)</title>
-    <link rel="icon" type="image/png" href="favicon.png">
     
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <meta name="apple-mobile-web-app-capable" content="yes">
@@ -19,88 +18,6 @@
     
     <style>
     
-    /* --- THANH TIỆN ÍCH TRÊN CÙNG (TOP BAR) --- */
-.top-bar {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 12px 10px;
-    border-bottom: 1px solid #2a2a2a; /* Đường viền xám tối tối giản */
-    margin-bottom: 20px;
-    width: 100%;
-    box-sizing: border-box;
-}
-
-.sub-links-container {
-    display: flex;
-    gap: 16px;
-}
-
-.sub-link {
-    font-size: 13px;
-    color: #888888;
-    text-decoration: none;
-    opacity: 0.8;
-    transition: all 0.2s ease;
-    font-weight: 500;
-}
-
-.sub-link:hover {
-    opacity: 1;
-    color: #03dac6; /* Màu Neon sáng đồng bộ với nút Next/Download của ứng dụng */
-}
-
-.right-utils {
-    display: flex;
-    align-items: center;
-}
-
-.btn-lang-toggle {
-    background: #1e1e1e;
-    border: 1px solid #333333;
-    color: #e0e0e0;
-    height: 32px;
-    border-radius: 16px;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s ease;
-    font-size: 13px;
-    font-weight: 600;
-    padding: 0 14px;
-}
-
-.btn-lang-toggle:hover {
-    background-color: #2d2d2d;
-    border-color: #03dac6;
-    transform: scale(1.03);
-}
-
-    
-    .gif-btn {
-    border: none; 
-    padding: 10px 16px; 
-    border-radius: 6px; 
-    cursor: pointer; 
-    font-weight: bold; 
-    font-size: 0.85em; 
-    flex: 1; 
-    transition: background 0.2s, transform 0.1s;
-    background-color: #bb86fc; /* Màu tím Neon đồng bộ với nút Random */
-    color: #000;
-}
-.gif-btn:not(:disabled):hover { background-color: #d7b4ff; }
-.gif-btn:active { transform: scale(0.98); }
-
-/* Điều chỉnh nhỏ cho màn hình dọc điện thoại để 3 nút nằm vừa vặn */
-@media (max-width: 768px) and (orientation: portrait) {
-    .delete-btn, .download-btn, .gif-btn {
-        padding: 10px 6px !important;
-        font-size: 0.75em !important;
-    }
-}
-
     /* --- GIAO DIỆN MÀN HÌNH LOADING TOÀN MÀN HÌNH --- */
 #ffmpegLoadingOverlay {
     position: fixed;
@@ -616,86 +533,37 @@ input, textarea {
     </style>
 </head>
 <body>
-    
-    <div class="top-bar">
-    <div class="sub-links-container">
-        <a href="https://sociabuzz.com/ncoxcoi" target="_blank" class="sub-link" data-i18n="nav_more_works">more works ♥️</a>
-    </div>
-    
-</div>
-
-    
-    
     <div id="ffmpegLoadingOverlay">
     <div class="loader-box">
         <div class="spinner"></div>
-        <h2 id="loadingStatusText">Initializing FFmpeg.wasm core...</h2>
-        <p>Please wait a moment, loading video processing library.</p>
+        <h2 id="loadingStatusText">Đang khởi tạo cấu trúc FFmpeg.wasm...</h2>
+        <p>Vui lòng đợi trong giây lát, hệ thống đang nạp thư viện xử lý video.</p>
     </div>
 </div>
 
 <input type="file" id="videoUpload" accept="video/*" style="display: none;">
-<p id="status" style=" margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Initializing FFmpeg.wasm core...</p>
-
-    
-    <div id="gifConfigOverlay" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10,10,10,0.85); backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); z-index: 3000; display: none; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box;">
-    <div style="background: #1e1e1e; border: 1px solid #333; border-radius: 16px; padding: 24px; max-width: 420px; width: 100%; box-shadow: 0 16px 40px rgba(0,0,0,0.8); box-sizing: border-box; display: flex; flex-direction: column; gap: 16px; touch-action: manipulation;">
-        
-        <h3 style="margin: 0; color: #fff; font-size: 1.3em; text-align: center; letter-spacing: 0.5px;">GIF Export Settings</h3>
-        
-                <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Frame Rate (FPS):</label>
-            <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Original - Keep video framework frame rate</option>
-                <option value="8">Low (8 FPS) - Basic animation, lightweight</option>
-</option>
-                <option value="12" selected>Medium (12 FPS) - Optimized configuration standard</option>
-</option>
-                <option value="18">High (18 FPS) - Smooth motion, larger file size</option>
-            </select>
-            <span style="font-size: 0.75em; color: #888;">* Higher FPS means smoother animation but significantly increases file size. "Original" option maintains the source video smoothness.</span>
-        </div>
-
-        <div style="display: flex; flex-direction: column; gap: 6px;">
-            <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Image Resolution:</label>
-            <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Original - Keep original resolution size</option>
-                <option value="320">Low (320px Width) - fast export</option>
-                <option value="480" selected>Medium (480px Width) - Standard for mobile view</option>
-                <option value="720">High (720px Width) - High definition, slower processing</option>
-            </select>
-            <span style="font-size: 0.75em; color: #888;">* High resolution delivers crisp images and minimizes color pixelation. Exporting in "Original" quality can result in extremely large files if the video is Full HD/4K.</span>
-        </div>
-
-
-        <div style="background: rgba(207, 102, 121, 0.1); border-left: 3px solid #cf6679; padding: 10px 12px; border-radius: 4px; box-sizing: border-box;">
-            <p style="margin: 0; font-size: 0.8em; color: #e0e0e0; line-height: 1.45;">
-                 <b>Processing Note:</b> WebAssembly technology extracts GIFs entirely within your browser RAM. If you select <b>High</b> configurations or long video segments (>10s), the process may take from several seconds up to a minute. Please do not close the app!
-            </p>
-        </div>
-
-        <div style="display: flex; gap: 10px; margin-top: 4px;">
-            <button id="btnCancelGif" style="flex: 1; background: #3a3a3a; color: #fff; border: 1px solid #555; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Cancel</button>
-            <button id="btnConfirmGif" style="flex: 1; background: #bb86fc; color: #000; border: none; padding: 12px; border-radius: 6px; font-weight: bold; cursor: pointer; transition: background 0.2s;">Start Export</button>
-        </div>
-
-    </div>
-</div>
+<p id="status" style="display: none; margin:0; font-size: 0.85em; color: #aaa; font-weight: 500;">Đang khởi tạo cấu trúc FFmpeg.wasm...</p>
 
     
         <div id="welcomeOverlay">
-        <!-- Icon SVG thiết kế tối giản, sắc nét -->
-        <div class="upload-icon">
+    <!-- Vùng chứa icon hoặc ảnh thumbnail thay thế -->
+    <div class="upload-icon">
+        <!-- Thẻ chứa icon gốc -->
+        <span id="uploadIconSvg">
             <svg width="48" height="48" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
                 <polyline points="17 8 12 3 7 8"></polyline>
                 <line x1="12" y1="3" x2="12" y2="15"></line>
             </svg>
-        </div>
-
-        <h1 id="mainTitle">Video Segmenter</h1>
-        <p id="subTitle">Drop video file here or tap to choose from your device</p>
+        </span>
+        <!-- Thẻ hình ảnh vuông nhỏ sẽ hiển thị sau khi upload -->
+        <img id="previewThumb" src="" alt="Video Preview" style="display: none; width: 64px; height: 64px; object-fit: cover; border-radius: 8px; border: 2px solid #03dac6; box-shadow: 0 0 10px rgba(3, 218, 198, 0.3);">
     </div>
+
+    <h1 id="mainTitle">Phân Đoạn Video</h1>
+    <p id="subTitle">Thả tệp video vào đây hoặc chạm để chọn từ thiết bị của bạn</p>
+</div>
+
 
 
     <div id="videoContainer"></div>
@@ -703,8 +571,8 @@ input, textarea {
     <div id="gridOverlay">
         
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Segment List</h3>
-            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Close Grid</button>
+            <h3 style="margin:0; font-size: 1.4em;" id="gridTitle">Danh Sách Phân Đoạn</h3>
+            <button id="closeGrid" style="background:#cf6679; border:none; padding:10px 20px; border-radius:6px; font-weight:bold; cursor:pointer; color:#000;">Đóng Lưới</button>
         </div>
         <div id="gridContent"></div>
     </div>
@@ -720,7 +588,7 @@ input, textarea {
                    <div style="background: #252525; padding: 12px; border-radius: 8px; gap: 10px; display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 400px; box-sizing: border-box;">
     
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cut from:</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Cắt từ:</label>
                <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <button class="tune-btn" id="btnPrevTime" style="flex-shrink: 0;"><<</button>
             <input type="text" id="startTimeInput" value="00:00:00" style="flex-grow: 1; width: 100%; min-width: 0;">
@@ -730,10 +598,10 @@ input, textarea {
     </div>
         
     <div style="display: flex; gap: 8px; align-items: center; width: 100%;">
-        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Duration (s):</label>
+        <label style="font-size:0.85em; color:#aaa; width: 100px; text-align: right; flex-shrink: 0;">Độ dài clip (s):</label>
         <div style="display: flex; gap: 6px; align-items: center; flex-grow: 1;">
             <input type="number" id="durationInput" value="5" min="1" step="0.5" >
-            <input type="text" id="clipLabelInput" placeholder="Enter segment label (optional)"style="flex-grow: 1; width: 100%; min-width: 0;">
+            <input type="text" id="clipLabelInput" placeholder="Đặt tên phân đoạn (tùy chọn)"style="flex-grow: 1; width: 100%; min-width: 0;">
         </div>
     </div>
     
@@ -744,7 +612,7 @@ input, textarea {
         </div>
 
         <div class="controls-row">                                            
-            <button id="nextBtn" class="action-btn" disabled>Add Segment</button>
+            <button id="nextBtn" class="action-btn" disabled>Đang tải Core...</button>
             <button id="randomBtn" class="action-btn" disabled>Random 5s</button>
             <button id="gridViewBtn" title="Xem dạng lưới" disabled>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" style="margin-right:4px;"><path d="M4 11h5V5H4v6zm0 7h5v-6H4v6zm6 0h5v-6h-5v6zm6 0h5v-6h-5v6zm-6-7h5V5h-5v6zm6-6v6h5V5h-5z"/></svg>
@@ -767,38 +635,6 @@ input, textarea {
         const durationInput = document.getElementById('durationInput');
         const clipLabelInput = document.getElementById('clipLabelInput');
 const welcomeOverlay = document.getElementById('welcomeOverlay');
-            
-            // Khai báo phần tử cho Popup cấu hình GIF
-const gifConfigOverlay = document.getElementById('gifConfigOverlay');
-const btnCancelGif = document.getElementById('btnCancelGif');
-const btnConfirmGif = document.getElementById('btnConfirmGif');
-const gifFpsSelect = document.getElementById('gifFpsSelect');
-const gifQualitySelect = document.getElementById('gifQualitySelect');
-
-// Đối tượng trung gian ghi nhớ mốc thời gian đoạn đang chuẩn bị bấm xuất GIF
-let activeGifJob = null;
-
-// Sự kiện đóng bảng điều khiển cấu hình GIF
-btnCancelGif.addEventListener('click', () => {
-    gifConfigOverlay.style.display = 'none';
-    activeGifJob = null; // Xóa trạng thái hàng chờ
-});
-
-            
-            // KHỐI MÃ MỚI: YÊU CẦU QUYỀN LƯU TRỮ BỀN VỮNG (PERSISTENT STORAGE)
-        // ==========================================
-        if (navigator.storage && navigator.storage.persist) {
-            navigator.storage.persist().then((granted) => {
-                if (granted) {
-                    console.log("🚀 Android đã cấp quyền duy trì dữ liệu bền vững cho App!");
-                    // Cập nhật trạng thái ngầm lên giao diện nếu cần để bạn dễ theo dõi
-                    if (status) status.innerText = "Initializing FFmpeg.wasm core...";
-                } else {
-                    console.log("⚠️ Chế độ lưu trữ vẫn có thể bị hệ thống dọn dẹp.");
-                }
-            });
-        }
-        // ==========================================
             
             // Hàm kiểm tra xem tệp tin có bị Android ngắt kết nối hay không
 async function checkFileConnection() {
@@ -850,7 +686,7 @@ welcomeOverlay.addEventListener('drop', (e) => {
         const event = new Event('change', { bubbles: true });
         upload.dispatchEvent(event);
     } else {
-        alert("Please drop a valid Video file format!");
+        alert("Vui lòng thả một tệp tin định dạng Video hợp lệ!");
     }
 });
 
@@ -869,40 +705,35 @@ const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
               (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
 
 
-                        
-            
-            
-            
-                    async function loadFFmpegCore() {
+                async function loadFFmpegCore() {
             const loadingOverlay = document.getElementById('ffmpegLoadingOverlay');
             const loadingStatusText = document.getElementById('loadingStatusText');
-
-            // CHẠY NGẦM: Ẩn ngay màn hình loading sau 100ms để người dùng vào thẳng ứng dụng
-            setTimeout(() => {
-                if (loadingOverlay) loadingOverlay.classList.add('fade-out');
-            }, 100);
 
             try {
                 await ffmpeg.load();
                 isFFmpegReady = true;
-                status.innerText = "Core system is ready! Please select a Video.";
+                status.innerText = "Hệ thống Core đã sẵn sàng! Vui lòng chọn Video.";
                 
-                // Khi core đã nạp xong, cập nhật lại chữ trên nút bấm chính
-                if (nextBtn.innerText === "Đang tải Core...") {
-                    nextBtn.innerText = "Add Segment";
+                if(upload.files[0]) {
+                    enableControls();
                 }
+
+                // Chờ một nhịp nhỏ 300ms cho mượt rồi ẩn màn hình Loading
+                setTimeout(() => {
+                    loadingOverlay.classList.add('fade-out');
+                }, 300);
+
             } catch (error) {
                 console.error(error);
-                isFFmpegReady = false;
-                status.innerText = "Core initialization failed.";
+                status.innerText = "Lỗi khởi tạo Core. Hãy đảm bảo chạy bằng GitHub Pages (HTTPS) hoặc Local Server Cross-Origin.";
                 
-                if (nextBtn.innerText === "Đang tải Core...") {
-                    nextBtn.innerText = "Add Segment";
+                // Cập nhật trạng thái lỗi trực tiếp lên màn hình loading để người dùng biết
+                if (loadingStatusText) {
+                    loadingStatusText.innerText = "❌ Lỗi khởi tạo hệ thống xử lý!";
+                    loadingStatusText.style.color = "#cf6679"; // Đổi chữ sang màu đỏ rủi ro
                 }
             }
         }
-
-
 
         loadFFmpegCore();
 
@@ -1050,52 +881,17 @@ if (btnPrevTime && btnNextTime) {
     videoElement.volume = 1.0; 
     videoElement.classList.add('unmuted');
     currentlyUnmutedVideo = videoElement;
-
-    // --- ĐOẠN MÃ ĐÃ SỬA: Lấy mốc thời gian KẾT THÚC thay vì BẮT ĐẦU ---
-    if (videoElement.dataset.startTime) {
-        const startSecs = parseFloat(videoElement.dataset.startTime);
-        
-        // Tìm thẻ chứa thông tin thời gian (.clip-info) nằm chung trong khung bọc .clip-wrapper
-        const wrapper = videoElement.closest('.clip-wrapper');
-        let duration = 5; // Giá trị mặc định phòng hờ
-        
-        if (wrapper) {
-            const infoElement = wrapper.querySelector('.clip-info');
-            if (infoElement) {
-                // Trích xuất số giây nằm trong dấu ngoặc đơn, ví dụ: "00:01:20 - 00:01:25 (5.0s)" -> 5.0
-                const match = infoElement.innerText.match(/\(([^s]+)s\)/);
-                if (match && match[1]) {
-                    duration = parseFloat(match[1]);
-                }
-            }
-        }
-        
-        // Tính toán mốc kết thúc = Bắt đầu + Độ dài
-        const endSecs = startSecs + duration;
-        
-        if (!isNaN(endSecs) && typeof formatTime === 'function') {
-            startTimeInput.value = formatTime(endSecs);
-        }
-    }
 }
 
 
-
-
-                function enableControls() {
-            // Chỉ cần có file video tải lên (sharedVideoURL) là mở khóa toàn bộ các nút bấm ngay lập tức
-            if (sharedVideoURL) {
+        function enableControls() {
+            if (isFFmpegReady && sharedVideoURL) {
                 nextBtn.disabled = false;
                 randomBtn.disabled = false;
                 gridViewBtn.disabled = false;
-                
-                // Cập nhật lại text hiển thị trên nút chính phòng trường hợp FFmpeg chưa tải xong ngầm
-                if (!isFFmpegReady) {
-                    nextBtn.innerText = "Add Segment";
-                }
+                nextBtn.innerText = "Thêm đoạn";
             }
         }
-
 
         // --- ĐÃ CẬP NHẬT: TỰ ĐỘNG GIỮ LẠI CÁC ĐOẠN ĐÃ CẮT KHI KẾT NỐI LẠI VIDEO ---
 upload.addEventListener('change', (e) => {
@@ -1110,6 +906,21 @@ upload.addEventListener('change', (e) => {
         tempVideo.onloadedmetadata = () => {
             totalVideoDuration = tempVideo.duration;
             
+            // --- ĐOẠN THÊM MỚI: Xử lý thay thế icon thành hình ảnh vuông nhỏ ---
+            const uploadIconSvg = document.getElementById('uploadIconSvg');
+            const previewThumb = document.getElementById('previewThumb');
+            
+            if (uploadIconSvg && previewThumb) {
+                // Chụp ảnh thumbnail tại giây thứ 0 của video mới upload
+                captureThumbnail(0).then(thumbUrl => {
+                    if (thumbUrl) {
+                        previewThumb.src = thumbUrl;
+                        previewThumb.style.display = 'block'; // Hiện ảnh thumbnail
+                        uploadIconSvg.style.display = 'none'; // Ẩn icon SVG gốc
+                    }
+                });
+            }
+            
             // Kiểm tra xem trước đó người dùng đã cắt đoạn nào chưa
             const hasExistingClips = videoContainer.children.length > 0;
             
@@ -1119,9 +930,9 @@ upload.addEventListener('change', (e) => {
                 gridContent.innerHTML = "";
                 document.body.classList.remove('has-clips');
                 
-                document.getElementById('mainTitle').innerText = "Video Ready";
+                document.getElementById('mainTitle').innerText = "Video sẵn sàng";
                 document.getElementById('mainTitle').style.color = "#2ecc71";
-                document.getElementById('subTitle').innerHTML = "💡 Set the start time, assign an optional label, then click <b>Add Segment</b>.";
+                document.getElementById('subTitle').innerHTML = "💡 Thiết lập mốc thời gian bắt đầu, gán nhãn rồi nhấn <b>Thêm đoạn</b>.";
             } else {
                 // TRƯỜNG HỢP 2: Người dùng đang kết nối lại video do bị ngắt RAM
                 console.log("🔄 Đang hồi sinh nguồn dữ liệu cho các phân đoạn cũ...");
@@ -1160,7 +971,7 @@ upload.addEventListener('change', (e) => {
             }
             
             upload.value = ""; 
-            status.innerText = `Video duration: ${formatTime(totalVideoDuration)}`;
+            status.innerText = `Thời lượng video: ${formatTime(totalVideoDuration)}`;
             enableControls();
         };
     }
@@ -1290,7 +1101,7 @@ upload.addEventListener('change', (e) => {
             // --- KIỂM TRA ĐỘC LẬP KHI BẤM THÊM ĐOẠN ---
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
-        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the exact video file to continue segmenting!");
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
@@ -1302,7 +1113,7 @@ upload.addEventListener('change', (e) => {
             const clipLabel = clipLabelInput.value.trim();
 
             if (start >= totalVideoDuration) {
-                alert("Start time exceeds total video duration!");
+                alert("Thời gian bắt đầu vượt quá tổng độ dài video!");
                 return;
             }
             document.body.classList.add('has-clips');
@@ -1385,30 +1196,12 @@ video.onpause = () => {
             const btnGroup = document.createElement('div');
             btnGroup.className = 'button-group';
             
-            
-             // Nút Tải Ảnh GIF - Sửa lại để mở bảng cấu hình Popup trước
-const gifBtn = document.createElement('button');
-gifBtn.className = 'gif-btn'; 
-gifBtn.innerText = "Download GIF";
-gifBtn.onclick = () => {
-    // Ghi nhớ thông số của phân đoạn cụ thể này vào biến chờ toàn cục
-    activeGifJob = {
-        startTime: start,
-        duration: (end - start),
-        labelText: clipLabel,
-        buttonRef: gifBtn
-    };
-    // Hiển thị Popup cấu hình lên màn hình
-    gifConfigOverlay.style.display = 'flex';
-};
-            
-
             const dl = document.createElement('button');
-            dl.className = 'download-btn'; dl.innerText = "Download .MP4";
+            dl.className = 'download-btn'; dl.innerText = "Tải Xuống .MP4";
             dl.onclick = () => downloadClipFFmpeg(start, (end - start), clipLabel, dl);
             
             const del = document.createElement('button');
-            del.className = 'delete-btn'; del.innerText = "Delete";
+            del.className = 'delete-btn'; del.innerText = "Xóa Đoạn";
             del.onclick = () => {
                 clipObserver.unobserve(video); 
                 // --- THÊM ĐOẠN NÀY: Ngắt luồng chạy và nạp dữ liệu của video trước khi gỡ bỏ ---
@@ -1422,9 +1215,7 @@ gifBtn.onclick = () => {
                 handleClipRehydration();
             };
             
-            btnGroup.appendChild(gifBtn);
-            btnGroup.appendChild(dl); 
-            btnGroup.appendChild(del);
+            btnGroup.appendChild(dl); btnGroup.appendChild(del);
             wrapper.appendChild(video); wrapper.appendChild(info); wrapper.appendChild(btnGroup);
             videoContainer.appendChild(wrapper);
             
@@ -1445,11 +1236,11 @@ gifBtn.onclick = () => {
 
         async function downloadClipFFmpeg(startTime, duration, labelText, btn) {
             if (!isFFmpegReady) {
-                alert("FFmpeg core system is loading, please try again in a few seconds!");
+                alert("Hệ thống FFmpeg core đang tải, vui lòng thử lại sau vài giây!");
                 return;
             }
             if (!rawVideoFile) {
-                alert("Error: Input video file not found.");
+                alert("Lỗi: Không tìm thấy file video đầu vào.");
                 return;
             }
             
@@ -1460,7 +1251,7 @@ if (rawVideoFile) {
         await rawVideoFile.slice(0, 1).arrayBuffer();
     } catch (fileError) {
         // Nếu Android đã ngắt kết nối, luồng đọc sẽ ném ra lỗi lập tức
-        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the video to proceed with GIF extraction!");
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại video để tiếp tục trích xuất!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Khử lỗi không nhận diện trùng file
         upload.click(); 
         return;
@@ -1470,8 +1261,8 @@ if (rawVideoFile) {
 
             const originalBtnText = btn.innerText;
             btn.disabled = true;
-            btn.innerText = '⌛ Processing...';
-            status.innerText = `⏳ Extracting segment [${formatTime(startTime)}] độ dài ${duration}s...`;
+            btn.innerText = '⌛ Đang xử lý...';
+            status.innerText = `⏳ Thực thi trích xuất đoạn [${formatTime(startTime)}] độ dài ${duration}s...`;
 
             const timestamp = Date.now();
             const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
@@ -1496,11 +1287,11 @@ if (rawVideoFile) {
                 document.body.removeChild(a);
 
                 try { ffmpeg.FS('unlink', outputName); } catch(e){}
-                status.innerText = `✨ Successfully extracted: ${downloadName}`;
+                status.innerText = `✨ Trích xuất thành công: ${downloadName}`;
             } catch (err) {
                 console.error(err);
-                alert("An error occurred during FFmpeg command execution.");
-                status.innerText = "❌ Render execution error.";
+                alert("Có lỗi xảy ra trong quá trình xử lý dòng lệnh FFmpeg.");
+                status.innerText = "❌ Lỗi thực thi Render.";
             } finally {
                 btn.disabled = false;
                 btn.innerText = originalBtnText;
@@ -1512,7 +1303,7 @@ if (rawVideoFile) {
     // --- KIỂM TRA ĐỘC LẬP KHI BẤM RANDOM ---
     const isFileAlive = await checkFileConnection();
     if (!isFileAlive) {
-        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the exact video file to continue creating random segments!");
+        alert("⚠️ Hệ thống đã ngắt kết nối tệp tin để giải phóng RAM.\nVui lòng chọn lại đúng video ban đầu để tiếp tục tạo phân đoạn!");
         upload.value = ""; // ✨ THÊM DÒNG NÀY: Reset input để kích hoạt lại sự kiện change
         upload.click(); 
         return;
@@ -1609,131 +1400,6 @@ document.addEventListener('contextmenu', (e) => {
             
             
 
-async function downloadGifFFmpeg(startTime, duration, labelText, btn, fps = "12", scaleWidth = "480") {
-    if (!isFFmpegReady) {
-        alert("FFmpeg core system is loading, please try again in a few seconds!");
-        return;
-    }
-    if (!rawVideoFile) {
-        alert("Error: Input video file not found.");
-        return;
-    }
-    
-    // Kiểm tra kết nối tệp tin (Anti-RAM Cleanup trên Android)
-    try {
-        await rawVideoFile.slice(0, 1).arrayBuffer();
-    } catch (fileError) {
-        alert("⚠️ File disconnected by the system to free up RAM.\nPlease reselect the video to proceed with extraction!");
-        if (upload) upload.value = "";
-        if (upload) upload.click(); 
-        return;
-    }
-
-    const originalBtnText = btn.innerText;
-    btn.disabled = true;
-    btn.innerText = '⌛ Generating GIF...';
-    
-    const displayFps = fps === "original" ? "original" : `${fps}`;
-    const displayWidth = scaleWidth === "original" ? "original" : `${scaleWidth}px`;
-    status.innerText = `⏳ Converting GIF [${formatTime(startTime)}] (FPS: ${displayFps}, Rộng: ${displayWidth})...`;
-
-    const timestamp = Date.now();
-    const cleanFileName = rawVideoFile.name.replace(/\s+/g, '_');
-    const virtualInputName = `input_${timestamp}_${cleanFileName}`;
-    const outputName = `animated_${timestamp}.gif`;
-
-    try {
-        // Nạp file video vào hệ thống file ảo của FFmpeg
-        ffmpeg.FS('writeFile', virtualInputName, await fetchFile(rawVideoFile));
-        
-        // PHÂN TÍCH VÀ XÂY DỰNG CHUỖI LỆNH ĐỘNG DỰA TRÊN LỰA CHỌN "GỐC"
-        let filterParts = [];
-        
-        // 1. Kiểm tra FPS
-        if (fps !== "original") {
-            filterParts.push(`fps=${fps}`);
-        }
-        
-        // 2. Kiểm tra Độ phân giải (Scale)
-        if (scaleWidth !== "original") {
-            filterParts.push(`scale=${scaleWidth}:-1:flags=lanczos`);
-        }
-        
-        // 3. Kết hợp với bộ cấu trúc lọc tối cao palettegen & paletteuse để triệt nhiễu hạt
-        let filterGraph = "";
-        if (filterParts.length > 0) {
-            const baseFilters = filterParts.join(',');
-            filterGraph = `${baseFilters},split[a][b];[a]palettegen[p];[b][p]paletteuse`;
-        } else {
-            // Nếu cả 2 đều chọn gốc, chỉ chạy bộ tạo và áp bảng màu 256 chuẩn lanczos mà không thay đổi size/fps
-            filterGraph = `split[a][b];[a]palettegen[p];[b][p]paletteuse`;
-        }
-
-        await ffmpeg.run(
-            '-ss', startTime.toString(), 
-            '-t', duration.toString(), 
-            '-i', virtualInputName, 
-            '-vf', filterGraph, 
-            outputName
-        );
-        
-        // Đọc dữ liệu GIF từ bộ nhớ ảo
-        const data = ffmpeg.FS('readFile', outputName);
-        const gifUrl = URL.createObjectURL(new Blob([data.buffer], { type: 'image/gif' }));
-        
-        const suffix = labelText ? `_${labelText.replace(/[^a-zA-Z0-9]/g, '_')}` : '';
-        const downloadName = `clip_${formatTime(startTime).replace(/:/g, '-')}${suffix}.gif`;
-        
-        // Kích hoạt tiến trình tải xuống tự động
-        const a = document.createElement('a');
-        a.href = gifUrl;
-        a.download = downloadName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-
-        try { ffmpeg.FS('unlink', outputName); } catch(e){}
-        status.innerText = `✨ GIF successfully extracted: ${downloadName}`;
-    } catch (err) {
-        console.error(err);
-        alert("An error occurred during GIF render processing.");
-        status.innerText = "❌ GIF render execution error.";
-    } finally {
-        btn.disabled = false;
-        btn.innerText = originalBtnText;
-        try { ffmpeg.FS('unlink', virtualInputName); } catch(e){}
-    }
-}
-
-    
-            
-            
-            
-
-// Xử lý khi người dùng ấn nút bắt đầu kết xuất ảnh GIF từ bảng cấu hình
-btnConfirmGif.addEventListener('click', () => {
-    if (!activeGifJob) return;
-
-    // 1. Lấy thông số cấu hình do người dùng chọn từ menu thả xuống
-    const selectedFps = gifFpsSelect.value;
-    const selectedWidth = gifQualitySelect.value;
-
-    // 2. Ẩn bảng Popup cấu hình để người dùng nhìn thấy thanh trạng thái hiển thị tiến trình
-    gifConfigOverlay.style.display = 'none';
-
-    // 3. Thực thi gọi hàm kết xuất với 2 thông số động được cấu hình thêm ở cuối
-    downloadGifFFmpeg(
-        activeGifJob.startTime, 
-        activeGifJob.duration, 
-        activeGifJob.labelText, 
-        activeGifJob.buttonRef, 
-        selectedFps, 
-        selectedWidth
-    );
-
-    // 4. Giải phóng vùng nhớ công việc
-    activeGifJob = null;
-});
 
     </script>
             
