@@ -646,12 +646,14 @@ input, textarea {
                 <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #bb86fc; font-weight: bold;">Frame Rate (FPS):</label>
             <select id="gifFpsSelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Original - Keep video framework frame rate</option>
-                <option value="8">Low (8 FPS) - Basic animation, lightweight</option>
+                
+                <option value="12">Low (12 FPS) - Basic animation, lightweight</option>
 </option>
-                <option value="12" selected>Medium (12 FPS) - Optimized configuration standard</option>
+                <option value="16" selected>Medium (16 FPS) - Optimized configuration standard</option>
 </option>
-                <option value="18">High (18 FPS) - Smooth motion, larger file size</option>
+                <option value="24">High (24 FPS) - Smooth motion, larger file size</option>
+        
+        <option value="original">Original - Keep video framework frame rate</option>
             </select>
             <span style="font-size: 0.75em; color: #888;">* Higher FPS means smoother animation but significantly increases file size. "Original" option maintains the source video smoothness.</span>
         </div>
@@ -659,10 +661,11 @@ input, textarea {
         <div style="display: flex; flex-direction: column; gap: 6px;">
             <label style="font-size: 0.9em; color: #03dac6; font-weight: bold;">Image Resolution:</label>
             <select id="gifQualitySelect" style="width: 100%; text-align: left; background: #2d2d2d; border: 1px solid #444; padding: 10px; border-radius: 6px; color: #fff;">
-                <option value="original">Original - Keep original resolution size</option>
+                
                 <option value="320">Low (320px Width) - fast export</option>
                 <option value="480" selected>Medium (480px Width) - Standard for mobile view</option>
                 <option value="720">High (720px Width) - High definition, slower processing</option>
+                <option value="original">Original - Keep original resolution size</option>
             </select>
             <span style="font-size: 0.75em; color: #888;">* High resolution delivers crisp images and minimizes color pixelation. Exporting in "Original" quality can result in extremely large files if the video is Full HD/4K.</span>
         </div>
