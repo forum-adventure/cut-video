@@ -1,0 +1,15 @@
+{
+  "short_name": "VideoCutter",
+  "name": "Video Segment Player & Cutter",
+  "icons": [
+    {
+      "src": "https://cdn-icons-png.flaticon.com/512/711/711245.png",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "./index.html",
+  "display": "standalone",
+  "background_color": "#121212",
+  "theme_color": "#121212"
+}
