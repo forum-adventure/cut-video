@@ -3,7 +3,7 @@
   "name": "Video Segment Player & Cutter",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/711/711245.png",
+      "src": "./icon-512.png",
       "type": "image/png",
       "sizes": "512x512"
     }
