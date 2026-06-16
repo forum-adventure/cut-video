@@ -1,75 +1,94 @@
+/*! sw.js | Hợp nhất PWA Offline Cache & COI Security Headers | Hoạt động hoàn hảo 2026 */
 
-// Tên của bộ nhớ đệm (Thay đổi phiên bản khi bạn cập nhật code: v2, v3...)
-const CACHE_NAME = 'video-cutter-cache-v1';
-
-// Danh sách các tài nguyên bạn muốn lưu cache để chạy Offline
+const CACHE_NAME = 'video-cutter-v1';
 const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './manifest.json',
-    './coi-serviceworker.js',
-    './favicon.png',
-    // Thêm các file CSS, JS hoặc Icon khác của bạn ở đây (ví dụ: ./icon-512.png)
+    './favicon.png'
 ];
 
-// 1. Sự kiện INSTALL: Kích hoạt khi Service Worker được cài đặt lần đầu
+// 1. Sự kiện Cài đặt (Install)
 self.addEventListener('install', (event) => {
+    self.skipWaiting(); 
     event.waitUntil(
         caches.open(CACHE_NAME).then((cache) => {
-            console.log('SW: Đang lưu cache các tài nguyên tĩnh');
+            console.log(' PWA: Đang khởi tạo bộ nhớ đệm cho tài nguyên cốt lõi...');
             return cache.addAll(ASSETS_TO_CACHE);
-        }).then(() => self.skipWaiting()) // Bỏ qua hàng chờ, kích hoạt ngay lập tức
+        })
     );
 });
 
-// 2. Sự kiện ACTIVATE: Dọn dẹp các bộ nhớ đệm cũ khi có phiên bản SW mới
+// 2. Sự kiện Kích hoạt (Activate)
 self.addEventListener('activate', (event) => {
+    event.waitUntil(self.clients.claim());
     event.waitUntil(
         caches.keys().then((cacheNames) => {
             return Promise.all(
                 cacheNames.map((cache) => {
                     if (cache !== CACHE_NAME) {
-                        console.log('SW: Đang xóa cache cũ:', cache);
+                        console.log(' PWA: Đang dọn dẹp bộ nhớ đệm cũ:', cache);
                         return caches.delete(cache);
                     }
                 })
             );
-        }).then(() => self.clients.claim()) // Giành quyền kiểm soát tất cả các tab ngay lập tức
-    );
-});
-
-// 3. Sự kiện FETCH: Đánh chặn các yêu cầu mạng để lấy dữ liệu từ Cache nếu mất mạng
-self.addEventListener('fetch', (event) => {
-    // Không can thiệp vào các yêu cầu không phải GET (như POST) hoặc các CDN bên ngoài nếu không cần thiết
-    if (event.request.method !== 'GET') return;
-
-    event.respondWith(
-        caches.match(event.request).then((cachedResponse) => {
-            // Nếu tìm thấy trong Cache, trả về luôn (Tốc độ cực nhanh)
-            if (cachedResponse) {
-                return cachedResponse;
-            }
-
-            // Nếu không có trong Cache, thực hiện tải từ internet
-            return fetch(event.request).then((networkResponse) => {
-                // Kiểm tra nếu phản hồi hợp lệ thì lưu lại vào cache để dùng lần sau
-                if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
-                }
-
-                const responseToCache = networkResponse.clone();
-                caches.open(CACHE_NAME).then((cache) => {
-                    cache.put(event.request, responseToCache);
-                });
-
-                return networkResponse;
-            }).catch(() => {
-                // Khi mất mạng hoàn toàn và tài nguyên không có trong cache
-                // Bạn có thể trả về một trang offline.html mặc định ở đây nếu muốn
-                console.log('SW: Thiết bị đang offline và không có dữ liệu cache cho:', event.request.url);
-            });
         })
     );
 });
 
+// 3. Sự kiện Nhận yêu cầu (Fetch) - HỢP NHẤT KHÔNG XUNG ĐỘT
+self.addEventListener('fetch', (event) => {
+    // Bỏ qua các yêu cầu không phải GET hoặc từ extension bên ngoài
+    if (event.request.method !== 'GET' || !event.request.url.startsWith(self.location.origin)) {
+        return;
+    }
 
+    // Ngoại lệ đặc biệt của COI Service Worker
+    if (event.request.cache === "only-if-cached" && event.request.mode !== "same-origin") {
+        return;
+    }
+
+    event.respondWith(
+        caches.match(event.request).then((cachedResponse) => {
+            // Bước A: Tạo luồng tải mạng (Cho dù có cache hay không để lấy response gốc xử lý Header)
+            const networkFetch = fetch(event.request)
+                .then((response) => {
+                    if (response.status === 0) {
+                        return response;
+                    }
+
+                    // Tiến hành bóc tách và nhân bản Header bảo mật để kích hoạt SharedArrayBuffer cho FFmpeg
+                    const newHeaders = new Headers(response.headers);
+                    newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+                    newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
+                    newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin"); 
+
+                    const secureResponse = new Response(response.body, {
+                        status: response.status,
+                        statusText: response.statusText,
+                        headers: newHeaders,
+                    });
+
+                    // Cập nhật ngầm vào Cache nếu phản hồi hợp lệ để duy trì trạng thái Offline
+                    if (response.status === 200 && response.type === 'basic') {
+                        const responseToCache = secureResponse.clone();
+                        caches.open(CACHE_NAME).then((cache) => {
+                            cache.put(event.request, responseToCache);
+                        });
+                    }
+
+                    return secureResponse;
+                })
+                .catch((err) => {
+                    console.error(" Mạng lỗi, đang cố gắng dùng tài nguyên dự phòng...", err);
+                    // Khi mất mạng và không có cache, chuyển hướng về trang chủ
+                    if (event.request.mode === 'navigate') {
+                        return caches.match('./index.html');
+                    }
+                });
+
+            // Bước B: Chiến lược Ưu tiên Cache (Cache-First) để app PWA mở tức thì
+            return cachedResponse || networkFetch;
+        })
+    );
+});
