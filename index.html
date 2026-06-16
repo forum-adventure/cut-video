@@ -11,36 +11,10 @@
     <meta name="mobile-web-app-capable" content="yes">
     <meta name="theme-color" content="#121212">
     
-    <link rel="manifest" href="manifest.json">
+   <link rel="manifest" href="manifest.json">
 
-    <!-- ĐĂNG KÝ SW TỔNG HỢP DUY NHẤT -->
-    <script>
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then((registration) => {
-                    console.log(' Service Worker đã đăng ký thành công với phạm vi:', registration.scope);
-                    
-                    registration.addEventListener('updatefound', () => {
-                        const newWorker = registration.installing;
-                        newWorker.addEventListener('statechange', () => {
-                            if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                                console.log('Có phiên bản mới! Đang tự động làm mới trang...');
-                                window.location.reload();
-                            }
-                        });
-                    });
-                })
-                .catch((error) => {
-                    console.error('❌ Đăng ký Service Worker thất bại:', error);
-                });
-        });
-    }
-    </script>
-
+    <script src="sw.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
-    
-    
 
     
     <style>
