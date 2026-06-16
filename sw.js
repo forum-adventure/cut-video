@@ -6,7 +6,6 @@ const ASSETS_TO_CACHE = [
     './',
     './index.html',
     './manifest.json',
-    './coi-serviceworker.js',
     './favicon.png',
     // Thêm các file CSS, JS hoặc Icon khác của bạn ở đây (ví dụ: ./icon-512.png)
 ];
@@ -37,38 +36,65 @@ self.addEventListener('activate', (event) => {
     );
 });
 
-// 3. Sự kiện FETCH: Đánh chặn các yêu cầu mạng để lấy dữ liệu từ Cache nếu mất mạng
+// 3. Sự kiện FETCH: Đánh chặn các yêu cầu mạng để lưu cache và chèn COOP/COEP Headers
 self.addEventListener('fetch', (event) => {
-    // Không can thiệp vào các yêu cầu không phải GET (như POST) hoặc các CDN bên ngoài nếu không cần thiết
-    if (event.request.method !== 'GET') return;
+    // Xử lý bảo mật chặn của coi-serviceworker đối với các yêu cầu đặc biệt
+    if (event.request.cache === "only-if-cached" && event.request.mode !== "same-origin") {
+        return;
+    }
 
+    // Đối với các request không phải GET, chỉ xử lý chèn Header chứ không lưu Cache
+    if (event.request.method !== 'GET') {
+        event.respondWith(
+            fetch(event.request)
+                .then((response) => addCOOPHeaders(response))
+                .catch((e) => console.error('SW Fetch Error:', e))
+        );
+        return;
+    }
+
+    // Quy trình xử lý cho yêu cầu GET: Kiểm tra Cache -> Fetch mạng -> Thêm Header -> Trả về
     event.respondWith(
         caches.match(event.request).then((cachedResponse) => {
-            // Nếu tìm thấy trong Cache, trả về luôn (Tốc độ cực nhanh)
             if (cachedResponse) {
-                return cachedResponse;
+                // Nếu có trong cache, vẫn cần đảm bảo có đủ Header COOP/COEP
+                return addCOOPHeaders(cachedResponse);
             }
 
-            // Nếu không có trong Cache, thực hiện tải từ internet
             return fetch(event.request).then((networkResponse) => {
-                // Kiểm tra nếu phản hồi hợp lệ thì lưu lại vào cache để dùng lần sau
                 if (!networkResponse || networkResponse.status !== 200 || networkResponse.type !== 'basic') {
-                    return networkResponse;
+                    // Đối với tài nguyên bên ngoài (CDN, Google Font...), chỉ thêm Header chứ không lưu cache tĩnh basic
+                    return addCOOPHeaders(networkResponse);
                 }
 
+                // Sao chép response để vừa lưu cache vừa trả về cho trình duyệt
                 const responseToCache = networkResponse.clone();
                 caches.open(CACHE_NAME).then((cache) => {
                     cache.put(event.request, responseToCache);
                 });
 
-                return networkResponse;
+                return addCOOPHeaders(networkResponse);
             }).catch(() => {
-                // Khi mất mạng hoàn toàn và tài nguyên không có trong cache
-                // Bạn có thể trả về một trang offline.html mặc định ở đây nếu muốn
                 console.log('SW: Thiết bị đang offline và không có dữ liệu cache cho:', event.request.url);
             });
         })
     );
 });
 
+// Hàm hỗ trợ chèn các Header COOP, COEP, CORP bắt buộc cho SharedArrayBuffer (FFmpeg WASM)
+function addCOOPHeaders(response) {
+    if (!response || response.status === 0) {
+        return response;
+    }
 
+    const newHeaders = new Headers(response.headers);
+    newHeaders.set("Cross-Origin-Opener-Policy", "same-origin");
+    newHeaders.set("Cross-Origin-Embedder-Policy", "require-corp");
+    newHeaders.set("Cross-Origin-Resource-Policy", "cross-origin"); // Fix lỗi chặn script từ CDN
+
+    return new Response(response.body, {
+        status: response.status,
+        statusText: response.statusText,
+        headers: newHeaders,
+    });
+}

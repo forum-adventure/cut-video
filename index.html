@@ -13,7 +13,7 @@
     
    <link rel="manifest" href="manifest.json">
 
-    <script src="coi-serviceworker.js"></script>
+    
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
 
     
@@ -1759,20 +1759,29 @@ btnConfirmGif.addEventListener('click', () => {
     activeGifJob = null;
 });
 
+            
             <script>
-    // Kiểm tra xem trình duyệt có hỗ trợ Service Worker hay không
-    if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-            navigator.serviceWorker.register('./sw.js')
-                .then((registration) => {
-                    console.log('Service Worker đã đăng ký thành công với phạm vi:', registration.scope);
-                })
-                .catch((error) => {
-                    console.error('Đăng ký Service Worker thất bại:', error);
-                });
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('./sw.js')
+        .then((registration) => {
+          console.log('Service Worker đã đăng ký thành công với scope:', registration.scope);
+
+          // Tự động reload khi có bản cập nhật mới từ SW (giống logic của coi-sw cũ)
+          registration.addEventListener("updatefound", () => {
+            window.location.reload();
+          });
+          if (registration.active && !navigator.serviceWorker.controller) {
+            window.location.reload();
+          }
+        })
+        .catch((error) => {
+          console.error('Đăng ký Service Worker thất bại:', error);
         });
-    }
+    });
+  }
 </script>
+
 
     </script>
             
