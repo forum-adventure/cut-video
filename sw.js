@@ -1,6 +1,3 @@
-importScripts('./coi-serviceworker.js');
-
-// --- Dưới này là toàn bộ code cũ sẵn có của sw.js (Xử lý Cache, PWA...) ---
 
 // Tên của bộ nhớ đệm (Thay đổi phiên bản khi bạn cập nhật code: v2, v3...)
 const CACHE_NAME = 'video-cutter-cache-v1';

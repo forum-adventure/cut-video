@@ -13,7 +13,7 @@
     
    <link rel="manifest" href="manifest.json">
 
-    
+    <script src="coi-serviceworker.js"></script>
     <script src="https://unpkg.com/@ffmpeg/ffmpeg@0.11.6/dist/ffmpeg.min.js" crossorigin="anonymous"></script>
 
     
@@ -1760,12 +1760,12 @@ btnConfirmGif.addEventListener('click', () => {
 });
             
             <script>
+    // Kiểm tra xem trình duyệt có hỗ trợ Service Worker hay không
     if ('serviceWorker' in navigator) {
         window.addEventListener('load', () => {
-            // Đăng ký sw.js làm worker chính (nó đã tự nạp coi-serviceworker ở bên trong)
             navigator.serviceWorker.register('./sw.js')
                 .then((registration) => {
-                    console.log('Service Worker đã đăng ký thành công:', registration.scope);
+                    console.log('Service Worker đã đăng ký thành công với phạm vi:', registration.scope);
                 })
                 .catch((error) => {
                     console.error('Đăng ký Service Worker thất bại:', error);
@@ -1773,7 +1773,6 @@ btnConfirmGif.addEventListener('click', () => {
         });
     }
 </script>
-
 
 
     </script>
